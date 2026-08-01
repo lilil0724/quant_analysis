@@ -1,0 +1,17 @@
+column,term_group,coefficient
+intercept,intercept,39.49669324539901
+nbits,nbits,-3.522282864096091
+log2_group_size,group_size,0.5378880219654031
+dataset_name[cars],dataset,0.28836020780868876
+dataset_name[cub],dataset,-0.7352166273618658
+model_name[swin_base_patch4_window7_224_in22k],model,-25.535327248337882
+model_name[vit_b16],model,-3.7971201272288684
+ckpt_kind[ft],ckpt_kind,4.933207049724792
+ckpt_kind[fz],ckpt_kind,5.659635279019046
+nbits:log2_group_size,nbits:group_size,-0.007549544367065675
+nbits:dataset_name[cars],nbits:dataset,-0.011350704048843252
+nbits:dataset_name[cub],nbits:dataset,-0.06617377794258493
+nbits:model_name[swin_base_patch4_window7_224_in22k],nbits:model,3.5845750763828397
+nbits:model_name[vit_b16],nbits:model,0.8944359330306544
+nbits:ckpt_kind[ft],nbits:ckpt_kind,-1.260830312525141
+nbits:ckpt_kind[fz],nbits:ckpt_kind,-1.2062339720492536

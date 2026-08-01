@@ -1,0 +1,19 @@
+{
+  "outcome": "vram_reduction_pct",
+  "model": "levels",
+  "n_cells": 864,
+  "n_columns": 80,
+  "rank": 80,
+  "condition_number": 57.56504320132647,
+  "r2": 0.9273703908064965,
+  "adjusted_r2": 0.9200518460025593,
+  "loo_mae": 2.727512290404192,
+  "loo_rmse": 3.188683952903947,
+  "references": {
+    "nbits": "1.0",
+    "group_size": "8",
+    "dataset": "aircraft",
+    "model": "beitv2_base_patch16_224_in22k",
+    "ckpt_kind": "cal"
+  }
+}

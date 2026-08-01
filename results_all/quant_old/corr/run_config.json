@@ -1,0 +1,24 @@
+{
+  "input_file": "data\\backbones_quant.csv",
+  "baseline_overrides": "data\\quant_fp32_baseline_overrides.csv",
+  "results_dir": "C:\\iCloudDrive\\project_2\\my_project\\quant_analysis\\stat_old\\results_all\\quant_old\\corr",
+  "output_name": null,
+  "subset_datasets": null,
+  "subset_models": null,
+  "subset_ckpt_kinds": [
+    "ft",
+    "fz",
+    "cal"
+  ],
+  "metrics": [
+    "accuracy",
+    "vram",
+    "params",
+    "time"
+  ],
+  "save_format": "png",
+  "dpi": 300,
+  "started_at": "2026-07-29T04:53:40.038063+00:00",
+  "git_commit": "0b14c6e0f0047c7240d6184e5ed3e49d4af774eb",
+  "git_dirty": true
+}

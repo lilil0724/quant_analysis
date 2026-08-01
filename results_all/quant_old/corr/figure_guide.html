@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quant Signal Atlas | corr_quant_old 圖表導讀</title>
+  <style>
+    :root {
+      --ink: #12212f;
+      --muted: #5d6b76;
+      --paper: #f1f5f6;
+      --card: #ffffff;
+      --rule: #d6e0e4;
+      --blue: #0072b2;
+      --orange: #d55e00;
+      --green: #009e73;
+      --red: #c83c2a;
+      --deep: #173a4b;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+      line-height: 1.55;
+    }
+    .topline { height: 8px; background: linear-gradient(90deg, var(--blue) 0 33.33%, var(--orange) 33.33% 66.66%, var(--green) 66.66%); }
+    header {
+      padding: 54px clamp(22px, 7vw, 112px) 42px;
+      background: var(--deep);
+      color: #f7fbfc;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: end;
+    }
+    .eyebrow, .section-label { font: 700 12px/1.2 "Courier New", monospace; letter-spacing: .12em; text-transform: uppercase; }
+    .eyebrow { color: #a9d4e4; }
+    h1 { max-width: 920px; margin: 10px 0 12px; font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(35px, 5vw, 68px); line-height: 1.02; font-weight: 500; }
+    header p { max-width: 720px; margin: 0; color: #d2e0e5; font-size: 17px; }
+    .schema { border-left: 1px solid #6b8a97; padding-left: 18px; font: 13px/1.6 "Courier New", monospace; color: #cde4ec; white-space: nowrap; }
+    nav { padding: 13px clamp(22px, 7vw, 112px); background: #fff; border-bottom: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 10px 20px; }
+    nav a { color: var(--deep); text-decoration: none; font-size: 14px; font-weight: 700; }
+    nav a:hover { color: var(--red); }
+    main { max-width: 1440px; margin: 0 auto; padding: 46px clamp(22px, 5vw, 72px) 80px; }
+    section { margin: 0 0 62px; }
+    h2 { margin: 0 0 8px; font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(27px, 3vw, 39px); font-weight: 500; }
+    h3 { margin: 0 0 8px; font-size: 18px; }
+    .section-label { color: var(--red); margin-bottom: 8px; }
+    .lead { max-width: 940px; color: var(--muted); margin: 0 0 25px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(145px, 1fr)); gap: 12px; }
+    .stat { padding: 18px; background: var(--card); border-top: 3px solid var(--blue); box-shadow: 0 4px 16px rgba(18,33,47,.05); }
+    .stat:nth-child(2) { border-top-color: var(--orange); }
+    .stat:nth-child(3) { border-top-color: var(--green); }
+    .stat:nth-child(4) { border-top-color: var(--red); }
+    .stat strong { display: block; font: 500 32px/1 Georgia, serif; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .note { padding: 16px 18px; border-left: 4px solid var(--red); background: #fff7f5; color: #6a2b22; }
+    .formula-grid, .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .formula, .card { background: var(--card); border: 1px solid var(--rule); padding: 20px; }
+    code { color: #0e596e; font: 13px/1.5 "Courier New", monospace; overflow-wrap: anywhere; }
+    .read { margin: 10px 0 0; color: var(--muted); }
+    .figure { margin: 16px 0 0; background: #e8eef0; border: 1px solid var(--rule); }
+    .figure img { display: block; width: 100%; height: auto; }
+    .figure figcaption { padding: 10px 12px; font-size: 13px; color: var(--muted); background: #fff; }
+    .figure a { color: var(--deep); font-weight: 700; }
+    .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--rule); background: #fff; }
+    .step { padding: 18px; border-right: 1px solid var(--rule); }
+    .step:last-child { border-right: 0; }
+    .step b { display: block; color: var(--red); font: 700 13px "Courier New", monospace; }
+    .step p { margin: 7px 0 0; font-size: 14px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px 22px; padding: 14px 0; font-size: 14px; }
+    .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 7px; vertical-align: -1px; }
+    .units { background: var(--card); border: 1px solid var(--rule); padding: 22px; overflow-x: auto; }
+    .units table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 640px; }
+    .units th, .units td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    .units th { background: #eef3f5; font-family: "Courier New", monospace; font-weight: 700; color: var(--deep); }
+    .units td code { font-size: 12px; }
+    .units caption { caption-side: top; text-align: left; padding: 0 0 10px; color: var(--muted); font-size: 13px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .stat-block { background: var(--card); border: 1px solid var(--rule); padding: 16px 18px; }
+    .stat-block h3 { margin: 0 0 8px; font-family: Georgia, "Noto Serif TC", serif; font-size: 15px; }
+    .stat-block table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stat-block th, .stat-block td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--rule); }
+    .stat-block th { font-family: "Courier New", monospace; color: var(--deep); }
+    .stat-block .top { color: var(--red); font-weight: 700; }
+    .stat-block .good { color: var(--green); font-weight: 700; }
+    @media (max-width: 820px) { .stat-grid { grid-template-columns: 1fr; } }
+    footer { padding: 28px clamp(22px, 7vw, 112px); color: #d9e6e9; background: var(--deep); font-size: 13px; }
+    @media (max-width: 820px) {
+      header { grid-template-columns: 1fr; }
+      .schema { border-left: 0; border-top: 1px solid #6b8a97; padding: 14px 0 0; white-space: normal; }
+      .stats, .steps, .formula-grid, .cards { grid-template-columns: 1fr; }
+      .step { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .step:last-child { border-bottom: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <div class="topline"></div>
+  <header>
+    <div>
+      <div class="eyebrow">Quant Signal Atlas / pre-cleanup HQQ</div>
+      <h1>如何讀 corr_quant_old 的每一張圖</h1>
+      <p>這份導讀把 864 個量化設定 cell 的圖表放進同一條閱讀路徑：先確認資料能否信任，再理解 bit 與 group 的影響，最後查統計排名。</p>
+    </div>
+    <div class="schema">HQQ: hqq_top1 / hqq_vram_gb / hqq_params_m<br>FP32: serial 4999 / top1 / vram_gb / params_m</div>
+  </header>
+  <nav>
+    <a href="#start">開始前</a><a href="#heatmaps">Heatmaps</a><a href="#interactions">Interactions</a><a href="#effects">Factor effects</a><a href="#stats">Stats</a><a href="#units">Units</a>
+  </nav>
+
+  <main>
+    <section id="start">
+      <div class="section-label">01 / Read the frame first</div>
+      <h2>先知道每個點代表什麼</h2>
+      <p class="lead">每一個 prepared cell 固定一組 <code>(dataset, model, checkpoint kind, nbits, group size)</code>。同一 cell 的重複 run 不會被當成多個 seed，而是以 median 合併；所有相對指標都對應相同 <code>(dataset, model, checkpoint kind)</code> 的 FP32 serial 4999 baseline。</p>
+      <div class="stats">
+        <div class="stat"><strong>864</strong><span>prepared HQQ factor cells</span></div>
+        <div class="stat"><strong>27</strong><span>matched FP32 baseline contexts</span></div>
+        <div class="stat"><strong>16</strong><span>duplicate cells with time-range diagnostics</span></div>
+        <div class="stat"><strong>100.41 s</strong><span>maximum duplicate-run time range</span></div>
+      </div>
+      <div class="note" style="margin-top:18px"><strong>限制：</strong>所有 cell 都是 <code>seed=0</code>。這些圖描述此完整實驗網格中的趨勢、效應與取捨，不能當成跨 seed 的顯著性檢定或因果結論。</div>
+    </section>
+
+    <section>
+      <div class="section-label">Metric dictionary</div>
+      <h2>先判斷方向，才判斷好壞</h2>
+      <div class="formula-grid">
+        <div class="formula"><h3>Accuracy ratio</h3><code>accuracy_ratio = hqq_top1 / fp32_top1</code><p class="read">越接近 <strong>1</strong> 越好。1 = 完全保留 FP32 accuracy，0.5 = 剩一半。這消除了不同 checkpoint baseline 難度差異的影響，讓跨情境的相對 degradation 可比較。</p></div>
+        <div class="formula"><h3>VRAM reduction</h3><code>100 × (fp32_vram_gb - hqq_vram_gb) / fp32_vram_gb</code><p class="read">越高越好。正值代表 HQQ 比 matched FP32 baseline 使用更少 VRAM。</p></div>
+        <div class="formula"><h3>Params reduction</h3><code>100 × (fp32_params_m - hqq_params_m) / fp32_params_m</code><p class="read">越高越好。它常與 VRAM reduction 同方向。</p></div>
+        <div class="formula"><h3>Time delta</h3><code>100 × (hqq_time - fp32_time) / fp32_time</code><p class="read">越低越好，但只作 exploratory 指標。重跑時間差異很大，先看 quality plot 再引用它。</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-label">Suggested order</div>
+      <h2>一張圖不夠，四步讀完整個答案</h2>
+      <div class="steps">
+        <div class="step"><b>STEP 01</b><p>先看 heatmap：在不同 bit / group 下，哪裡開始掉 accuracy、哪裡真的省 VRAM。</p></div>
+        <div class="step"><b>STEP 02</b><p>看 interaction：整體趨勢是否會被某個 group 或 checkpoint kind 改變。</p></div>
+        <div class="step"><b>STEP 03</b><p>看 factor contribution：哪些因子在這份設計網格中最能解釋 outcome。</p></div>
+        <div class="step"><b>STEP 04</b><p>看 Stats 排行榜：delta R² 與 Spearman ρ 給出 factor importance 的兩條互補視角。</p></div>
+      </div>
+    </section>
+
+    <section id="heatmaps">
+      <div class="section-label">02 / Grid scan</div>
+      <h2>Heatmaps：bit 與 group 的快速地圖</h2>
+      <p class="lead">每張 heatmap 固定 checkpoint kind，將所有 dataset × model context 的同一 <code>(nbits, group size)</code> 取 median。橫軸是 nbits，縱軸是 group size；它回答的是「在這個 checkpoint 類型中，哪個量化區域通常較安全或較省資源」。</p>
+      <div class="cards">
+        <article class="card">
+          <h3>Accuracy drop heatmap</h3>
+          <p class="read">讀每格的 median <code>accuracy_ratio</code>。1 = 完全保留 FP32 accuracy，接近 0 = 量化後幾乎無用。這消除了不同 checkpoint 之間 FP32 baseline 差距的干擾（例如 FZ 起點只有 68%、FT 起點 88%），讓相對退化程度可直接比較。</p>
+          <figure class="figure"><a href="plots/accuracy_heatmap_cal.png"><img src="plots/accuracy_heatmap_cal.png" alt="CAL checkpoint accuracy drop heatmap"></a><figcaption>範例：<a href="plots/accuracy_heatmap_cal.png">accuracy_heatmap_cal.png</a>。另有 <code>_ft</code>、<code>_fz</code>。</figcaption></figure>
+        </article>
+        <article class="card">
+          <h3>VRAM reduction heatmap</h3>
+          <p class="read">讀每格的 median <code>vram_reduction_pct</code>。高正值表示通常更省 VRAM；必須和 accuracy heatmap 一起看，不能只追求最綠的格子。</p>
+          <figure class="figure"><a href="plots/vram_heatmap_cal.png"><img src="plots/vram_heatmap_cal.png" alt="CAL checkpoint VRAM reduction heatmap"></a><figcaption>範例：<a href="plots/vram_heatmap_cal.png">vram_heatmap_cal.png</a>。另有 <code>_ft</code>、<code>_fz</code>。</figcaption></figure>
+        </article>
+      </div>
+    </section>
+
+    <section id="interactions">
+      <div class="section-label">03 / Trend changes by context</div>
+      <h2>Interaction plots：同一 bit 不一定有同一效果</h2>
+      <div class="cards">
+        <article class="card">
+          <h3><code>interaction_nbits_group_&lt;metric&gt;</code></h3>
+          <p class="read">每條線代表一個 group size，點是跨其他 context 的 median outcome。若曲線大致平行，group size 只是在整體上下平移；若曲線交叉或斜率差很多，代表 <code>nbits × group_size</code> interaction 值得注意。</p>
+          <figure class="figure"><a href="plots/interaction_nbits_group_accuracy.png"><img src="plots/interaction_nbits_group_accuracy.png" alt="Accuracy interaction by nbits and group size"></a><figcaption><a href="plots/interaction_nbits_group_accuracy.png">accuracy example</a>。同系列另有 VRAM、params、time。</figcaption></figure>
+        </article>
+        <article class="card">
+          <h3><code>interaction_nbits_context_&lt;metric&gt;</code></h3>
+          <p class="read">每條線代表 <code>cal / ft / fz</code> checkpoint kind。它用來檢查 checkpoint 訓練方式是否改變量化對 bit width 的敏感度。這不是單一 model/dataset 的曲線，而是跨其他 context 的 median。</p>
+          <figure class="figure"><a href="plots/interaction_nbits_context_accuracy.png"><img src="plots/interaction_nbits_context_accuracy.png" alt="Accuracy interaction by nbits and checkpoint kind"></a><figcaption><a href="plots/interaction_nbits_context_accuracy.png">accuracy example</a>。同系列另有 VRAM、params、time。</figcaption></figure>
+        </article>
+      </div>
+    </section>
+
+    <section id="effects">
+      <div class="section-label">04 / What explains the variation?</div>
+      <h2>Factor contribution：不是 p-value，而是解釋力</h2>
+      <p class="lead"><code>factor_contribution_&lt;metric&gt;</code> 來自 trend regression 的 ablation。每根 bar 表示拿掉某一 term group 後，模型 R² 減少多少（<code>delta R²</code>）。bar 越大，表示該 term 對這份資料網格的預測越重要。</p>
+      <div class="note"><strong>注意：</strong>interactions 與主效應會重疊，因此 delta R² 是描述性的 contribution ranking，不是可相加的百分比，也不是顯著性結論。要看係數、reference level、rank、LOOCV MAE/RMSE，請開同層的 <code>factor_effects_*.csv</code> 與 <code>model_fit_*.json</code>。</div>
+      <figure class="figure" style="max-width:760px"><a href="plots/factor_contribution_accuracy.png"><img src="plots/factor_contribution_accuracy.png" alt="Accuracy factor contribution"></a><figcaption>範例：<a href="plots/factor_contribution_accuracy.png">factor_contribution_accuracy.png</a>。另有 VRAM、params、time。</figcaption></figure>
+    </section>
+
+    <section id="stats">
+<div class="section-label">05 / Statistical summary</div>
+      <h2>Factor importance 排行榜</h2>
+      <p class="lead">兩張表回答不同問題：<strong>delta R² ablation</strong> 來自 levels（categorical）模型，nbits / group_size 各自為獨立的 dummy column、不強制線性關係，能捕捉「低 bit 崩潰、高 bit 趨穩」的非線性 pattern；<strong>Spearman ρ</strong> 衡量 factor 與 outcome 的單調關聯強度，適合非線性關係，且固定了 confound 情境。</p>
+
+      <div class="note" style="margin-bottom:18px"><strong>R² 怎麼算：</strong>
+        <code>R² = 1 − SSE / SST</code>，其中 <code>SSE = Σ(y_i − ŷ_i)²</code>（殘差平方和，模型沒解釋到的部分），<code>SST = Σ(y_i − ȳ)²</code>（總平方和，資料本身的總變異量）。R² = 0 表示模型不比用平均值猜好；R² = 1 表示完美擬合。<br><br>
+        <strong>delta R² 怎麼算：</strong>先 fit 完整模型得到 <code>R²_full</code>，再把某個 term group（例如 nbits 及其所有 interactions）從設計矩陣中刪除，重 fit 得到 <code>R²_reduced</code>，<code>delta = R²_full − R²_reduced</code>。delta 越大，表示該 term group 在控制了其他 factor 之後，對預測 accuracy 的額外貢獻越多。注意：各 term 的 delta R² <strong>不可相加</strong>，因為 term 之間的解釋力有重疊。<br><br>
+        與線性 trend model 相比（R²=0.628），levels model 的 R²=0.956 更能捕捉 nbits 對 accuracy 保留比例的真實貢獻——nbits 的 delta 因此從 0.013 升至 0.113。</div>
+
+      <div class="stat-grid">
+        <div class="stat-block">
+          <h3>delta R² ablation ranking（accuracy_ratio）</h3>
+          <table>
+            <thead><tr><th>term group</th><th class="top">delta R²</th></tr></thead>
+            <tbody>
+              <tr><td>nbits</td><td class="top">0.113</td></tr>
+              <tr><td>nbits × group_size</td><td class="top">0.081</td></tr>
+              <tr><td>nbits × model</td><td>0.012</td></tr>
+              <tr><td>nbits × ckpt_kind</td><td>0.003</td></tr>
+              <tr><td>nbits × dataset</td><td>0.001</td></tr>
+              <tr><td>dataset</td><td>≈0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stat-block">
+          <h3>delta R² ablation ranking（vram_reduction_pct）</h3>
+          <table>
+            <thead><tr><th>term group</th><th class="top">delta R²</th></tr></thead>
+            <tbody>
+              <tr><td>nbits × model</td><td class="top">0.147</td></tr>
+              <tr><td>model</td><td class="top">0.100</td></tr>
+              <tr><td>nbits</td><td class="top">0.071</td></tr>
+              <tr><td>nbits × ckpt_kind</td><td>0.021</td></tr>
+              <tr><td>ckpt_kind</td><td>0.004</td></tr>
+              <tr><td>group_size</td><td>0.002</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stat-block">
+          <h3>delta R² ablation ranking（params_reduction_pct）</h3>
+          <table>
+            <thead><tr><th>term group</th><th class="top">delta R²</th></tr></thead>
+            <tbody>
+              <tr><td>nbits</td><td class="top">0.100</td></tr>
+              <tr><td>nbits × model</td><td>≈0</td></tr>
+              <tr><td>model</td><td>≈0</td></tr>
+              <tr><td>nbits × ckpt_kind</td><td>≈0</td></tr>
+              <tr><td>ckpt_kind</td><td>≈0</td></tr>
+              <tr><td>nbits × dataset</td><td>≈0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stat-block">
+          <h3>delta R² ablation ranking（time_delta_pct）</h3>
+          <table>
+            <thead><tr><th>term group</th><th class="top">delta R²</th></tr></thead>
+            <tbody>
+              <tr><td>nbits × ckpt_kind</td><td class="top">0.052</td></tr>
+              <tr><td>dataset</td><td class="top">0.028</td></tr>
+              <tr><td>nbits</td><td class="top">0.024</td></tr>
+              <tr><td>nbits × group_size</td><td>0.020</td></tr>
+              <tr><td>nbits × dataset</td><td>0.014</td></tr>
+              <tr><td>model</td><td>0.011</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3 style="margin-top:28px">Spearman within-context 單調關聯性</h3>
+      <p class="lead">每個值都控制了 confound 情境：<code>nbits_within_context</code> 固定 (dataset, model, ckpt_kind, group_size)；<code>group_within_context</code> 固定 (dataset, model, ckpt_kind, nbits)。值範圍 −1 至 1。<strong>當 Spearman ρ 明顯大於 Pearson r，代表關係非線性但強單調，Spearman 是更可靠的第一手指標。</strong></p>
+
+      <div class="units">
+        <table>
+          <caption>對比 nbits 的 global Pearson r vs. within-context Spearman ρ</caption>
+          <thead><tr><th>outcome</th><th>global Pearson r</th><th>within-context Spearman ρ (nbits)</th><th>within-context Spearman ρ (group_size)</th><th>特徵</th></tr></thead>
+          <tbody>
+            <tr><td><code>accuracy_ratio</code></td><td class="top">+0.75</td><td class="good">+0.98</td><td>−0.80</td><td>Spearman 遠高於 Pearson → 非線性，但 nbits 順序強烈決定 accuracy 保留比例</td></tr>
+            <tr><td><code>vram_reduction_pct</code></td><td class="top">−0.50</td><td class="good">−0.95</td><td class="good">+1.00</td><td>nbits 越高、VRAM 節省越少；group_size 越大、節省越少</td></tr>
+            <tr><td><code>params_reduction_pct</code></td><td class="top">−0.69</td><td class="good">−0.82</td><td class="good">−1.00</td><td>參數節省主要由 bit width 決定，group size 有完美單調影響</td></tr>
+            <tr><td><code>time_delta_pct</code></td><td>−0.02</td><td class="good">−0.81</td><td>−0.20</td><td>Global Pearson 近 0（被 confound 淹沒），但控制了情境後 Spearman 揭露強單調關聯</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note" style="margin-top:18px"><strong>判讀提示：</strong>Delta R² 與 Spearman 回答不同問題，排名也會不同。<code>time_delta_pct</code> 的 global Pearson r = −0.02 看起來無關聯，但 within-context Spearman = −0.81 告訴你「當其他條件相同時，bit 越大時間越省」——這是 confound 被 dataset/model 難度差異淹沒了。要真正理解 factor importance，應兩張表一起看。<code>factor_contribution_*.png</code> 的 bar chart 提供了更細的 term-group 分解；完整的數值在 <code>factor_ablation_*.csv</code> 與 <code>correlations_*.csv</code>。</div>
+    </section>
+
+    <section id="units">
+      <div class="section-label">06 / Units dictionary</div>
+      <h2>每個數值的單位</h2>
+
+      <h3>座標軸 / colorbar 數值</h3>
+      <div class="units">
+        <table>
+          <caption>圖中軸與 colorbar 上的數值及其物理單位</caption>
+          <thead><tr><th>圖</th><th>數值</th><th>原始欄位</th><th>單位</th></tr></thead>
+          <tbody>
+            <tr><td><code>accuracy_heatmap_&lt;ckpt&gt;</code></td><td>cell value</td><td><code>hqq_top1 / fp32_top1</code></td><td><strong>ratio (0~1)</strong>：1 = 完全保留 FP32 accuracy，0.5 = 剩一半</td></tr>            <tr><td><code>vram_heatmap_&lt;ckpt&gt;</code></td><td>cell value</td><td><code>100 × (fp32_vram_gb - hqq_vram_gb) / fp32_vram_gb</code></td><td><strong>%</strong>：正值省 VRAM，-10 = HQQ 多用 10% VRAM</td></tr>
+            <tr><td><code>interaction_nbits_group_accuracy</code></td><td>y</td><td>accuracy_ratio</td><td><strong>ratio (0~1)</strong></td></tr>
+            <tr><td><code>interaction_nbits_group_vram</code></td><td>y</td><td>vram_reduction_pct</td><td><strong>%</strong></td></tr>
+            <tr><td><code>interaction_nbits_group_params</code></td><td>y</td><td>params_reduction_pct</td><td><strong>%</strong></td></tr>
+            <tr><td><code>interaction_nbits_group_time</code></td><td>y</td><td>time_delta_pct</td><td><strong>%</strong></td></tr>
+            <tr><td><code>interaction_nbits_context_&lt;metric&gt;</code></td><td>y</td><td>對應上述四個 metric</td><td>同對應 metric：pp 或 %</td></tr>
+            <tr><td><code>factor_contribution_&lt;metric&gt;</code></td><td>bar 長度</td><td>delta_R²</td><td><strong>dimensionless</strong>：R² 為 0–1 比值；沒有物理單位</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>X / Y 軸數值</h3>
+      <div class="units">
+        <table>
+          <caption>軸上數值的物理單位</caption>
+          <thead><tr><th>圖</th><th>軸</th><th>單位</th></tr></thead>
+          <tbody>
+            <tr><td>heatmap 橫軸</td><td><code>hqq_nbits</code></td><td><strong>bit</strong>：1 / 1.58 / 2 / 3 / 4 / 5 / 6 / 8</td></tr>
+            <tr><td>heatmap 縱軸</td><td><code>hqq_group_size</code></td><td><strong>count（整數）</strong>：8 / 32 / 128 / 512 個權重 / group</td></tr>
+            <tr><td>interaction_nbits_*</td><td>x = <code>hqq_nbits</code></td><td><strong>bit</strong></td></tr>
+            <tr><td>factor_contribution_*</td><td>y 軸（barh）= term 名稱</td><td><strong>dimensionless</strong>（類別軸，非數值）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>中間數值（非軸但會出現在圖中）</h3>
+      <div class="units">
+        <table>
+          <caption>圖上 annotation、輔助檔案、模型診斷中的數值單位</caption>
+          <thead><tr><th>出現位置</th><th>數值</th><th>單位</th></tr></thead>
+          <tbody>
+            <tr><td>heatmap 每格 annotation</td><td>median outcome</td><td>ratio（accuracy）或 %（vram）</td></tr>
+            <tr><td>interaction 圖的 <code>axhline</code></td><td>0 或 1</td><td>accuracy ratio: 參考線在 1（完全保留）；VRAM/params/time: 參考線在 0</td></tr>
+            <tr><td><code>baseline_contexts.csv</code> / <code>prepared_quant_cells.csv</code></td><td><code>fp32_top1</code>、<code>hqq_top1</code></td><td><strong>%</strong>（Top-1 accuracy，原始 WandB 數字）</td></tr>
+            <tr><td>同上</td><td><code>fp32_vram_gb</code>、<code>hqq_vram_gb</code></td><td><strong>GB</strong>（VRAM）</td></tr>
+            <tr><td>同上</td><td><code>fp32_params_m</code>、<code>hqq_params_m</code></td><td><strong>M（百萬個）</strong>：參數個數</td></tr>
+            <tr><td>同上</td><td><code>time_total_s</code></td><td><strong>秒 (s)</strong></td></tr>
+            <tr><td>同上</td><td><code>hqq_nbits</code></td><td><strong>bit</strong></td></tr>
+            <tr><td>同上</td><td><code>hqq_group_size</code></td><td><strong>count</strong></td></tr>
+            <tr><td>同上</td><td><code>seed</code>、<code>serial</code></td><td><strong>dimensionless</strong> ordinal</td></tr>
+            <tr><td><code>model_fit_*.json</code></td><td><code>r2</code>、<code>adjusted_r2</code></td><td><strong>dimensionless</strong>（0–1 比值）</td></tr>
+            <tr><td><code>model_fit_*.json</code></td><td><code>loo_mae</code>、<code>loo_rmse</code></td><td>與該檔對應的 outcome 同單位（pp 或 %）</td></tr>
+            <tr><td><code>model_fit_*.json</code></td><td><code>condition_number</code></td><td><strong>dimensionless</strong></td></tr>
+            <tr><td><code>correlations_*.csv</code></td><td><code>correlation</code></td><td><strong>dimensionless</strong>（Pearson / Spearman ρ，−1 至 1）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <footer>Generated for <code>corr_quant_old.py</code>. Source tables: <code>prepared_quant_cells.csv</code>, <code>data_quality.md</code>, <code>report.md</code>.</footer>
+</body>
+</html>

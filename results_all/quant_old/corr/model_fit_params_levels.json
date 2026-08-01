@@ -1,0 +1,19 @@
+{
+  "outcome": "params_reduction_pct",
+  "model": "levels",
+  "n_cells": 864,
+  "n_columns": 80,
+  "rank": 80,
+  "condition_number": 57.56504320132647,
+  "r2": 0.9999998262301028,
+  "adjusted_r2": 0.9999998087201258,
+  "loo_mae": 0.012001303677246458,
+  "loo_rmse": 0.01741294110290423,
+  "references": {
+    "nbits": "1.0",
+    "group_size": "8",
+    "dataset": "aircraft",
+    "model": "beitv2_base_patch16_224_in22k",
+    "ckpt_kind": "cal"
+  }
+}

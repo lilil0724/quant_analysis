@@ -1,7 +1,13 @@
 import os
 import argparse
+import json
+import subprocess
+from datetime import datetime, timezone
 import wandb
 import pandas as pd
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 CONFIG_COLS = [
@@ -28,9 +34,12 @@ SORT_COLS = [
 
 
 # For eval_quant.py runs in the sibling TGDA project (project nycu_pcs/TiT).
-# Each run logs hqq_top1/hqq_vram_gb/hqq_params_m (HQQ runs) OR
-# original_top1/original_vram_gb/original_params_m (when --hqq_compare_fp32) OR
-# top1/vram_gb/params_m (native quant models, no HQQ).
+# After the cleanup, every run logs a single bare set:
+#   - HQQ run               -> top1/loss/vram_gb/params_m (the post-quant model)
+#   - Native quant model    -> top1/loss/vram_gb/params_m (the bundled quant model)
+#   - Plain fp32 run (4999) -> top1/loss/vram_gb/params_m
+# The hqq_* / original_* / acc_drop / params_reduction_m keys were removed from
+# eval_quant.py's wandb log; they are dropped here too (see fix_eval_quant.md).
 QUANT_CONFIG_COLS = [
     'serial', 'dataset_name', 'model_name', 'seed',
     'image_size', 'batch_size', 'ckpt_path', 'ckpt_path_teacher',
@@ -38,13 +47,10 @@ QUANT_CONFIG_COLS = [
     'hqq', 'hqq_nbits', 'hqq_group_size', 'hqq_exclude',
     'hqq_offload_meta', 'hqq_compute_dtype',
     'hqq_quant_zero', 'hqq_quant_scale', 'hqq_verbose',
-    'hqq_compare_fp32', 'debugging', 'test_only',
+    'debugging', 'test_only',
 ]
 QUANT_SUMMARY_COLS = [
-    'original_top1', 'original_vram_gb', 'original_params_m',
-    'hqq_top1', 'hqq_loss', 'hqq_vram_gb', 'hqq_params_m',
-    'top1', 'loss', 'vram_gb', 'params_m',
-    'acc_drop', 'params_reduction_m', 'time_total_s',
+    'top1', 'loss', 'vram_gb', 'params_m', 'time_total_s',
 ]
 QUANT_SORT_COLS = [
     'dataset_name', 'serial', 'model_name',
@@ -68,7 +74,14 @@ def get_wandb_project_runs(project, serials=None, vit_only=False):
     else:
         runs = api.runs(path=project, per_page=2000)
 
-    print('Downloaded runs: ', len(runs))
+    total_runs = len(runs)
+    runs = [
+        run for run in runs
+        if str(getattr(run, 'state', '')).lower() == 'finished'
+    ]
+    print(f'Downloaded runs: {total_runs}')
+    print(f'Finished runs kept: {len(runs)}')
+    print(f'Runs excluded by state: {total_runs - len(runs)}')
     return runs
 
 
@@ -124,7 +137,9 @@ def parse_args():
     # output
     parser.add_argument('--output_file', type=str,
                         help='File path (default: per --quant)')
-    parser.add_argument('--results_dir', type=str, default='data',
+    parser.add_argument('--output-name', type=str,
+                        help='CSV filename stem under results_dir')
+    parser.add_argument('--results_dir', type=str, default=os.path.join(BASE_DIR, 'data'),
                         help='The directory where results will be stored')
     parser.add_argument('--sort_cols', nargs='+', type=str,
                         help='override sort columns (default: per --quant)')
@@ -161,7 +176,23 @@ def main():
     args = parse_args()
 
     os.makedirs(args.results_dir, exist_ok=True)
+    if args.output_name:
+        args.output_file = args.output_name
+        if not args.output_file.lower().endswith('.csv'):
+            args.output_file += '.csv'
     args.output_file = os.path.join(args.results_dir, args.output_file)
+    config = vars(args).copy()
+    config['started_at'] = datetime.now(timezone.utc).isoformat()
+    try:
+        config['git_commit'] = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], text=True).strip()
+        config['git_dirty'] = bool(subprocess.check_output(
+            ['git', 'status', '--porcelain'], text=True).strip())
+    except (OSError, subprocess.CalledProcessError):
+        config['git_commit'] = None
+        config['git_dirty'] = None
+    with open(os.path.join(args.results_dir, 'run_config.json'), 'w', encoding='utf-8') as handle:
+        json.dump(config, handle, indent=2, default=str)
 
     runs = get_wandb_project_runs(args.project_name, args.serials, args.vit_only)
 

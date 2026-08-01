@@ -1,0 +1,19 @@
+{
+  "outcome": "accuracy_ratio",
+  "model": "trend",
+  "n_cells": 864,
+  "n_columns": 16,
+  "rank": 16,
+  "condition_number": 260.7149760377103,
+  "r2": 0.6426192529256101,
+  "adjusted_r2": 0.6362976595221717,
+  "loo_mae": 0.23054494618312826,
+  "loo_rmse": 0.2649860890778982,
+  "references": {
+    "nbits": "1.0",
+    "group_size": "8",
+    "dataset": "aircraft",
+    "model": "beitv2_base_patch16_224_in22k",
+    "ckpt_kind": "cal"
+  }
+}

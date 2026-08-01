@@ -1,0 +1,19 @@
+{
+  "outcome": "time_delta_pct",
+  "model": "trend",
+  "n_cells": 864,
+  "n_columns": 16,
+  "rank": 16,
+  "condition_number": 260.7149760377103,
+  "r2": 0.49908772685589475,
+  "adjusted_r2": 0.49022725032622305,
+  "loo_mae": 13.338321876677485,
+  "loo_rmse": 19.610610706787057,
+  "references": {
+    "nbits": "1.0",
+    "group_size": "8",
+    "dataset": "aircraft",
+    "model": "beitv2_base_patch16_224_in22k",
+    "ckpt_kind": "cal"
+  }
+}
