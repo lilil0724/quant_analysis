@@ -1,0 +1,7 @@
+wandb
+pandas
+numpy
+matplotlib
+seaborn
+openpyxl
+statsmodels
