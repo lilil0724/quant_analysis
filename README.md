@@ -31,7 +31,7 @@ W&B TiT runs
 |---|---|---|
 | Download | `download_save_wandb_data.py` | Downloads finished legacy HQQ runs from `nycu_pcs/TiT`. |
 | Summarize | `summarize_quant.py` | Validates serial grids, pairs FP32 baselines, averages repeated experiments, and exports per-dataset XLSX files. |
-| Correlate | `corr_quant.py` | Calculates correlations, trend/levels models, delta R2 ablations, bootstrap summaries, and robust-model diagnostics. |
+| Correlate | `corr_quant.py` | Calculates correlations, trend/levels models, and delta R2 ablations. |
 | Plot | `plot_quant_acc_bit_group.py` | Generates heatmaps, line plots, factor plots, and coefficient figures as PNG files. |
 
 ## Requirements
@@ -63,18 +63,11 @@ python plot_quant_acc_bit_group.py
 If `data/backbones_quant.csv` already exists, skip download and run the last
 three commands.
 
-## Serial Rules and Baselines
+## Baseline Pairing
 
-Each scan has 32 HQQ cells: eight nbits codes times four group-size codes.
-
-| Scan | HQQ serials | FP32 baseline |
-|---|---|---|
-| 3X0X | `3000..3003` through `3700..3703` | `3999` |
-| 4X0X | `4000..4003` through `4700..4703` | `4999` |
-
-FP32 baselines are only paired within the same series, dataset, model, and
-checkpoint kind. The pipeline never cross-matches `3999` with 4X0X or `4999`
-with 3X0X.
+Each HQQ scan cell must be paired with an FP32 baseline from the same series,
+dataset, model, and checkpoint kind. The pipeline never cross-matches a
+baseline across series.
 
 Checkpoint paths must contain one of:
 
@@ -93,7 +86,6 @@ Checkpoint paths must contain one of:
 - `quant_summary.csv`: one row per aggregated HQQ experiment cell.
 - `completeness.csv`: expected versus observed serial grids and baseline status.
 - `configuration_quality.csv`: checks that non-factor HQQ settings are fixed.
-- `serial_mapping.csv`: serial-code mapping to actual nbits and group size.
 - `quant_<dataset>.xlsx`: accuracy-only workbook for each dataset.
 
 Repeated runs with the same series, dataset, model, checkpoint, serial, nbits,
@@ -109,16 +101,10 @@ summary also retains median, standard deviation, run count, and seed count.
 - `factor_effects_accuracy_levels.csv`: categorical-level model coefficients.
 - `factor_ablation_accuracy.csv`: legacy descriptive factor contribution,
   measured as delta R2.
-- `factor_summary.csv`: context-aware bootstrap factor summaries.
-- `model_summary.csv`: HC3 robust fixed-effects coefficients and confidence
-  intervals.
-- `model_metadata.json`: model fit information and mixed-effects diagnostic.
 - `data_quality.md` and `report.md`: concise analysis reports.
 
-The original correlation, trend/levels, and delta R2 ablation analysis remains
-the primary descriptive method. Bootstrap confidence intervals, HC3 robust
-fixed effects, and the mixed-effects diagnostic are supplementary robustness
-checks.
+The correlation, trend/levels, and delta R2 ablation analysis are descriptive
+association methods, not causal claims.
 
 ### Figures
 
@@ -129,8 +115,6 @@ checks.
 - nbits/group-size and nbits/checkpoint interaction lines
 - per-checkpoint Top-1 accuracy lines with 90% FP32 references
 - factor-contribution and factor-relationship plots
-- bootstrap nbits/group-size effect plots
-- HC3 fixed-effects forest plot
 
 ## Reusable CLI
 
@@ -147,27 +131,21 @@ with full paths:
 `--serials` accepts explicit integer lists only. It does not expand ranges. If
 you select a subset, include its matching FP32 baseline yourself.
 
-Example: run only the 4X0X group-size code 0 cells plus their baseline.
+Example with custom input and output paths:
 
 ```powershell
-$serials = 4000,4100,4200,4300,4400,4500,4600,4700,4999
-
 python summarize_quant.py `
   --input-file D:\runs\raw.csv `
   --output-file D:\analysis\summary\quant_summary.csv `
-  --results-dir D:\analysis\summary `
-  --serials $serials
+  --results-dir D:\analysis\summary
 
 python corr_quant.py `
   --input-file D:\analysis\summary\quant_summary.csv `
-  --output-file D:\analysis\corr\model_summary.csv `
-  --results-dir D:\analysis\corr `
-  --serials $serials
+  --output-file D:\analysis\corr\factor_ablation_accuracy.csv `
+  --results-dir D:\analysis\corr
 
 python plot_quant_acc_bit_group.py `
   --input-file D:\analysis\corr\prepared_accuracy_cells.csv `
-  --model-file D:\analysis\corr\model_summary.csv `
-  --factor-summary-file D:\analysis\corr\factor_summary.csv `
   --ablation-file D:\analysis\corr\factor_ablation_accuracy.csv `
   --corr-dir D:\analysis\corr `
   --output-file D:\analysis\plots\overview.png `

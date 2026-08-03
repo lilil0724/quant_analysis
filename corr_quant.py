@@ -4,37 +4,33 @@ import argparse
 import json
 import os
 import subprocess
-import warnings
 from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTCOME = 'accuracy_ratio'
 CONTEXT_COLUMNS = ['series', 'dataset_name', 'model_name', 'ckpt_kind']
 DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results_all', 'quant', 'corr')
-DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'model_summary.csv')
+DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'factor_ablation_accuracy.csv')
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Model HQQ accuracy-ratio factors.')
+    parser = argparse.ArgumentParser(description='Analyze HQQ accuracy-ratio factor relationships.')
     parser.add_argument(
         '--input-file', default=os.path.join(BASE_DIR, 'results_all', 'quant', 'quant_summary.csv'),
         help='full path of the summary CSV produced by summarize_quant.py')
     parser.add_argument(
         '--output-file', default=DEFAULT_OUTPUT,
-        help='full path of the primary HC3 model summary CSV')
+        help='full path of the primary factor-ablation CSV')
     parser.add_argument(
         '--results-dir', default=DEFAULT_RESULTS_DIR,
-        help='directory for statistical tables, Markdown reports, and run_config.json')
+        help='directory for correlation tables, factor models, Markdown reports, and run_config.json')
     parser.add_argument(
         '--serials', nargs='+', type=int,
         help='explicit HQQ serial numbers to retain; default uses every summary row')
-    parser.add_argument('--bootstrap-replicates', type=int, default=1000)
-    parser.add_argument('--seed', type=int, default=20260801)
     return parser.parse_args()
 
 
@@ -49,53 +45,6 @@ def write_run_config(path, args):
         config['git_dirty'] = None
     with open(path, 'w', encoding='utf-8') as handle:
         json.dump(config, handle, indent=2)
-
-
-def bootstrap_interval(frame, value_column, replicates, rng):
-    context_values = frame.groupby(CONTEXT_COLUMNS, as_index=False)[value_column].median()[value_column].to_numpy(float)
-    if len(context_values) < 2:
-        return np.nan, np.nan
-    samples = rng.choice(context_values, size=(replicates, len(context_values)), replace=True)
-    medians = np.median(samples, axis=1)
-    return tuple(np.quantile(medians, [0.025, 0.975]))
-
-
-def factor_summary(data, factor, replicates, rng):
-    rows = []
-    for value, frame in data.groupby(factor, dropna=False):
-        low, high = bootstrap_interval(frame, OUTCOME, replicates, rng)
-        context_values = frame.groupby(CONTEXT_COLUMNS, as_index=False)[OUTCOME].median()[OUTCOME]
-        rows.append({
-            'factor': factor,
-            'level': value,
-            'n_cells': len(frame),
-            'n_contexts': frame[CONTEXT_COLUMNS].drop_duplicates().shape[0],
-            'mean_accuracy_ratio': frame[OUTCOME].mean(),
-            # Match the point estimate to the context-level bootstrap unit.
-            'median_accuracy_ratio': context_values.median(),
-            'bootstrap_ci_low': low,
-            'bootstrap_ci_high': high,
-        })
-    return pd.DataFrame(rows)
-
-
-def correlations(data):
-    rows = []
-    numeric_factors = {'hqq_nbits': data['hqq_nbits'], 'log2_group_size': np.log2(data['hqq_group_size'])}
-    for name, values in numeric_factors.items():
-        for method in ('pearson', 'spearman'):
-            rows.append({'scope': 'global', 'factor': name, 'method': method, 'correlation': values.corr(data[OUTCOME], method=method)})
-    for name, values in numeric_factors.items():
-        values = pd.Series(values, index=data.index)
-        grouped = []
-        for _, frame in data.assign(_factor=values).groupby(CONTEXT_COLUMNS):
-            if frame['_factor'].nunique() > 1 and frame[OUTCOME].nunique() > 1:
-                grouped.append(frame['_factor'].corr(frame[OUTCOME], method='spearman'))
-        rows.append({
-            'scope': 'median_within_context', 'factor': name, 'method': 'spearman',
-            'correlation': np.median(grouped) if grouped else np.nan,
-        })
-    return pd.DataFrame(rows)
 
 
 def original_correlation_rows(data):
@@ -177,49 +126,6 @@ def legacy_factor_model(data, levels):
     }
 
 
-def fit_models(data):
-    formula = (
-        'accuracy_ratio ~ C(hqq_nbits) * C(hqq_group_size) + '
-        'C(ckpt_kind) + C(dataset_name) + C(model_name)'
-    )
-    fixed = smf.ols(formula, data=data).fit(cov_type='HC3')
-    fixed_table = pd.DataFrame({
-        'term': fixed.params.index,
-        'coefficient': fixed.params.values,
-        'std_error': fixed.bse.values,
-        'ci_low': fixed.conf_int().iloc[:, 0].values,
-        'ci_high': fixed.conf_int().iloc[:, 1].values,
-        'p_value': fixed.pvalues.values,
-    })
-    fixed_metadata = {
-        'formula': formula,
-        'n_cells': int(fixed.nobs),
-        'r_squared': float(fixed.rsquared),
-        'adjusted_r_squared': float(fixed.rsquared_adj),
-        'condition_number': float(fixed.condition_number),
-        'covariance': 'HC3 heteroskedasticity robust',
-    }
-
-    mixed_metadata = {'status': 'not_run'}
-    try:
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter('always')
-            mixed = smf.mixedlm(
-                formula, data=data, groups=data[CONTEXT_COLUMNS].astype(str).agg('|'.join, axis=1)
-            ).fit(reml=False, method='lbfgs')
-        random_variance = float(mixed.cov_re.iloc[0, 0])
-        warning_text = ' | '.join(str(item.message) for item in caught_warnings)
-        status = 'fit' if mixed.converged and random_variance > 1e-10 else 'singular_or_unconverged'
-        mixed_metadata = {
-            'status': status, 'converged': bool(mixed.converged), 'random_intercept_variance': random_variance,
-            'aic': float(mixed.aic), 'bic': float(mixed.bic), 'log_likelihood': float(mixed.llf),
-            'warning': warning_text or None,
-        }
-    except Exception as error:
-        mixed_metadata = {'status': 'failed', 'reason': str(error)}
-    return fixed_table, fixed_metadata, mixed_metadata
-
-
 def main():
     args = parse_args()
     args.results_dir = os.path.abspath(args.results_dir)
@@ -239,13 +145,6 @@ def main():
         raise ValueError('No baseline-matched accuracy cells remain.')
     data.to_csv(os.path.join(args.results_dir, 'prepared_accuracy_cells.csv'), index=False)
 
-    rng = np.random.default_rng(args.seed)
-    summaries = pd.concat([
-        factor_summary(data, factor, args.bootstrap_replicates, rng)
-        for factor in ('hqq_nbits', 'hqq_group_size', 'ckpt_kind', 'dataset_name', 'model_name')
-    ], ignore_index=True)
-    summaries.to_csv(os.path.join(args.results_dir, 'factor_summary.csv'), index=False)
-    correlations(data).to_csv(os.path.join(args.results_dir, 'correlations.csv'), index=False)
     legacy_correlations = original_correlation_rows(data)
     legacy_correlations.to_csv(os.path.join(args.results_dir, 'correlations_accuracy.csv'), index=False)
     trend_effects, trend_ablation, trend_metadata = legacy_factor_model(data, levels=False)
@@ -254,31 +153,21 @@ def main():
     level_effects.to_csv(os.path.join(args.results_dir, 'factor_effects_accuracy_levels.csv'), index=False)
     trend_ablation.to_csv(os.path.join(args.results_dir, 'factor_ablation_accuracy_trend.csv'), index=False)
     level_ablation.to_csv(os.path.join(args.results_dir, 'factor_ablation_accuracy_levels.csv'), index=False)
-    level_ablation.to_csv(os.path.join(args.results_dir, 'factor_ablation_accuracy.csv'), index=False)
+    level_ablation.to_csv(args.output_file, index=False)
     with open(os.path.join(args.results_dir, 'model_fit_accuracy_trend.json'), 'w', encoding='utf-8') as handle:
         json.dump(trend_metadata, handle, indent=2)
     with open(os.path.join(args.results_dir, 'model_fit_accuracy_levels.json'), 'w', encoding='utf-8') as handle:
         json.dump(level_metadata, handle, indent=2)
-    fixed_table, fixed_metadata, mixed_metadata = fit_models(data)
-    fixed_table.to_csv(args.output_file, index=False)
-    with open(os.path.join(args.results_dir, 'model_metadata.json'), 'w', encoding='utf-8') as handle:
-        json.dump({'fixed_effects': fixed_metadata, 'mixed_effects': mixed_metadata}, handle, indent=2)
     quality_lines = ['# Data quality', '', f'- Prepared accuracy cells: {len(data)}',
                      f'- Baseline-matched cells: {int(data["baseline_matched"].sum())}',
                      f'- Contexts: {data[CONTEXT_COLUMNS].drop_duplicates().shape[0]}']
     with open(os.path.join(args.results_dir, 'data_quality.md'), 'w', encoding='utf-8') as handle:
         handle.write('\n'.join(quality_lines) + '\n')
-    mixed_status = mixed_metadata['status']
-    mixed_detail = mixed_metadata.get('reason') or mixed_metadata.get('warning') or 'No diagnostic warning.'
     report_lines = ['# Quant accuracy factor report', '', f'- Prepared cells: {len(data)}', '',
                     '## Factor contribution ranking (delta R2 ablation)', '',
                     level_ablation.sort_values('delta_r2', ascending=False).to_string(index=False), '',
                     '## Spearman rank correlation supplement', '',
-                    legacy_correlations[legacy_correlations['method'].eq('spearman')].tail(2).to_string(index=False), '',
-                    '## Additional inference', '',
-                    'HC3 fixed-effects estimates and a mixed-effects diagnostic are in `model_summary.csv` and `model_metadata.json`.',
-                    f'Mixed-effects diagnostic status: `{mixed_status}`.',
-                    f'Diagnostic detail: {mixed_detail}']
+                    legacy_correlations[legacy_correlations['method'].eq('spearman')].tail(2).to_string(index=False)]
     with open(os.path.join(args.results_dir, 'report.md'), 'w', encoding='utf-8') as handle:
         handle.write('\n'.join(report_lines) + '\n')
     print(f'Modelled {len(data)} baseline-matched cells in {args.results_dir}')

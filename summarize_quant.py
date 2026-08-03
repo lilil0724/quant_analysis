@@ -233,25 +233,6 @@ def configuration_quality(hqq):
     return pd.DataFrame(rows)
 
 
-def serial_mapping(hqq):
-    mapping = hqq[['series', 'serial', 'hqq_nbits', 'hqq_group_size']].copy()
-    mapping['nbits_code'] = (mapping['serial'] % 1000) // 100
-    mapping['group_code'] = mapping['serial'] % 10
-    mapping = mapping.groupby(['series', 'nbits_code', 'group_code'], as_index=False).agg(
-        hqq_nbits=('hqq_nbits', 'first'),
-        hqq_group_size=('hqq_group_size', 'first'),
-        nbits_values=('hqq_nbits', 'nunique'),
-        group_values=('hqq_group_size', 'nunique'),
-    )
-    if (mapping['nbits_values'] > 1).any() or (mapping['group_values'] > 1).any():
-        raise ValueError('A serial code maps to inconsistent HQQ bit or group-size values.')
-    if mapping['series'].nunique() == 2:
-        compared = mapping.drop(columns='series').duplicated(keep=False)
-        if not compared.all():
-            raise ValueError('3X0X and 4X0X use different serial-to-HQQ mappings.')
-    return mapping
-
-
 def write_dataset_workbooks(cells, results_dir):
     workbook_columns = [
         'series', 'dataset_name', 'model_name', 'ckpt_kind', 'hqq_nbits',
@@ -280,11 +261,9 @@ def main():
         raise ValueError('No HQQ rows remain after applying --serials and subset filters.')
     completeness = completeness_table(hqq, cells, args.serials)
     quality = configuration_quality(hqq)
-    mapping = serial_mapping(hqq)
     cells.to_csv(args.output_file, index=False)
     completeness.to_csv(os.path.join(args.results_dir, 'completeness.csv'), index=False)
     quality.to_csv(os.path.join(args.results_dir, 'configuration_quality.csv'), index=False)
-    mapping.to_csv(os.path.join(args.results_dir, 'serial_mapping.csv'), index=False)
     write_dataset_workbooks(cells, args.results_dir)
     missing = int((~completeness['complete_context']).sum()) if len(completeness) else 0
     unmatched = int((~cells['baseline_matched']).sum())

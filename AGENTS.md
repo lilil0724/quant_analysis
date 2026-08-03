@@ -64,7 +64,7 @@ paths for reusable runs:
 |---|---|---|---|
 | download | N/A | downloaded raw CSV | downloader `run_config.json` |
 | summarize | raw WandB CSV | primary summary CSV | validation CSVs and XLSX files |
-| corr | summary CSV | primary HC3 model CSV | statistics, Markdown, and metadata |
+| corr | summary CSV | primary factor-ablation CSV | correlations, factor models, and Markdown |
 | plot | prepared accuracy-cell CSV | primary overview PNG | all generated PNGs |
 
 `--serials` accepts explicit integer lists only; it does not expand ranges.
@@ -80,12 +80,10 @@ python summarize_quant.py --input-file D:\runs\raw.csv `
   --output-file D:\analysis\summary.csv `
   --results-dir D:\analysis\summary --serials $serials
 python corr_quant.py --input-file D:\analysis\summary.csv `
-  --output-file D:\analysis\corr\model.csv `
+  --output-file D:\analysis\corr\factor_ablation_accuracy.csv `
   --results-dir D:\analysis\corr --serials $serials
 python plot_quant_acc_bit_group.py `
   --input-file D:\analysis\corr\prepared_accuracy_cells.csv `
-  --model-file D:\analysis\corr\model.csv `
-  --factor-summary-file D:\analysis\corr\factor_summary.csv `
   --ablation-file D:\analysis\corr\factor_ablation_accuracy.csv `
   --corr-dir D:\analysis\corr --results-dir D:\analysis\plots `
   --output-file D:\analysis\plots\overview.png
@@ -99,8 +97,8 @@ python plot_quant_acc_bit_group.py `
   its FP32 baseline.
 - A baseline only matches rows from the same series, dataset, model, and
   checkpoint kind. Never cross-match `3999` and `4999`.
-- `summarize_quant.py` checks every expected 32-cell scan grid and verifies that
-  both series use the same serial-to-`nbits`/`group_size` mapping when present.
+- `summarize_quant.py` checks every expected 32-cell scan grid. It reads nbits
+  and group size directly from the raw CSV rather than deriving them from serial.
 - Checkpoint paths must include `/cal_ckpts/`, `/ft_ckpts/`, or `/fz_ckpts/`.
 
 ## Analysis scope
@@ -116,9 +114,8 @@ model. Resource, timing, loss, and top-k count outputs are intentionally out of
 scope. The summary retains legacy HQQ fields because they are the schema
 currently logged by the TiT project.
 
-`corr_quant.py` produces context-aware bootstrap intervals, correlation
-supplements, HC3 robust fixed-effects results, and a mixed-effects diagnostic.
-The report must state if the mixed model is singular or fails to converge.
+`corr_quant.py` produces global and within-context correlation supplements,
+trend/levels factor models, and delta R2 ablation tables.
 
 ## Verification
 
@@ -129,5 +126,5 @@ CSV before downloading new WandB data. Confirm that:
 2. `configuration_quality.csv` identifies any non-fixed HQQ setup fields.
 3. Every dataset has an accuracy-only XLSX workbook.
 4. `results_all/quant/corr/` contains no PNG files.
-5. `results_all/quant/plots/` contains the overview, heatmaps, line plots,
-   factor-contribution plot, factor-relationship plot, and HC3 forest plot.
+5. `results_all/quant/plots/` contains the overview, heatmaps, line plots, and
+   factor-contribution plot.
