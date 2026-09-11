@@ -1,8 +1,14 @@
 # AGENTS.md - quant_analysis
 
-This repository is a standalone, four-stage analysis pipeline for legacy HQQ
-quantization experiments from Weights & Biases. It is not a Python package and
-has no automated test, lint, type-check, build, or CI configuration.
+This repository contains a standalone four-stage analysis pipeline for legacy
+HQQ quantization experiments from Weights & Biases. The legacy workflow is not
+a Python package and has no automated test, lint, type-check, build, or CI
+configuration.
+
+A separate matched-sample confidence workflow, including its own tests and
+operating contract, is documented in `hqq_confidence/README.md`. Keep its data,
+outputs, and changes isolated under `hqq_confidence/`; do not change the four
+legacy scripts when working on it.
 
 ## Layout
 
@@ -13,6 +19,8 @@ quant_analysis/
 |-- corr_quant.py                     # Accuracy-ratio statistics and inference
 |-- plot_quant_acc_bit_group.py       # Heatmaps, line plots, and factor figures
 |-- requirements.txt
+|-- hqq_confidence/                    # Parallel artifact/confidence workflow
+|   `-- README.md                      # Its CLI, schemas, metrics, and tests
 |-- data/
 |   |-- backbones_quant.csv            # Downloaded raw legacy HQQ schema
 |   `-- quant_fp32_baseline_overrides.csv

@@ -2,5 +2,7 @@ __pycache__/
 *.py[cod]
 results_all/
 data/
+hqq_confidence/results/
+hqq_confidence/data/
 *.html
 

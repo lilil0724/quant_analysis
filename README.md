@@ -158,6 +158,14 @@ Use `--help` on any script for the full argument list:
 python summarize_quant.py --help
 ```
 
+## Parallel Confidence Workflow
+
+Matched per-sample confidence and HQQ fragility analysis lives entirely under
+[`hqq_confidence/`](hqq_confidence/README.md). It has its own four-stage CLI,
+cache, prepared data, statistics, plots, and CPU-only tests. The baseline in
+that workflow is matched-AMP unquantized inference, not FP32; the legacy
+accuracy-ratio workflow documented above is unchanged.
+
 ## Verification
 
 After changing the code, rerun the downstream stages against the checked-in raw
