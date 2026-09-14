@@ -195,6 +195,22 @@ class TestPreparePairs(unittest.TestCase):
             self.assertAlmostEqual(metrics['ece_uncalibrated'], 0.5)
             self.assertEqual(reliability[0]['mean_confidence'], 0.5)
 
+    def test_loaded_predictions_discard_full_class_matrices(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'small.npz')
+            write_predictions(
+                path, ['a.jpg', 'b.jpg'], [0, 1],
+                [[3, 1, 0], [0, 1, 3]], 'fp_unquantized')
+
+            actual = load_predictions(path, chunk_size=1)
+
+            self.assertNotIn('logits', actual)
+            self.assertNotIn('_probabilities', actual)
+            self.assertNotIn('_log_probabilities', actual)
+            self.assertEqual(actual['_shape'], (2, 3))
+            self.assertEqual(actual['_num_classes'], 3)
+            self.assertIsInstance(actual['_brier_uncalibrated'], float)
+
     def test_tied_logits_accept_the_topk_class_recorded_by_pytorch(self):
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, 'tied.npz')

@@ -20,6 +20,7 @@ REQUIRED_ARRAYS = [
     'top2_probability', 'true_class_probability', 'entropy',
     'normalized_entropy',
 ]
+LOGIT_VALIDATION_CHUNK_SIZE = 1024
 
 
 def parse_args():
@@ -56,15 +57,23 @@ def _close(actual, expected, name, rtol=2e-4, atol=1e-6):
         raise ValueError(f'Artifact field {name} does not match values recomputed from logits')
 
 
-def load_predictions(path):
+def load_predictions(path, chunk_size=LOGIT_VALIDATION_CHUNK_SIZE):
+    if chunk_size < 1:
+        raise ValueError('chunk_size must be positive')
     with np.load(path, allow_pickle=False) as payload:
         missing = sorted(set(REQUIRED_ARRAYS).difference(payload.files))
         if missing:
             raise ValueError(f'{path} is missing arrays: {", ".join(missing)}')
-        data = {key: np.asarray(payload[key]) for key in REQUIRED_ARRAYS}
+        # Keep only sample-level vectors after validation. Compressed NPZ files
+        # cannot memory-map logits, so one float32 matrix must be materialized;
+        # all derived matrices are computed in bounded row chunks below.
+        data = {
+            key: np.asarray(payload[key])
+            for key in REQUIRED_ARRAYS if key != 'logits'
+        }
+        logits = np.asarray(payload['logits'])
         metadata = _metadata(payload)
 
-    logits = data['logits'].astype(np.float64, copy=False)
     targets = data['target'].astype(np.int64, copy=False)
     if logits.ndim != 2 or logits.shape[0] != len(targets) or logits.shape[1] < 2:
         raise ValueError(f'{path} has incompatible logits and target shapes')
@@ -78,7 +87,6 @@ def load_predictions(path):
     if len(np.unique(sample_ids)) != len(sample_ids):
         raise ValueError(f'{path} contains duplicate sample IDs')
 
-    rows = np.arange(len(logits))
     top1 = data['top1_class'].astype(np.int64, copy=False)
     top2 = data['top2_class'].astype(np.int64, copy=False)
     if (top1.shape != targets.shape or top2.shape != targets.shape
@@ -86,34 +94,58 @@ def load_predictions(path):
             or (top2 < 0).any() or (top2 >= logits.shape[1]).any()
             or np.any(top1 == top2)):
         raise ValueError(f'{path} contains invalid top-1 or top-2 classes')
-    top_values = np.sort(logits, axis=1)[:, -2:][:, ::-1]
-    if (not np.array_equal(logits[rows, top1], top_values[:, 0])
-            or not np.array_equal(logits[rows, top2], top_values[:, 1])):
-        raise ValueError('Artifact top-1 or top-2 class does not match logits')
-    shifted = logits - logits.max(axis=1, keepdims=True)
-    probabilities = np.exp(shifted)
-    probabilities /= probabilities.sum(axis=1, keepdims=True)
-    log_probabilities = shifted - np.log(np.exp(shifted).sum(axis=1, keepdims=True))
-    entropy = -(probabilities * log_probabilities).sum(axis=1)
-    expected = {
-        'top1_logit': logits[rows, top1], 'top2_logit': logits[rows, top2],
-        'logit_margin': logits[rows, top1] - logits[rows, top2],
-        'top1_probability': probabilities[rows, top1],
-        'top2_probability': probabilities[rows, top2],
-        'true_class_probability': probabilities[rows, targets],
-        'entropy': entropy, 'normalized_entropy': entropy / np.log(logits.shape[1]),
-        'correct': top1 == targets,
-    }
-    for name, values in expected.items():
-        if name == 'correct':
-            if not np.array_equal(data[name], values):
-                raise ValueError(f'Artifact field {name} does not match logits')
-        else:
-            _close(data[name], values, name)
+    expected_correct = top1 == targets
+    if not np.array_equal(data['correct'], expected_correct):
+        raise ValueError('Artifact field correct does not match logits')
+
+    brier_sum = 0.0
+    num_classes = logits.shape[1]
+    for start in range(0, len(logits), chunk_size):
+        stop = min(start + chunk_size, len(logits))
+        block = logits[start:stop]
+        block_rows = np.arange(stop - start)
+        block_top1 = top1[start:stop]
+        block_top2 = top2[start:stop]
+        block_targets = targets[start:stop]
+
+        # np.partition avoids a full C-way sort, and chunking bounds the copy.
+        top_values = np.partition(block, num_classes - 2, axis=1)[:, -2:]
+        top_values.sort(axis=1)
+        if (not np.array_equal(block[block_rows, block_top1], top_values[:, 1])
+                or not np.array_equal(block[block_rows, block_top2], top_values[:, 0])):
+            raise ValueError('Artifact top-1 or top-2 class does not match logits')
+
+        shifted = block - block.max(axis=1, keepdims=True)
+        probabilities = np.exp(shifted)
+        probability_sums = probabilities.sum(axis=1, keepdims=True)
+        probabilities /= probability_sums
+        log_probabilities = shifted - np.log(probability_sums)
+        entropy = -(probabilities * log_probabilities).sum(axis=1)
+        true_probabilities = probabilities[block_rows, block_targets]
+        expected = {
+            'top1_logit': block[block_rows, block_top1],
+            'top2_logit': block[block_rows, block_top2],
+            'logit_margin': (block[block_rows, block_top1]
+                             - block[block_rows, block_top2]),
+            'top1_probability': probabilities[block_rows, block_top1],
+            'top2_probability': probabilities[block_rows, block_top2],
+            'true_class_probability': true_probabilities,
+            'entropy': entropy,
+            'normalized_entropy': entropy / np.log(num_classes),
+        }
+        for name, values in expected.items():
+            _close(data[name][start:stop], values, name)
+        brier_sum += float(
+            (np.square(probabilities).sum(axis=1)
+             - 2 * true_probabilities + 1).sum(dtype=np.float64)
+        )
+
     data.update({
-        'sample_id': sample_ids, 'target': targets, 'logits': logits,
-        'correct': expected['correct'], '_probabilities': probabilities,
-        '_log_probabilities': log_probabilities, '_metadata': metadata,
+        'sample_id': sample_ids, 'target': targets,
+        'correct': expected_correct, '_shape': logits.shape,
+        '_num_classes': num_classes,
+        '_brier_uncalibrated': brier_sum / len(logits),
+        '_metadata': metadata,
     })
     return data
 
@@ -140,17 +172,14 @@ def calibration_rows(data, bins=15):
 
 
 def condition_metrics(data):
-    rows = np.arange(len(data['target']))
     target = data['target']
-    probs = data['_probabilities']
-    true_probs = np.clip(probs[rows, target], 1e-12, 1)
-    brier = (np.square(probs).sum(axis=1) - 2 * true_probs + 1).mean()
+    true_probs = np.clip(data['true_class_probability'], 1e-12, 1)
     reliability = calibration_rows(data)
     return {
-        'n_samples': len(target), 'num_classes': data['logits'].shape[1],
+        'n_samples': len(target), 'num_classes': data['_num_classes'],
         'accuracy': 100 * float(data['correct'].mean()),
         'nll_uncalibrated': float(-np.log(true_probs).mean()),
-        'brier_uncalibrated': float(brier),
+        'brier_uncalibrated': float(data['_brier_uncalibrated']),
         'ece_uncalibrated': float(sum(row['ece_contribution'] for row in reliability)),
         'mean_top1_probability': float(data['top1_probability'].mean()),
         'mean_logit_margin': float(data['logit_margin'].mean()),
@@ -212,7 +241,7 @@ def _align(data, baseline):
     }
     if not np.array_equal(aligned['target'], baseline['target']):
         raise ValueError('Targets differ for matched sample IDs')
-    if aligned['logits'].shape != baseline['logits'].shape:
+    if aligned['_shape'] != baseline['_shape']:
         raise ValueError('N or C differs within a sweep')
     return aligned
 
