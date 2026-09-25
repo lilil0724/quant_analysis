@@ -1,8 +1,8 @@
-"""Prepare baseline-matched accuracy summaries from legacy HQQ WandB exports.
+"""Prepare condition-keyed, baseline-matched HQQ accuracy summaries.
 
-This replaces summarize_quant_old.py. The small helper functions below are
-adapted from the historical BackbonesAnalysis utilities so this repository no
-longer depends on that sibling project or its unrelated analysis code.
+The analysis uses recorded HQQ settings and exact checkpoint identities rather
+than inferring experimental conditions or FP32 baselines from serial numbers.
+Serials remain optional input filters and output provenance only.
 """
 
 import argparse
@@ -19,31 +19,49 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results_all', 'quant')
 DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'quant_summary.csv')
-CKPT_PATTERN = re.compile(r'/(cal|ft|fz)_ckpts/')
-CONTEXT_COLUMNS = ['series', 'dataset_name', 'model_name', 'ckpt_kind']
+CKPT_PATTERN = re.compile(r'/(?:ckpt/)?(cal|ft|fz)(?:_ckpts)?/', re.IGNORECASE)
+IDENTITY_COLUMNS = ['dataset_name', 'model_name', 'ckpt_path', 'seed_key']
+CONTEXT_COLUMNS = ['dataset_name', 'model_name', 'ckpt_path', 'ckpt_kind']
+SEED_CONDITION_COLUMNS = IDENTITY_COLUMNS + ['ckpt_kind', 'hqq_nbits', 'hqq_group_size']
+CONDITION_COLUMNS = CONTEXT_COLUMNS + ['hqq_nbits', 'hqq_group_size']
 HQQ_COLUMNS = ['hqq_top1', 'hqq_nbits', 'hqq_group_size']
 BASELINE_COLUMNS = ['top1']
-
-
-def scan_serials(series):
-    return [series + nbits * 100 + group for nbits in range(8) for group in range(4)]
-
-
-EXPECTED_SERIALS = {3000: scan_serials(3000), 4000: scan_serials(4000)}
-BASELINE_SERIALS = {3000: 3999, 4000: 4999}
 
 
 def is_true(values):
     return values.astype(str).str.lower().isin(('true', '1'))
 
 
-def series_from_serial(values):
-    numeric = pd.to_numeric(values, errors='coerce')
-    return np.select([numeric.between(3000, 3999), numeric.between(4000, 4999)], [3000, 4000], default=np.nan)
+def serial_values(values):
+    numeric = pd.to_numeric(pd.Series(values), errors='coerce').dropna()
+    return sorted({int(value) for value in numeric})
+
+
+def serials_text(values):
+    return ', '.join(map(str, serial_values(values)))
+
+
+def serials_count(values):
+    return len(serial_values(values))
+
+
+def combine_serial_text(values):
+    serials = []
+    for value in values:
+        if pd.isna(value):
+            continue
+        serials.extend(str(value).split(','))
+    return serials_text(serials)
+
+
+def combined_serial_count(values):
+    text = combine_serial_text(values)
+    return serials_count(text.split(',')) if text else 0
 
 
 def checkpoint_kind(paths):
-    kinds = paths.astype(str).str.extract(CKPT_PATTERN)[0]
+    normalized = paths.astype(str).str.replace('\\', '/', regex=False)
+    kinds = normalized.str.extract(CKPT_PATTERN)[0].str.lower()
     invalid = paths[kinds.isna()].unique()
     if len(invalid):
         examples = ', '.join(map(str, invalid[:3]))
@@ -52,11 +70,12 @@ def checkpoint_kind(paths):
 
 
 def rename_swin(model_name):
-    """Adapted from BackbonesAnalysis/utils.py to normalize Swin model names."""
+    """Adapted from BackbonesAnalysis/utils.py to normalize model names."""
     return {
         'swin_large_patch4_window12_384_in22k': 'swin_large_patch4_window7_224_in22k',
         'swin_base_patch4_window12_384_in22k': 'swin_base_patch4_window7_224_in22k',
         'swin_base_patch4_window12_384': 'swin_base_patch4_window7_224',
+        'beitv2_base_patch16_224': 'beitv2_base_patch16_224_in22k',
     }.get(model_name, model_name)
 
 
@@ -69,10 +88,10 @@ def highlight_top_k(series, largest=True, k=5, color='lightgreen'):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Summarize HQQ accuracy against series-specific FP32 baselines.')
+    parser = argparse.ArgumentParser(description='Summarize HQQ accuracy against exact checkpoint-and-seed FP32 baselines.')
     parser.add_argument(
         '--input-file', default=os.path.join(BASE_DIR, 'data', 'backbones_quant.csv'),
-        help='full path of the downloaded legacy HQQ CSV')
+        help='full path of the downloaded HQQ CSV')
     parser.add_argument(
         '--output-file', default=DEFAULT_OUTPUT,
         help='full path of the primary summary CSV')
@@ -80,11 +99,8 @@ def parse_args():
         '--results-dir', default=DEFAULT_RESULTS_DIR,
         help='directory for validation CSVs, XLSX workbooks, and run_config.json')
     parser.add_argument(
-        '--serials', nargs='+', type=int, default=sum(EXPECTED_SERIALS.values(), []) + list(BASELINE_SERIALS.values()),
-        help='explicit serial numbers to retain; include each required FP32 baseline')
-    parser.add_argument(
-        '--baseline-overrides', default=os.path.join(BASE_DIR, 'data', 'quant_fp32_baseline_overrides.csv'),
-        help='full path of the optional FP32 baseline override CSV')
+        '--serials', nargs='+', type=int,
+        help='optional raw-run serials to retain; matching baselines must be included in the selected rows')
     parser.add_argument('--subset-datasets', nargs='+')
     parser.add_argument('--subset-models', nargs='+')
     return parser.parse_args()
@@ -117,100 +133,105 @@ def require_columns(frame, columns):
         raise ValueError(f'Input CSV is missing required columns: {", ".join(missing)}')
 
 
-def load_overrides(path, args):
-    if not os.path.exists(path):
-        return pd.DataFrame(columns=CONTEXT_COLUMNS + ['fp32_top1', 'baseline_source'])
-    overrides = pd.read_csv(path)
-    require_columns(overrides, ['dataset_name', 'model_name', 'ckpt_kind', 'serial', 'top1', 'source'])
-    overrides = overrides[overrides['serial'].isin(args.serials)].copy()
-    overrides['series'] = series_from_serial(overrides['serial'])
-    if overrides['series'].isna().any():
-        raise ValueError('Baseline overrides must use serial 3999 or 4999.')
-    overrides = apply_filters(overrides, args)
-    overrides = overrides.rename(columns={'top1': 'fp32_top1', 'source': 'baseline_source'})
-    if overrides.duplicated(CONTEXT_COLUMNS).any():
-        raise ValueError('Baseline overrides contain duplicate series/context keys.')
-    return overrides[CONTEXT_COLUMNS + ['fp32_top1', 'baseline_source']]
+def normalize_raw(raw, args):
+    require_columns(raw, ['hqq', 'dataset_name', 'model_name', 'ckpt_path', *HQQ_COLUMNS, *BASELINE_COLUMNS])
+    normalized = raw.copy()
+    if 'serial' not in normalized:
+        if args.serials:
+            raise ValueError('--serials requires a serial column in the input CSV.')
+        normalized['serial'] = pd.NA
+    else:
+        normalized['serial'] = pd.to_numeric(normalized['serial'], errors='raise')
+        if args.serials:
+            normalized = normalized[normalized['serial'].isin(args.serials)].copy()
+    if 'seed' not in normalized:
+        normalized['seed'] = pd.NA
+    normalized['seed_key'] = normalized['seed'].where(normalized['seed'].notna(), '__missing_seed__').astype(str)
+    normalized['model_name'] = normalized['model_name'].map(rename_swin)
+    normalized = apply_filters(normalized, args)
+    normalized['ckpt_kind'] = checkpoint_kind(normalized['ckpt_path'])
+    return normalized
 
 
-def prepare_summary(raw, args):
-    require_columns(raw, ['serial', 'hqq', 'dataset_name', 'model_name', 'ckpt_path', *HQQ_COLUMNS, *BASELINE_COLUMNS])
-    raw = raw.copy()
-    raw['serial'] = pd.to_numeric(raw['serial'], errors='raise')
-    raw = raw[raw['serial'].isin(args.serials)].copy()
-    raw['series'] = series_from_serial(raw['serial'])
-    raw = raw[raw['series'].notna()].copy()
-    raw['series'] = raw['series'].astype(int)
-    raw['model_name'] = raw['model_name'].map(rename_swin)
-    raw = apply_filters(raw, args)
-    raw['ckpt_kind'] = checkpoint_kind(raw['ckpt_path'])
+def aggregate_baselines(raw):
+    baseline = raw[~is_true(raw['hqq'])].dropna(subset=BASELINE_COLUMNS).copy()
+    baseline['top1'] = pd.to_numeric(baseline['top1'], errors='raise')
+    grouped = baseline.groupby(IDENTITY_COLUMNS, as_index=False, dropna=False).agg(
+        fp32_top1=('top1', 'median'),
+        baseline_n_runs=('top1', 'size'),
+        baseline_source_serials=('serial', serials_text),
+        baseline_source_serial_count=('serial', serials_count),
+    )
+    grouped['baseline_source'] = 'raw_checkpoint_seed_baseline'
+    return grouped
 
-    hqq = raw[is_true(raw['hqq']) & raw['serial'].isin(sum(EXPECTED_SERIALS.values(), []))].copy()
-    hqq = hqq.dropna(subset=HQQ_COLUMNS)
-    hqq['hqq_nbits'] = pd.to_numeric(hqq['hqq_nbits'], errors='raise')
-    hqq['hqq_group_size'] = pd.to_numeric(hqq['hqq_group_size'], errors='raise')
-    baseline = raw[(~is_true(raw['hqq'])) & raw['serial'].isin(BASELINE_SERIALS.values())].copy()
-    baseline = baseline.dropna(subset=BASELINE_COLUMNS)
-    baseline = baseline.groupby(CONTEXT_COLUMNS, as_index=False).agg(fp32_top1=('top1', 'median'))
-    baseline['baseline_source'] = 'raw_series_baseline'
-    overrides = load_overrides(args.baseline_overrides, args)
-    baseline = pd.concat([baseline, overrides], ignore_index=True).drop_duplicates(CONTEXT_COLUMNS, keep='last')
 
-    cell_keys = CONTEXT_COLUMNS + ['ckpt_path', 'serial', 'hqq_nbits', 'hqq_group_size']
-    cells = hqq.groupby(cell_keys, as_index=False).agg(
+def aggregate_hqq_seed_conditions(raw):
+    hqq = raw[is_true(raw['hqq'])].dropna(subset=HQQ_COLUMNS).copy()
+    for column in HQQ_COLUMNS:
+        hqq[column] = pd.to_numeric(hqq[column], errors='raise')
+    grouped = hqq.groupby(SEED_CONDITION_COLUMNS, as_index=False, dropna=False).agg(
         hqq_top1=('hqq_top1', 'mean'),
         hqq_top1_median=('hqq_top1', 'median'),
         hqq_top1_std=('hqq_top1', 'std'),
-        n_runs=('serial', 'size'),
-        n_seeds=('seed', 'nunique'),
+        n_runs=('hqq_top1', 'size'),
+        hqq_source_serials=('serial', serials_text),
+        hqq_source_serial_count=('serial', serials_count),
     )
-    cells = cells.merge(baseline, on=CONTEXT_COLUMNS, how='left')
-    cells['baseline_matched'] = cells['fp32_top1'].notna()
-    cells['accuracy_ratio'] = cells['hqq_top1'] / cells['fp32_top1']
-    return raw, hqq, cells
+    return hqq, grouped
 
 
-def completeness_table(hqq, cells, serials):
-    selected = set(serials)
+def aggregate_conditions(seed_conditions):
+    grouped = seed_conditions.groupby(CONDITION_COLUMNS, as_index=False, dropna=False).agg(
+        hqq_top1=('hqq_top1', 'mean'),
+        hqq_top1_median=('hqq_top1', 'median'),
+        hqq_top1_std=('hqq_top1', 'std'),
+        fp32_top1=('fp32_top1', 'mean'),
+        accuracy_ratio=('accuracy_ratio', 'mean'),
+        n_runs=('n_runs', 'sum'),
+        n_seeds=('seed_key', 'nunique'),
+        matched_seed_count=('baseline_matched', 'sum'),
+        baseline_matched=('baseline_matched', 'all'),
+        hqq_source_serials=('hqq_source_serials', combine_serial_text),
+        hqq_source_serial_count=('hqq_source_serials', combined_serial_count),
+        baseline_source_serials=('baseline_source_serials', combine_serial_text),
+        baseline_source_serial_count=('baseline_source_serials', combined_serial_count),
+        baseline_n_runs=('baseline_n_runs', 'sum'),
+    )
+    grouped['unmatched_seed_count'] = grouped['n_seeds'] - grouped['matched_seed_count']
+    grouped['baseline_source'] = 'raw_checkpoint_seed_baseline'
+    unmatched = ~grouped['baseline_matched']
+    grouped.loc[unmatched, ['fp32_top1', 'accuracy_ratio']] = np.nan
+    return grouped
+
+
+def prepare_summary(raw, args):
+    normalized = normalize_raw(raw, args)
+    hqq, seed_conditions = aggregate_hqq_seed_conditions(normalized)
+    baseline = aggregate_baselines(normalized)
+    seed_conditions = seed_conditions.merge(
+        baseline, on=IDENTITY_COLUMNS, how='left', validate='many_to_one')
+    seed_conditions['baseline_matched'] = seed_conditions['fp32_top1'].notna()
+    seed_conditions['accuracy_ratio'] = seed_conditions['hqq_top1'] / seed_conditions['fp32_top1']
+    cells = aggregate_conditions(seed_conditions)
+    return normalized, hqq, cells
+
+
+def completeness_table(cells):
     rows = []
-    for context, group in hqq.groupby(CONTEXT_COLUMNS, dropna=False):
-        series = int(context[0])
-        expected = set(EXPECTED_SERIALS[series]).intersection(selected)
-        observed = set(group['serial'].astype(int))
-        missing = sorted(expected.difference(observed))
-        cell_context = cells
-        for column, value in zip(CONTEXT_COLUMNS, context):
-            cell_context = cell_context[cell_context[column] == value]
-        baseline_present = bool(cell_context['baseline_matched'].any())
+    for context, group in cells.groupby(CONTEXT_COLUMNS, dropna=False):
         rows.append({
             **dict(zip(CONTEXT_COLUMNS, context)),
-            'expected_hqq_cells': len(expected),
-            'observed_hqq_cells': len(observed),
-            'missing_hqq_serials': ', '.join(map(str, missing)),
-            'complete_hqq_grid': not missing,
-            'expected_baseline_serial': BASELINE_SERIALS[series],
-            'baseline_present': baseline_present,
-            'complete_context': not missing and baseline_present,
-            'raw_hqq_rows': len(group),
+            'observed_hqq_conditions': len(group),
+            'observed_nbits': ', '.join(map(str, sorted(group['hqq_nbits'].unique()))),
+            'observed_group_sizes': ', '.join(map(str, sorted(group['hqq_group_size'].unique()))),
+            'n_seeds': int(group['n_seeds'].sum()),
+            'matched_conditions': int(group['baseline_matched'].sum()),
+            'unmatched_conditions': int((~group['baseline_matched']).sum()),
+            'unmatched_seed_count': int(group['unmatched_seed_count'].sum()),
+            'raw_hqq_rows': int(group['n_runs'].sum()),
+            'hqq_source_serials': combine_serial_text(group['hqq_source_serials']),
         })
-    observed_series = set(hqq['series'].astype(int).unique())
-    for series, expected_serials in EXPECTED_SERIALS.items():
-        expected = set(expected_serials).intersection(selected)
-        if expected and series not in observed_series:
-            rows.append({
-                'series': series,
-                'dataset_name': '__series_missing__',
-                'model_name': '__series_missing__',
-                'ckpt_kind': '__series_missing__',
-                'expected_hqq_cells': len(expected),
-                'observed_hqq_cells': 0,
-                'missing_hqq_serials': ', '.join(map(str, sorted(expected))),
-                'complete_hqq_grid': False,
-                'expected_baseline_serial': BASELINE_SERIALS[series],
-                'baseline_present': False,
-                'complete_context': False,
-                'raw_hqq_rows': 0,
-            })
     return pd.DataFrame(rows)
 
 
@@ -235,14 +256,16 @@ def configuration_quality(hqq):
 
 def write_dataset_workbooks(cells, results_dir):
     workbook_columns = [
-        'series', 'dataset_name', 'model_name', 'ckpt_kind', 'hqq_nbits',
+        'dataset_name', 'model_name', 'ckpt_path', 'ckpt_kind', 'hqq_nbits',
         'hqq_group_size', 'hqq_top1', 'fp32_top1', 'accuracy_ratio',
-        'hqq_top1_std', 'n_runs', 'n_seeds', 'baseline_source', 'baseline_matched',
+        'hqq_top1_std', 'n_runs', 'n_seeds', 'hqq_source_serials',
+        'baseline_source_serials', 'baseline_source', 'baseline_matched',
+        'unmatched_seed_count',
     ]
     for dataset, frame in cells.groupby('dataset_name'):
         output = os.path.join(results_dir, f'quant_{dataset}.xlsx')
         selected = frame[[column for column in workbook_columns if column in frame]].sort_values(
-            ['series', 'model_name', 'ckpt_kind', 'hqq_nbits', 'hqq_group_size'])
+            ['model_name', 'ckpt_kind', 'ckpt_path', 'hqq_nbits', 'hqq_group_size'])
         selected.style.apply(
             highlight_top_k, largest=True, k=5, color='lightgreen', axis=0,
             subset=['accuracy_ratio']).to_excel(output, index=False, engine='openpyxl')
@@ -258,16 +281,15 @@ def main():
     raw = pd.read_csv(args.input_file)
     _, hqq, cells = prepare_summary(raw, args)
     if hqq.empty:
-        raise ValueError('No HQQ rows remain after applying --serials and subset filters.')
-    completeness = completeness_table(hqq, cells, args.serials)
+        raise ValueError('No valid HQQ rows remain after applying the selected filters.')
+    completeness = completeness_table(cells)
     quality = configuration_quality(hqq)
     cells.to_csv(args.output_file, index=False)
     completeness.to_csv(os.path.join(args.results_dir, 'completeness.csv'), index=False)
     quality.to_csv(os.path.join(args.results_dir, 'configuration_quality.csv'), index=False)
     write_dataset_workbooks(cells, args.results_dir)
-    missing = int((~completeness['complete_context']).sum()) if len(completeness) else 0
     unmatched = int((~cells['baseline_matched']).sum())
-    print(f'Prepared {len(cells)} HQQ cells; incomplete contexts: {missing}; unmatched baselines: {unmatched}')
+    print(f'Prepared {len(cells)} observed HQQ conditions; unmatched baseline conditions: {unmatched}')
 
 
 if __name__ == '__main__':

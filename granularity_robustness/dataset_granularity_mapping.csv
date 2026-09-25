@@ -1,0 +1,17 @@
+dataset_name,core_group,expanded_group,broad_group,label_level,primary_included,source_url,notes
+aircraft,FGIR,FGIR,FGIR,aircraft variant,True,https://www.robots.ox.ac.uk/~vgg/data/fgvc-aircraft/,FGVC-Aircraft
+cars,FGIR,FGIR,FGIR,car make model and year,True,http://ai.stanford.edu/~jkrause/cars/car_dataset.html,Stanford Cars
+cub,FGIR,FGIR,FGIR,bird species,True,https://www.vision.caltech.edu/datasets/cub_200_2011/,CUB-200-2011
+dogs,FGIR,FGIR,FGIR,dog breed,True,http://vision.stanford.edu/aditya86/ImageNetDogs/,Stanford Dogs
+flowers,FGIR,FGIR,FGIR,flower category,True,https://www.robots.ox.ac.uk/~vgg/data/flowers/102/,Oxford Flowers 102
+food,,FGIR,FGIR,dish category,False,https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/,Boundary dataset in the core analysis
+inat17,,FGIR,FGIR,species across broad supercategories,False,https://github.com/visipedia/inat_comp/tree/master/2017,Boundary dataset in the core analysis
+moe,,,FGIR,anime face character identity,False,https://github.com/arkel23/animesion/tree/main/classification_tagging,moeImouto boundary dataset
+nabirds,FGIR,FGIR,FGIR,bird species,True,https://dl.allaboutbirds.org/nabirds,NA Birds
+pets,FGIR,FGIR,FGIR,cat or dog breed,True,https://www.robots.ox.ac.uk/~vgg/data/pets/,Oxford IIIT Pets
+soyageing,Ultra-FGIR,Ultra-FGIR,Ultra-FGIR,soybean cultivar,True,https://github.com/XiaohanYu-GU/Ultra-FGVC,Ultra-FGVC benchmark family
+soygene,Ultra-FGIR,Ultra-FGIR,Ultra-FGIR,soybean cultivar,True,https://github.com/XiaohanYu-GU/Ultra-FGVC,Ultra-FGVC benchmark family
+soyglobal,Ultra-FGIR,Ultra-FGIR,Ultra-FGIR,soybean cultivar,True,https://github.com/XiaohanYu-GU/Ultra-FGVC,Ultra-FGVC benchmark family
+soylocal,Ultra-FGIR,Ultra-FGIR,Ultra-FGIR,soybean cultivar,True,https://github.com/XiaohanYu-GU/Ultra-FGVC,Ultra-FGVC benchmark family
+vegfru,FGIR,FGIR,FGIR,vegetable or fruit subordinate category,True,https://openaccess.thecvf.com/content_ICCV_2017/html/Hou_VegFru_A_Domain-Specific_ICCV_2017_paper.html,VegFru fine-grained benchmark
+

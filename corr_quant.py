@@ -12,7 +12,7 @@ import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTCOME = 'accuracy_ratio'
-CONTEXT_COLUMNS = ['series', 'dataset_name', 'model_name', 'ckpt_kind']
+CONTEXT_COLUMNS = ['dataset_name', 'model_name', 'ckpt_path', 'ckpt_kind']
 DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results_all', 'quant', 'corr')
 DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'factor_ablation_accuracy.csv')
 
@@ -30,7 +30,7 @@ def parse_args():
         help='directory for correlation tables, factor models, Markdown reports, and run_config.json')
     parser.add_argument(
         '--serials', nargs='+', type=int,
-        help='explicit HQQ serial numbers to retain; default uses every summary row')
+        help='optional HQQ source serials to retain; matches any serial in hqq_source_serials')
     return parser.parse_args()
 
 
@@ -45,6 +45,27 @@ def write_run_config(path, args):
         config['git_dirty'] = None
     with open(path, 'w', encoding='utf-8') as handle:
         json.dump(config, handle, indent=2)
+
+
+def source_serials_match(values, selected_serials):
+    """Return a mask for rows whose provenance includes any selected serial."""
+    selected = set(selected_serials)
+
+    def matches(value):
+        if pd.isna(value):
+            return False
+        sources = {
+            int(token.strip())
+            for token in str(value).split(',')
+            if token.strip()
+        }
+        return bool(sources.intersection(selected))
+
+    return values.map(matches)
+
+
+def is_true(values):
+    return values.astype(str).str.lower().isin(('true', '1'))
 
 
 def original_correlation_rows(data):
@@ -134,13 +155,13 @@ def main():
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
     write_run_config(os.path.join(args.results_dir, 'run_config.json'), args)
     data = pd.read_csv(args.input_file)
-    required = [OUTCOME, 'baseline_matched', 'serial', 'hqq_nbits', 'hqq_group_size', *CONTEXT_COLUMNS]
+    required = [OUTCOME, 'baseline_matched', 'hqq_source_serials', 'hqq_nbits', 'hqq_group_size', *CONTEXT_COLUMNS]
     missing = sorted(set(required).difference(data.columns))
     if missing:
         raise ValueError(f'Summary is missing columns: {", ".join(missing)}')
     if args.serials:
-        data = data[data['serial'].isin(args.serials)].copy()
-    data = data[data['baseline_matched']].dropna(subset=[OUTCOME]).copy()
+        data = data[source_serials_match(data['hqq_source_serials'], args.serials)].copy()
+    data = data[is_true(data['baseline_matched'])].dropna(subset=[OUTCOME]).copy()
     if data.empty:
         raise ValueError('No baseline-matched accuracy cells remain.')
     data.to_csv(os.path.join(args.results_dir, 'prepared_accuracy_cells.csv'), index=False)
