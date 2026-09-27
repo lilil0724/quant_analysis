@@ -30,7 +30,7 @@ W&B TiT runs
 | Stage | Script | Purpose |
 |---|---|---|
 | Download | `download_save_wandb_data.py` | Downloads finished legacy HQQ runs from `nycu_pcs/TiT`. |
-| Summarize | `summarize_quant.py` | Validates serial grids, pairs FP32 baselines, averages repeated experiments, and exports per-dataset XLSX files. |
+| Summarize | `summarize_quant.py` | Observes recorded HQQ conditions, pairs exact FP32 baselines, averages repeated experiments, and exports per-dataset XLSX files. |
 | Correlate | `corr_quant.py` | Calculates correlations, trend/levels models, and delta R2 ablations. |
 | Plot | `plot_quant_acc_bit_group.py` | Generates heatmaps, line plots, factor plots, and coefficient figures as PNG files. |
 
@@ -65,9 +65,11 @@ three commands.
 
 ## Baseline Pairing
 
-Each HQQ scan cell must be paired with an FP32 baseline from the same series,
-dataset, model, and checkpoint kind. The pipeline never cross-matches a
-baseline across series.
+Each HQQ condition is paired with an FP32 baseline from the same dataset,
+normalized model name, complete checkpoint path, and seed. This prevents
+different checkpoints or seeds from being mixed without relying on serial
+number conventions. A condition with any unmatched seed remains in the summary
+as `baseline_matched=false` and is excluded from correlation and figures.
 
 Checkpoint paths must contain one of:
 
@@ -75,6 +77,9 @@ Checkpoint paths must contain one of:
 /cal_ckpts/
 /ft_ckpts/
 /fz_ckpts/
+/ckpt/cal/
+/ckpt/ft/
+/ckpt/fz/
 ```
 
 ## Outputs
@@ -84,13 +89,15 @@ Checkpoint paths must contain one of:
 `results_all/quant/` contains:
 
 - `quant_summary.csv`: one row per aggregated HQQ experiment cell.
-- `completeness.csv`: expected versus observed serial grids and baseline status.
+- `completeness.csv`: observed nbits, group sizes, seed coverage, and baseline status per checkpoint context.
 - `configuration_quality.csv`: checks that non-factor HQQ settings are fixed.
 - `quant_<dataset>.xlsx`: accuracy-only workbook for each dataset.
 
-Repeated runs with the same series, dataset, model, checkpoint, serial, nbits,
-and group size are combined into one experiment. `hqq_top1` is their mean; the
-summary also retains median, standard deviation, run count, and seed count.
+Repeated runs with the same dataset, model, checkpoint path, seed, nbits, and
+group size are combined even when they came from different serials. HQQ and
+FP32 values are paired within each seed before the summary aggregates seeds.
+The summary retains source serial lists and counts as provenance, alongside
+median, standard deviation, run count, and seed count.
 
 ### Statistics
 
@@ -128,8 +135,10 @@ with full paths:
 | Correlate | `--input-file` summary CSV | `--output-file` model CSV | `--results-dir` |
 | Plot | `--input-file` prepared cells CSV | `--output-file` overview PNG | `--results-dir` |
 
-`--serials` accepts explicit integer lists only. It does not expand ranges. If
-you select a subset, include its matching FP32 baseline yourself.
+`--serials` accepts explicit integer lists only and is optional. It narrows the
+raw rows considered by summary, or selects rows whose HQQ provenance contains a
+serial in correlation. When subsetting summary input, include any exact
+checkpoint-and-seed FP32 baseline rows needed for matching.
 
 Example with custom input and output paths:
 
@@ -171,7 +180,7 @@ accuracy-ratio workflow documented above is unchanged.
 After changing the code, rerun the downstream stages against the checked-in raw
 CSV and confirm:
 
-1. `completeness.csv` identifies every missing context or baseline.
+1. `completeness.csv` reports observed conditions and every unmatched baseline.
 2. `configuration_quality.csv` reports unexpected non-fixed setup values.
 3. A workbook exists for every dataset.
 4. `results_all/quant/corr/` contains no PNG files.

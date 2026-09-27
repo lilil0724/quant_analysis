@@ -1,2 +1,0 @@
-dataset_name,model_name,ckpt_kind,serial,top1,vram_gb,params_m,time_total_s,source
-cub,vit_b16,ft,4999,87.78,0.8945,85.952456,44.93,manual_corrected_run

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 import wandb
+from wandb.apis.public.runs import _create_runs_query
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -107,10 +108,16 @@ def main():
             ]
         },
     )
+    # Fetch config and summary fields with each page, but keep Run objects lazy.
+    # Setting ``lazy=False`` on api.runs() instead reloads every individual run.
+    runs.QUERY = _create_runs_query(lazy=False)
     rows = []
     total = len(runs)
     for run in runs:
-        metadata = getattr(run, 'metadata', None) or {}
+        # ``run.metadata`` fetches wandb-metadata.json separately for each run.
+        # Host information is not part of the analysis, so avoid thousands of
+        # per-run metadata requests while retaining the legacy schema column.
+        metadata = getattr(run, '_attrs', {}).get('metadata') or {}
         row = {'host': metadata.get('host')}
         row.update({column: run.config.get(column) for column in CONFIG_COLUMNS})
         row.update({column: run.summary.get(column) for column in SUMMARY_COLUMNS})
