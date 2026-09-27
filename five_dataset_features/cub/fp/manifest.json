@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "status": "complete",
+  "identity": "b076bb4e72baa5d70b1f838e34f89a57332cb39f36600b7db18056ff7d105640",
+  "dataset": "cub",
+  "condition": {
+    "name": "fp",
+    "weight_bits": null,
+    "weight_group_size": null,
+    "act_bits": null,
+    "qkv": false
+  },
+  "quantized_linear_names": [],
+  "quantization_scope": "FP",
+  "excluded": [
+    "classification head",
+    "patch embedding",
+    "normalization",
+    "residual addition",
+    "attention probability"
+  ],
+  "n_samples": 64,
+  "files": {
+    "features.npy": "fa7dc915e7c486f405073884c288f6e36d5bb4a5b6e2c1042f78dca233714754",
+    "predictions.csv": "35fa2477e12c67edfc2183d73cfe811e5600c562a7b80784f28e1ca41e4e8865",
+    "precision_probe.npy": "f08b9fa43bff7b2dd326e84f6d413e3ddd9262e365c90aadffabc99c74edf3fb"
+  },
+  "inference_seconds": 0.33739936724305153,
+  "completed_at_utc": "2026-09-27T12:44:24.196826+00:00"
+}
