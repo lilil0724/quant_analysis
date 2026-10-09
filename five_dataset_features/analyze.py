@@ -21,7 +21,7 @@ from .metrics import (centered_linear_cka, class_equal_cosine_distances,
                       regularized_h_score, spearman_description)
 
 
-DATASETS = ('cotton', 'soyageing', 'soyglobal', 'cub', 'pets')
+DATASETS = ('aircraft', 'cars', 'cub', 'dogs', 'flowers', 'food', 'inat17', 'moe', 'nabirds', 'pets', 'soyageing', 'soygene', 'soyglobal', 'soylocal', 'vegfru', 'cotton')
 LAYERS, WIDTH = 13, 768
 
 
@@ -257,8 +257,8 @@ def aggregate_report(root):
               '## Files', '',
               '- `all_conditions.csv`: accuracy, relative loss, swap, damage, rescue and R for all 105 conditions.',
               '- `<dataset>/layer_metrics.csv`: 13-layer CKA, class-equal cosine distances, separation and norms.',
-              '- `fp_indicators.csv`: pre-quantization predictors for the five dataset-model pairs.',
-              '- `descriptive_spearman.csv`: five-point associations by condition family.',
+              '- `fp_indicators.csv`: pre-quantization predictors for the selected dataset-model pairs.',
+              '- `descriptive_spearman.csv`: dataset-level associations by condition family.',
               '- `<dataset>/precision_probe.csv`: first real batch FP32 versus FP16 storage sensitivity.',
               '- `<dataset>/activation_transition.png`: weight-only to Linear to Linear+QKV comparisons.',
               '- Local `<dataset>/fp_pca.npz`: FP-only PCA basis; all condition coordinates share this projection.', '',
@@ -301,10 +301,10 @@ def exemplar_indices(meta):
     for index, target in enumerate(meta['targets']):
         by_class[int(target)].append(index)
     classes = sorted(target for target, indices in by_class.items() if len(indices) >= 2)
-    if len(classes) < 10:
-        raise RuntimeError('Fewer than ten eligible exemplar classes')
+    if not classes:
+        raise RuntimeError('No class has two eligible exemplar samples')
     random = np.random.default_rng(100)
-    chosen = random.choice(classes, size=10, replace=False)
+    chosen = random.choice(classes, size=min(10, len(classes)), replace=False)
     return sorted(int(index) for target in chosen for index in random.choice(by_class[int(target)], size=2, replace=False))
 
 
@@ -335,7 +335,7 @@ def checked_exemplars(root, dataset, meta):
 def package(root):
     out = root / 'analysis'
     if not (out / 'REPORT.md').is_file():
-        raise RuntimeError('Run report after all five dataset analyses')
+        raise RuntimeError('Run report after all selected dataset analyses')
     stage = Path(tempfile.mkdtemp(prefix='.download-package-', dir=out))
     try:
         for name in ('REPORT.md', 'analysis_version.json', 'all_conditions.csv', 'fp_indicators.csv',
@@ -391,11 +391,16 @@ def package(root):
 
 
 def main():
+    global DATASETS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('dataset', 'report', 'package'))
     parser.add_argument('--root', required=True, type=Path)
     parser.add_argument('--dataset', choices=DATASETS)
+    parser.add_argument('--datasets', nargs='+', choices=DATASETS,
+                        help='Report/package scope; defaults to all 16 datasets')
     args = parser.parse_args()
+    if args.datasets:
+        DATASETS = tuple(dict.fromkeys(args.datasets))
     if args.command == 'dataset':
         if not args.dataset:
             parser.error('--dataset is required for dataset analysis')

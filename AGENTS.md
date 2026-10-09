@@ -38,14 +38,38 @@ edit them manually; rerun their owning stage instead.
 
 ## Environment
 
-All Python commands must use `opencode_env`:
+Operational inference data and feature-analysis results reside on nano4, not
+on the development Windows computer. Server checkouts are
+`/work/kyle0724/project/TGDA` and `/work/kyle0724/project/quant_analysis`;
+data reside under `/work/kyle0724/data/`.
 
-```powershell
-conda activate opencode_env
-pip install -r requirements.txt
+All analysis Python commands must use `opencode_env`. On nano4, initialize the
+environment like TGDA's inference script and invoke Python directly:
+
+```bash
+ml purge
+ml load miniconda3
+"$HOME/.conda/envs/opencode_env/bin/python" -m pip install -r requirements.txt
 ```
 
 Downloading requires `WANDB_API_KEY` or `wandb login`.
+
+## nano4 feature analysis
+
+- Submit `sbatch five_dataset_features/run_nano4.sh` from the nano4
+  `quant_analysis` checkout. Use `--dry-run` with Bash to inspect commands.
+- Input defaults to `<checkout>/../../data/five_dataset_hqq`; output is
+  `<input-root>/analysis/`. Analyze existing full inference arrays directly on
+  the server. No transfer to a Windows input directory is required.
+- The launcher runs all 16 datasets, then report and ZIP, using the existing
+  `five_dataset_features.analyze` entrypoint. Smoke analysis is a separate stage.
+- Environment overrides: `ANALYSIS_PROJECT_ROOT`, `ANALYSIS_INPUT_ROOT`,
+  `ANALYSIS_CONDA_ENV`, `ANALYSIS_PYTHON`. Module loading and direct Python
+  execution follow the TGDA inference launcher; do not replace this with
+  `conda run` or shell activation.
+- Preserve the source/metric separation from the legacy CSV and confidence
+  workflows. Launcher checks on the development computer do not establish
+  nano4 job completion, data validity or environment availability.
 
 ## Pipeline
 

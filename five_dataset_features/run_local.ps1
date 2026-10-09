@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$InputRoot,
 
-    [string]$PythonExe = 'C:\Users\Public\miniconda3\envs\opencode_env\python.exe'
+    [string]$PythonExe = 'C:\Users\Public\miniconda3\envs\opencode_env\python.exe',
+    [string[]]$Datasets = @('aircraft', 'cars', 'cub', 'dogs', 'flowers', 'food', 'inat17', 'moe', 'nabirds', 'pets', 'soyageing', 'soygene', 'soyglobal', 'soylocal', 'vegfru', 'cotton')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,13 +33,13 @@ try {
         }
     }
     if ($Stage -in @('analyze', 'all')) {
-        foreach ($dataset in @('cotton', 'soyageing', 'soyglobal', 'cub', 'pets')) {
+        foreach ($dataset in $Datasets) {
             Invoke-Analysis -Arguments @('dataset', '--root', $root, '--dataset', $dataset)
         }
-        Invoke-Analysis -Arguments @('report', '--root', $root)
+        Invoke-Analysis -Arguments (@('report', '--root', $root, '--datasets') + $Datasets)
     }
     if ($Stage -in @('package', 'all')) {
-        Invoke-Analysis -Arguments @('package', '--root', $root)
+        Invoke-Analysis -Arguments (@('package', '--root', $root, '--datasets') + $Datasets)
     }
 } finally {
     Pop-Location
