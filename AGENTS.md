@@ -43,8 +43,10 @@ on the development Windows computer. Server checkouts are
 `/work/kyle0724/project/TGDA` and `/work/kyle0724/project/quant_analysis`;
 data reside under `/work/kyle0724/data/`.
 
-All analysis Python commands must use `opencode_env`. On nano4, initialize the
-environment like TGDA's inference script and invoke Python directly:
+Legacy CSV/confidence workflows use `opencode_env`. The nano4 feature-analysis
+launcher currently defaults to the user's selected `tgda` environment, matching
+inference; override it with `ANALYSIS_CONDA_ENV=opencode_env` if desired. Initialize
+the module like TGDA's inference script and invoke the selected Python directly:
 
 ```bash
 ml purge
@@ -56,20 +58,28 @@ Downloading requires `WANDB_API_KEY` or `wandb login`.
 
 ## nano4 feature analysis
 
-- Submit `sbatch five_dataset_features/run_nano4.sh` from the nano4
-  `quant_analysis` checkout. Use `--dry-run` with Bash to inspect commands.
-- Input defaults to `<checkout>/../../data/five_dataset_hqq`; output is
-  `<input-root>/analysis/`. Analyze existing full inference arrays directly on
-  the server. No transfer to a Windows input directory is required.
-- The launcher runs all 16 datasets, then report and ZIP, using the existing
-  `five_dataset_features.analyze` entrypoint. Smoke analysis is a separate stage.
+- Submit `sbatch five_dataset_features/run_nano4.sh --serial N` from the nano4
+  quant_analysis checkout. Use Bash with `--dry-run` to inspect commands.
+- `--input-root` names the parent `<checkout>/../../data/w3_g128_analysis` directory.
+  Selected input is `<input-root>/<serial>`, organized as dataset/model/checkpoint
+  mode, using TGDA paired FP/W3 manifests and layer files.
+  Output defaults to `<input-root>/<serial>/analysis`; preserve all source files.
+- The launcher calls `five_dataset_features.paired` and requires the complete
+  selected 16-dataset × 3-model × ft/fz/cal matrix by default. Scope can be narrowed
+  explicitly with `--datasets`, `--models`, and `--modes`; never silently skip pairs.
+- Resources are partition 8gpus and one GPU per node. Module loading and direct
+  Python execution match TGDA inference; default environment is tgda. Analysis
+  metrics/PCA use NumPy CPUs despite GPU allocation.
+- Validate source completion, identity, checksums, sample pairing and variable
+  layer shapes before writing analysis output. Preserve source provenance in
+  aggregate reports; package only a whitelist of compact generated results.
+- The older `five_dataset_hqq` 21-condition schema remains supported by the
+  separate analyze.py/smoke.py/run_local.ps1 entrypoints; do not mix its data with
+  paired W3 exports or change the legacy CSV/confidence scripts.
 - Environment overrides: `ANALYSIS_PROJECT_ROOT`, `ANALYSIS_INPUT_ROOT`,
-  `ANALYSIS_CONDA_ENV`, `ANALYSIS_PYTHON`. Module loading and direct Python
-  execution follow the TGDA inference launcher; do not replace this with
-  `conda run` or shell activation.
-- Preserve the source/metric separation from the legacy CSV and confidence
-  workflows. Launcher checks on the development computer do not establish
-  nano4 job completion, data validity or environment availability.
+  `ANALYSIS_OUTPUT_ROOT`, `ANALYSIS_CONDA_ENV`, `ANALYSIS_PYTHON`.
+- Launcher checks on the development computer do not establish nano4 completion,
+  resource sufficiency, environment availability or source data validity.
 
 ## Pipeline
 

@@ -1,99 +1,112 @@
-> Current scope: 16 datasets and 336 conditions. Inference and analysis run on nano4. See the TGDA checkout's `tools/five_dataset_hqq/ALL_DATASETS.md` for inference setup and storage planning.
+# nano4 paired FP/W3 feature analysis
 
-# Five-dataset feature analysis
+The current `run_nano4.sh` analyzes TGDA's existing `w3_g128_analysis` exports on
+nano4. It reads the source manifest and per-layer FP/W3 arrays through
+`five_dataset_features.paired`, reusing the established feature metrics. It does
+not repeat inference or modify the source files.
 
-This is independent of the legacy 13-condition quantization analyzer and the W&B artifact workflow. Analyze the existing nano4 inference output directly on nano4. Analysis needs the full `[N,13,768]` feature arrays for all conditions, not just the final small ZIP. Raw datasets and checkpoints remain in the server's `data/` tree.
-
-## nano4 CPU analysis
-
-`run_nano4.sh` reuses the existing analysis module. It defaults to all 16 datasets,
-processed sequentially in one CPU job, followed by the cross-dataset report and
-ZIP. It does not perform inference. The `all` stage does not require the separate
-CUB smoke output; use `--stage smoke` to validate it explicitly.
-
-Place the checkouts and data as follows:
+## Server layout and submission
 
 ```text
-/work/kyle0724/
+<server-root>/
 ├── project/
-│   ├── TGDA/                 # inference checkout
-│   └── quant_analysis/       # analysis checkout
-└── data/five_dataset_hqq/
-    ├── aircraft/              # dataset.json, exemplars/, all 21 condition folders
-    ├── cub/
-    ├── ...                   # the other configured datasets
-    ├── smoke/cub/            # only needed for --stage smoke
-    └── analysis/             # generated here
+│   ├── TGDA/
+│   └── quant_analysis/
+└── data/w3_g128_analysis/
+    └── <serial>/
+        ├── <dataset>/<model>/<ft|fz|cal>/
+        │   ├── manifest.json
+        │   ├── samples.json
+        │   ├── fp/                 # per-layer .npy, logits.npy, predictions.csv
+        │   ├── w3_g128/            # same matched test samples
+        │   ├── layer_metrics.csv   # existing TGDA metrics
+        │   └── summary.json        # existing TGDA summary
+        └── analysis/               # new analysis outputs
 ```
 
-Submit from the `quant_analysis` checkout on nano4:
+Select one source serial explicitly; the example below uses the listed `20005`
+directory, without assuming it is complete:
 
 ```bash
 cd /work/kyle0724/project/quant_analysis
-bash five_dataset_features/run_nano4.sh --dry-run
-sbatch five_dataset_features/run_nano4.sh
+bash five_dataset_features/run_nano4.sh --serial 20005 --dry-run
+sbatch five_dataset_features/run_nano4.sh --serial 20005
 ```
 
-The input defaults to `<repo>/../../data/five_dataset_hqq`; override it with
-`--input-root /absolute/path/to/five_dataset_hqq`. Outputs are always under that
-input root's `analysis/`. The script checks all selected datasets' required files
-before starting; the analyzer then validates checksums, condition identity,
-sample pairing and shapes. ZIP creation also needs each dataset's exported
-`exemplars/` files. Re-running regenerates existing analysis outputs, including
-the ZIP; do not run concurrent jobs against the same dataset/output directory.
+Defaults are all 16 datasets, the three model directory names `vit_b16`,
+`swin_base_patch4_window7_224_in22k`, and `beitv2_base_patch16_224`, and all three
+checkpoint modes `ft,fz,cal`: 144 selected pairs, each containing FP and W3.
+Preflight requires every selected pair to be complete and compatible. It never
+silently reduces this matrix or merges experiments from different serials.
 
-Environment setup follows TGDA's `scripts/run_exp_nano5.sh`: `ml purge`,
-`ml load miniconda3`, then direct execution with
-`$HOME/.conda/envs/opencode_env/bin/python`. No `conda run` or shell activation
-is used. The environment must already contain the repository requirements.
-Set `ANALYSIS_CONDA_ENV` to change the environment name, or set
-`ANALYSIS_PYTHON=/absolute/path/to/python` for another installation location.
-Module setup still runs when Python is overridden, matching the inference script.
-Set `ANALYSIS_PROJECT_ROOT` if submitting from another directory;
-`ANALYSIS_INPUT_ROOT` overrides the default input (the CLI flag takes precedence).
-Dry-run does not load modules, execute Python, or require inference files.
-
-The job requests 8 CPUs, 64 GB RAM and 24 hours, with no GPU request. No partition
-is hardcoded: it uses the cluster default. If nano4 requires an explicit CPU
-queue, pass its actual name with `sbatch --partition=<cpu-queue>`. Resources and
-queue eligibility have not been validated on nano4. The largest datasets may
-require adjusted memory/time limits after observing a first run.
+The default input parent is `<analysis-checkout>/../../data/w3_g128_analysis`.
+Override it using `--input-root`; a selected serial directory is also accepted
+when its name matches `--serial`. Output defaults to `<input-root>/<serial>/analysis`;
+`--output-root` can select another directory. Original pair directories are
+preserved. Within the input parent, outputs must stay under the selected serial's
+`analysis/` directory, protecting source exports from other experiments too.
 
 ```bash
-# Small full-test pilot; report and ZIP cover this subset only.
-sbatch five_dataset_features/run_nano4.sh --datasets cub,pets
+# One dataset/model/mode pilot, still using the complete test split.
+sbatch five_dataset_features/run_nano4.sh --serial 20005 \
+  --datasets cub --models vit_b16 --modes ft
 
-# Recompute statistics and report without making the ZIP.
-sbatch five_dataset_features/run_nano4.sh --stage analyze
+# Read-only input validation; no analysis outputs.
+sbatch five_dataset_features/run_nano4.sh --serial 20005 --stage preflight
 
-# Repackage already generated analyses.
-sbatch five_dataset_features/run_nano4.sh --stage package
+# Analyze and report, without ZIP.
+sbatch five_dataset_features/run_nano4.sh --serial 20005 --stage analyze
 
-# Separate six-condition CUB smoke analysis.
-sbatch five_dataset_features/run_nano4.sh --stage smoke
+# Repackage the matching selected analysis scope.
+sbatch five_dataset_features/run_nano4.sh --serial 20005 --stage package
 ```
 
-Logs are `hqq_feature_analysis_<job-id>.out` and `.err` in the submission
-directory. The final archive is `<input-root>/analysis/five_dataset_hqq_results.zip`.
+Use the same dataset/model/mode options for subsequent report/package stages.
+Stages are `all`, `preflight`, `analyze`, `report`, and `package`. There is no
+legacy CUB smoke stage for this paired export format.
 
-## Server smoke and storage
+## Environment and resources
 
-After CUB smoke inference, run `--stage smoke` on nano4 and inspect
-`/work/kyle0724/data/five_dataset_hqq/analysis/smoke_precision.json` before
-submitting full inference. The report includes sample pairing, checksums,
-prediction changes and FP16 storage checks against the incremental W3-to-A8 and
-A8-to-QKV changes. No feature transfer to a Windows computer is required.
+Like TGDA's inference launcher, the script runs `ml purge`, `ml load miniconda3`,
+and directly executes `$HOME/.conda/envs/tgda/bin/python`. Override using
+`ANALYSIS_CONDA_ENV` or `ANALYSIS_PYTHON`. The environment must already contain
+NumPy and Matplotlib. No package installation or Conda activation occurs in jobs.
+`ANALYSIS_PROJECT_ROOT` changes the checkout path; `ANALYSIS_INPUT_ROOT` and
+`ANALYSIS_OUTPUT_ROOT` set data/output defaults, with CLI arguments taking precedence.
 
-For all 16 datasets, use TGDA preflight's actual test counts and disk estimate.
-The original five-dataset estimate of 8.48 GB plus about 0.419 GB per 1,000
-cotton test images does not cover the expanded scope. Allow extra server space
-for analysis figures, coordinates and temporary ZIP staging. The final ZIP
-excludes full-test feature arrays; it is a sharing output, not analysis input.
+SBATCH defaults are partition `8gpus`, one GPU per node, one task, 8 CPUs,
+64 GB RAM and 24 hours, account `MST114495`. Resources can be overridden before
+the script name, for example `sbatch --partition=dev --time=00:30:00 ...`.
+The queue allocates a GPU; the current NumPy metrics/PCA computations use CPUs.
+Resource sufficiency and nano4 execution have not been measured by local tests.
+Logs are `hqq_feature_analysis_<job-id>.out/.err` in the submission directory.
 
-## Analysis definitions
+## Outputs and scientific scope
 
-The dataset stage rejects missing or corrupt conditions and verifies all sample IDs and targets. CKA is centered linear CKA using feature cross-products, never an N-by-N sample matrix. Cosine intra-class distances average distinct sample pairs within each class, then classes equally; inter-class distances average class pairs equally. The final `D_inter - D_intra` is the primary feature separability score. H-score uses within-class scatter regularization of 1% of mean within-feature variance. Norm P50/P95/P99 and P99/P50 use unnormalized features. The final FP feature measures are candidate predictors; per-layer results are supplementary.
+Each selected dataset/model/mode receives paired prediction statistics, per-layer
+CKA, class-equal cosine distances/separation and norm summaries, plus final-layer
+H-score and normalized-margin Q10. PCA fits the FP final-feature basis once per
+pair and projects both conditions into it; dimensions and layer names come from
+the source manifest, accommodating ViT, BEiT and Swin.
 
-FP final features fit one PCA basis per dataset, and every condition uses that basis. Server dataset output includes full-test 2D coordinates for each condition; the small ZIP only includes up to 20 representative samples per dataset. The first real batch's FP32 activations are compared with their FP16 roundtrip in `precision_probe.csv`. Inspect A8 rows before accepting FP16 feature storage; if storage error is material, set `feature_dtype` to `float32` for the affected dataset in the server experiment JSON, rerun its inference, and re-evaluate disk capacity.
+Outputs include per-pair `summary.json`, `layer_metrics.csv`, `fp_pca.npz`,
+`coords_fp.npy`, `coords_w3_g128.npy`, and `pca.png`. Aggregate outputs include
+`coverage.csv`, `all_pairs.csv`, `REPORT.md`, `analysis_manifest.json`, and
+`w3_g128_results.zip`. The ZIP includes compact results and figures, excluding
+full source features, logits, checkpoints and full-test PCA coordinates.
 
-`report` computes mean loss by activation family within each selected dataset, then descriptive Spearman correlations across the selected dataset-model pairs (16 by default). Quantized conditions are repeated measurements, not independent datasets. Empty CSV cells mean undefined. No significance claim is made. Inference on nano4 chooses up to ten classes with at least two test images using seed 100, saves two 224px display images per class, and records a checksum manifest. Server packaging verifies those files, then builds an explicit whitelist ZIP and prints its size. The 50 MB limit is a target; inspect the printed size. The package excludes all full-test feature arrays, full images, and checkpoints.
+Dataset/model/checkpoint combinations are repeated measurements. Report any
+cross-dataset association separately within a model/checkpoint scope, with
+coverage metadata; do not treat all 144 pairs as independent datasets. CAL
+features describe the first raw-image backbone call while logits retain the
+normal crop/flip aggregation recorded by TGDA. PCA/CKA do not establish causality.
+
+## Legacy 21-condition workflow
+
+`analyze.py`, `smoke.py`, and `run_local.ps1` retain support for the older
+`data/five_dataset_hqq` schema: direct dataset folders, `dataset.json`, and 21
+conditions with `[N,13,768]` feature arrays. The supplied tree lists only cotton,
+cub, pets, soyageing and soyglobal in that directory. This legacy schema is
+separate from the current paired-W3 launcher; no path-only conversion is used.
+The user-provided tree also lists serials 20001–20005 and job 520062 logs.
+Directory and log filenames alone do not establish successful completion.

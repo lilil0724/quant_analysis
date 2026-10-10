@@ -1,151 +1,130 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=hqq_feature_analysis
+#SBATCH --partition=8gpus
 #SBATCH --account=MST114495
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --gpus-per-node=1
+#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
 #SBATCH --output=hqq_feature_analysis_%j.out
 #SBATCH --error=hqq_feature_analysis_%j.err
 
-# Submit from the quant_analysis checkout on nano4.
-# Environment setup follows TGDA/scripts/run_exp_nano5.sh.
-# Partition defaults to the cluster's configured queue.
-# Analysis uses CPUs only. Override resources with sbatch options when needed.
+# Submit from quant_analysis on nano4. Module/Python setup matches TGDA inference.
+# The queue allocates one GPU; the NumPy analysis currently computes on CPUs.
 set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: sbatch five_dataset_features/run_nano4.sh [options]
-       bash five_dataset_features/run_nano4.sh --dry-run [options]
+Usage: sbatch five_dataset_features/run_nano4.sh --serial N [options]
+       bash five_dataset_features/run_nano4.sh --serial N --dry-run [options]
 
-  --input-root PATH   Full inference output (default: <repo>/../../data/five_dataset_hqq).
-  --stage STAGE       all (default), analyze, report, package, or smoke.
-                      all = dataset analyses + report + ZIP; smoke is separate.
-  --datasets CSV      Comma-separated subset; default: all 16 datasets.
-  --dry-run           Print commands without loading modules or writing results.
+  --serial N          Required source experiment serial (for example 20005).
+  --input-root PATH   Parent w3_g128_analysis directory (default: <repo>/../../data/w3_g128_analysis).
+                      A selected serial directory is also accepted with the same --serial.
+  --output-root PATH  Default: <input-root>/<serial>/analysis.
+  --stage STAGE       all (default), preflight, analyze, report, or package.
+  --datasets CSV      Default: all 16 datasets.
+  --models CSV        Default: vit_b16,swin_base_patch4_window7_224_in22k,beitv2_base_patch16_224.
+  --modes CSV         Default: ft,fz,cal.
+  --dry-run           Print commands; do not load modules or execute analysis.
   -h, --help          Show this help.
 
-Environment:
-  ANALYSIS_PROJECT_ROOT  nano4 checkout (default: SLURM_SUBMIT_DIR or current directory).
-  ANALYSIS_INPUT_ROOT    Optional full inference output root.
-  ANALYSIS_CONDA_ENV     Conda environment (default: opencode_env).
-  ANALYSIS_PYTHON        Python (default: $HOME/.conda/envs/$ANALYSIS_CONDA_ENV/bin/python).
-
-Outputs: <input-root>/analysis/ and <input-root>/analysis/five_dataset_hqq_results.zip.
-Existing analysis outputs are regenerated. Full features are read without modification.
+Environment: ANALYSIS_PROJECT_ROOT, ANALYSIS_INPUT_ROOT, ANALYSIS_OUTPUT_ROOT,
+             ANALYSIS_CONDA_ENV (tgda), ANALYSIS_PYTHON.
+SBATCH defaults: partition=8gpus, GPUs/node=1, CPUs=8, memory=64G, time=24h.
+Override resources before the script: sbatch --partition=dev --gpus-per-node=1 ...
+Input: <serial>/<dataset>/<model>/<mode>/{manifest.json,samples.json,fp/,w3_g128/}.
+Output: CKA, statistics, shared-FP PCA, aggregate report and w3_g128_results.zip.
 EOF
 }
-
 fail() { echo "Error: $*" >&2; exit 2; }
 require_value() { [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || fail "Missing value for $1"; }
+read_csv_selection() {
+    [[ "$2" != ,* && "$2" != *, && "$2" != *,,* ]] || fail "Empty name in $1"
+}
+validate_names() {
+    local label="$1" allowed="$2" name
+    shift 2
+    local -A seen=()
+    for name in "$@"; do
+        [[ "$allowed" == *" $name "* ]] || fail "Unknown $label: $name"
+        [[ ! -v "seen[$name]" ]] || fail "Duplicate $label: $name"
+        seen[$name]=1
+    done
+}
 
+SERIAL=''
 STAGE=all
 INPUT_ROOT="${ANALYSIS_INPUT_ROOT:-}"
+OUTPUT_ROOT="${ANALYSIS_OUTPUT_ROOT:-}"
 DRY_RUN=0
 DATASETS=(aircraft cars cub dogs flowers food inat17 moe nabirds pets soyageing soygene soyglobal soylocal vegfru cotton)
+MODELS=(vit_b16 swin_base_patch4_window7_224_in22k beitv2_base_patch16_224)
+MODES=(ft fz cal)
 ALLOWED_DATASETS=" ${DATASETS[*]} "
+ALLOWED_MODELS=" ${MODELS[*]} "
+ALLOWED_MODES=" ${MODES[*]} "
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --input-root) require_value "$@"; INPUT_ROOT="$2"; shift 2 ;;
-        --stage) require_value "$@"; STAGE="$2"; shift 2 ;;
-        --datasets)
+        --serial|--input-root|--output-root|--stage|--datasets|--models|--modes)
             require_value "$@"
-            [[ "$2" != ,* && "$2" != *, && "$2" != *,,* ]] || fail 'Empty dataset in --datasets'
-            IFS=',' read -r -a DATASETS <<< "$2"
-            shift 2
-            ;;
+            case "$1" in
+                --serial) SERIAL="$2" ;;
+                --input-root) INPUT_ROOT="$2" ;;
+                --output-root) OUTPUT_ROOT="$2" ;;
+                --stage) STAGE="$2" ;;
+                --datasets) read_csv_selection "$1" "$2"; IFS=',' read -r -a DATASETS <<< "$2" ;;
+                --models) read_csv_selection "$1" "$2"; IFS=',' read -r -a MODELS <<< "$2" ;;
+                --modes) read_csv_selection "$1" "$2"; IFS=',' read -r -a MODES <<< "$2" ;;
+            esac
+            shift 2 ;;
         --dry-run) DRY_RUN=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) fail "Unknown option: $1" ;;
     esac
 done
-case "$STAGE" in all|analyze|report|package|smoke) ;; *) fail "Unknown stage: $STAGE" ;; esac
-declare -A SEEN=()
-for dataset in "${DATASETS[@]}"; do
-    [[ "$ALLOWED_DATASETS" == *" $dataset "* ]] || fail "Unknown dataset: $dataset"
-    [[ ! -v "SEEN[$dataset]" ]] || fail "Duplicate dataset: $dataset"
-    SEEN[$dataset]=1
-done
+[[ "$SERIAL" =~ ^[1-9][0-9]*$ ]] || fail 'Specify the source experiment with --serial N'
+case "$STAGE" in all|preflight|analyze|report|package) ;; *) fail "Unknown paired-W3 stage: $STAGE" ;; esac
+validate_names dataset "$ALLOWED_DATASETS" "${DATASETS[@]}"
+validate_names model "$ALLOWED_MODELS" "${MODELS[@]}"
+validate_names mode "$ALLOWED_MODES" "${MODES[@]}"
 
-# Slurm executes a copied script from its spool directory: use the submit root.
+# Slurm runs a spool copy; use its submission directory, like TGDA inference.
 ANALYSIS_PROJECT_ROOT="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-REPO="$ANALYSIS_PROJECT_ROOT"
-[[ -f "$REPO/five_dataset_features/analyze.py" ]] || fail 'Submit from quant_analysis or set ANALYSIS_PROJECT_ROOT'
-REPO="$(cd "$REPO" && pwd)"
-INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/five_dataset_hqq}"
-# Relative input paths refer to the submission directory, before changing directory.
+[[ -f "$ANALYSIS_PROJECT_ROOT/five_dataset_features/paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+REPO="$(cd "$ANALYSIS_PROJECT_ROOT" && pwd)"
+INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
+INPUT_ROOT="${INPUT_ROOT%/}"
+if [[ "$INPUT_ROOT" == */"$SERIAL" ]]; then INPUT_ROOT="${INPUT_ROOT%/*}"; fi
+OUTPUT_ROOT="${OUTPUT_ROOT:-$INPUT_ROOT/$SERIAL/analysis}"
+if [[ "$OUTPUT_ROOT" != /* ]]; then OUTPUT_ROOT="$PWD/$OUTPUT_ROOT"; fi
 ANALYSIS_CONDA_ENV="${ANALYSIS_CONDA_ENV:-tgda}"
 ANALYSIS_PYTHON="${ANALYSIS_PYTHON:-${HOME}/.conda/envs/${ANALYSIS_CONDA_ENV}/bin/python}"
-cd "$REPO"
-export PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONUNBUFFERED=1
 THREADS="${SLURM_CPUS_PER_TASK:-8}"
-[[ "$THREADS" =~ ^[1-9][0-9]*$ ]] || fail 'SLURM_CPUS_PER_TASK must be a positive integer'
+[[ "$THREADS" =~ ^[1-9][0-9]*$ ]] || fail 'SLURM_CPUS_PER_TASK must be positive'
+export PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS="$THREADS" OPENBLAS_NUM_THREADS="$THREADS" MKL_NUM_THREADS="$THREADS" NUMEXPR_NUM_THREADS="$THREADS"
+cd "$REPO"
+COMMAND=("$ANALYSIS_PYTHON" -B -u -m five_dataset_features.paired "$STAGE"
+    --input-root "$INPUT_ROOT" --serial "$SERIAL" --output-root "$OUTPUT_ROOT"
+    --datasets "${DATASETS[@]}" --models "${MODELS[@]}" --modes "${MODES[@]}")
 
-run_python() {
-    if (( DRY_RUN )); then
-        printf '  '; printf '%q ' "$ANALYSIS_PYTHON" -B -u "$@"; printf '\n'
-    else
-        "$ANALYSIS_PYTHON" -B -u "$@"
-    fi
-}
-
-if (( ! DRY_RUN )); then
-    [[ -d "$INPUT_ROOT" ]] || fail "Input root not found: $INPUT_ROOT"
-    INPUT_ROOT="$(cd "$INPUT_ROOT" && pwd)"
-    # Match the user's working TGDA inference environment initialization on nano4.
-    ml purge
-    ml load miniconda3
-    [[ "$ANALYSIS_PYTHON" = /* && -x "$ANALYSIS_PYTHON" ]] || fail "Set ANALYSIS_PYTHON to an executable absolute path: $ANALYSIS_PYTHON"
-    if [[ "$STAGE" == all || "$STAGE" == analyze || "$STAGE" == package ]]; then
-        CONDITIONS=(fp)
-        for w in 3 4; do
-            for g in 8 128; do
-                stem="w${w}_g${g}"
-                CONDITIONS+=("$stem" "${stem}_a8" "${stem}_a8_qkv" "${stem}_a4" "${stem}_a4_qkv")
-            done
-        done
-        # Check every requested dataset before starting; the analyzer verifies hashes and pairing.
-        for dataset in "${DATASETS[@]}"; do
-            [[ -f "$INPUT_ROOT/$dataset/dataset.json" ]] || fail "Missing $dataset/dataset.json"
-            for condition in "${CONDITIONS[@]}"; do
-                for filename in manifest.json features.npy predictions.csv precision_probe.npy; do
-                    [[ -f "$INPUT_ROOT/$dataset/$condition/$filename" ]] || fail "Missing $dataset/$condition/$filename"
-                done
-            done
-            if [[ "$STAGE" == all || "$STAGE" == package ]]; then
-                [[ -f "$INPUT_ROOT/$dataset/exemplars/manifest.json" ]] || fail "Missing $dataset/exemplars/manifest.json for ZIP"
-            fi
-        done
-    fi
-    run_python -c 'import sys, numpy, matplotlib; print("Python:", sys.executable); print("NumPy:", numpy.__version__); print("Matplotlib:", matplotlib.__version__)'
-fi
-
-echo "Stage: $STAGE"
-echo "SLURM job ID: ${SLURM_JOB_ID:-preview}"
-echo "Node: $(hostname)"
+echo "Job: ${SLURM_JOB_ID:-preview}; node: $(hostname); stage: $STAGE"
 echo "Python: $ANALYSIS_PYTHON"
-echo "Repository: $REPO"
-echo "Input: $INPUT_ROOT"
-echo "Output: $INPUT_ROOT/analysis"
-echo "Datasets (${#DATASETS[@]}): ${DATASETS[*]}"
-if [[ "$STAGE" == smoke ]]; then
-    run_python -m five_dataset_features.smoke --root "$INPUT_ROOT"
-else
-    if [[ "$STAGE" == all || "$STAGE" == analyze ]]; then
-        for dataset in "${DATASETS[@]}"; do
-            echo "Analyzing: $dataset"
-            run_python -m five_dataset_features.analyze dataset --root "$INPUT_ROOT" --dataset "$dataset"
-        done
-    fi
-    if [[ "$STAGE" == all || "$STAGE" == analyze || "$STAGE" == report ]]; then
-        run_python -m five_dataset_features.analyze report --root "$INPUT_ROOT" --datasets "${DATASETS[@]}"
-    fi
-    if [[ "$STAGE" == all || "$STAGE" == package ]]; then
-        run_python -m five_dataset_features.analyze package --root "$INPUT_ROOT" --datasets "${DATASETS[@]}"
-    fi
+echo "Input serial: $INPUT_ROOT/$SERIAL"
+echo "Output: $OUTPUT_ROOT"
+echo "Scope: ${#DATASETS[@]} datasets x ${#MODELS[@]} models x ${#MODES[@]} modes"
+printf '%q ' "${COMMAND[@]}"; printf '\n'
+if (( DRY_RUN )); then
+    echo 'Dry-run finished; no analysis executed.'
+    exit 0
 fi
-if (( DRY_RUN )); then echo 'Dry-run finished; no analysis executed.'; else echo "Analysis stage completed: $STAGE"; fi
+[[ -d "$INPUT_ROOT/$SERIAL" ]] || fail "Missing serial directory: $INPUT_ROOT/$SERIAL"
+ml purge
+ml load miniconda3
+[[ "$ANALYSIS_PYTHON" = /* && -x "$ANALYSIS_PYTHON" ]] || fail "Set ANALYSIS_PYTHON to an executable absolute path: $ANALYSIS_PYTHON"
+"${COMMAND[@]}"
+echo "Completed stage: $STAGE"

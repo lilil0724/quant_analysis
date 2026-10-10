@@ -1,8 +1,8 @@
-"""Analyze copied full inference outputs locally and make a small results ZIP.
+"""Analyze full nano4 inference outputs and make a small results ZIP.
 
-python -m five_dataset_features.analyze dataset --root C:/data/hqq --dataset cub
-python -m five_dataset_features.analyze report --root C:/data/hqq
-python -m five_dataset_features.analyze package --root C:/data/hqq
+python -m five_dataset_features.analyze dataset --root ../../data/five_dataset_hqq --dataset cub
+python -m five_dataset_features.analyze report --root ../../data/five_dataset_hqq
+python -m five_dataset_features.analyze package --root ../../data/five_dataset_hqq
 """
 import argparse
 import csv
@@ -250,18 +250,18 @@ def aggregate_report(root):
                                  'n_datasets': int((np.isfinite(x) & np.isfinite(losses)).sum()),
                                  'spearman_rho': spearman_description(x, losses)})
     write_csv(out / 'descriptive_spearman.csv', associations)
-    report = ['# Five-dataset ViT-B/16 HQQ + activation fake quantization', '',
-              'All primary statistics use matched full test sets. Five dataset-model pairs are the units of comparison; quantization conditions are repeated measurements.',
+    report = [f'# {len(DATASETS)}-dataset ViT-B/16 HQQ + activation fake quantization', '',
+              f'All primary statistics use matched full test sets. {len(DATASETS)} dataset-model pairs are the units of comparison; quantization conditions are repeated measurements.',
               'Spearman coefficients are descriptive candidate screening only. No significance threshold or predictive generalization claim is made.',
               'QKV and Linear activations use fake quantization; no integer kernel or speedup is claimed.', '',
               '## Files', '',
-              '- `all_conditions.csv`: accuracy, relative loss, swap, damage, rescue and R for all 105 conditions.',
+              f'- `all_conditions.csv`: accuracy, relative loss, swap, damage, rescue and R for all {len(summaries)} dataset-condition rows.',
               '- `<dataset>/layer_metrics.csv`: 13-layer CKA, class-equal cosine distances, separation and norms.',
               '- `fp_indicators.csv`: pre-quantization predictors for the selected dataset-model pairs.',
               '- `descriptive_spearman.csv`: dataset-level associations by condition family.',
               '- `<dataset>/precision_probe.csv`: first real batch FP32 versus FP16 storage sensitivity.',
               '- `<dataset>/activation_transition.png`: weight-only to Linear to Linear+QKV comparisons.',
-              '- Local `<dataset>/fp_pca.npz`: FP-only PCA basis; all condition coordinates share this projection.', '',
+              '- `<dataset>/fp_pca.npz`: FP-only PCA basis; all condition coordinates share this projection.', '',
               'Undefined values remain empty in CSV, including relative loss at zero FP accuracy and R without swaps.', '']
     (out / 'REPORT.md').write_text('\n'.join(report), encoding='utf-8')
     version_files = [Path(__file__), Path(__file__).with_name('metrics.py'),
