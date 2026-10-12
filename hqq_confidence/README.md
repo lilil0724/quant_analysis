@@ -207,6 +207,33 @@ tables, four figures, a decision JSON, and a Markdown report.
 
 ## Verification
 
+### Cross-fit class bias and competitor spectrum
+
+For nano4's multi-dataset/model/ft-fz-cal paired-W3 exports, use the portable
+`server_bias_competitors` entrypoint and `run_bias_competitors_nano4.sh` launcher.
+See [server commands and output definitions](SERVER_BIAS_COMPETITORS.md).
+This server stage accepts a selected serial, preserves the complete requested
+matrix and analyzes each model/mode separately. It reads full logit NPY files
+with memory mapping and does not require the Windows research snapshot.
+
+The independent `analyze_bias_competitors` stage reads the already audited
+serial-100004 raw-logit artifacts. It performs five-fold class bias correction
+with five permuted-class controls and tests additional nearby-competitor counts
+against a nonlinear top-two-margin model using leave-one-dataset-out prediction.
+Soybean-family holdouts are exploratory. A protocol JSON is saved before analysis;
+all 70 artifact hashes must match the supplied prior audit configuration.
+
+```powershell
+python -B -m hqq_confidence.analyze_bias_competitors --reference-config hqq_confidence/analysis/dataset_relationship_20261010/raw_logit_run_config.json --output-dir hqq_confidence/analysis/bias_competitors_20261011
+```
+
+Use a new output directory for each run. The stage retains source identity audits,
+folds and bias vectors, original/corrected predictions, heldout metrics, fitted
+model coefficients, a figure and a Markdown report. Existing test logits are used
+for cross-fitting; corrected accuracy is a retrospective mechanism diagnostic,
+not an independently calibrated benchmark. The baseline uses AMP FP16 and the
+checkpoint family is ViT-B/16 FT; do not infer BEiTv2 results from this analysis.
+
 CPU-only synthetic tests do not require W&B credentials:
 
 ```powershell

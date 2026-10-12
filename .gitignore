@@ -6,3 +6,40 @@ hqq_confidence/results/
 hqq_confidence/data/
 *.html
 
+# Generated experiment data and analysis outputs stay local/server-side.
+# Keep Python, shell launchers, configuration, documentation and test source tracked.
+/.codex_tmp/
+/outputs/
+/hqq_confidence/analysis/
+/hqq_confidence/dist/
+/five_dataset_features/analysis/
+/five_dataset_features/data/
+/five_dataset_features/smoke/
+/five_dataset_features/aircraft/
+/five_dataset_features/cars/
+/five_dataset_features/cub/
+/five_dataset_features/dogs/
+/five_dataset_features/flowers/
+/five_dataset_features/food/
+/five_dataset_features/inat17/
+/five_dataset_features/moe/
+/five_dataset_features/nabirds/
+/five_dataset_features/pets/
+/five_dataset_features/soyageing/
+/five_dataset_features/soygene/
+/five_dataset_features/soyglobal/
+/five_dataset_features/soylocal/
+/five_dataset_features/vegfru/
+/five_dataset_features/cotton/
+/w3_g128_analysis/
+/five_dataset_hqq/
+/logs/
+*.log
+*.out
+*.err
+*.npy
+*.npz
+*.pth
+*.ckpt
+*.safetensors
+

@@ -101,6 +101,45 @@ coverage metadata; do not treat all 144 pairs as independent datasets. CAL
 features describe the first raw-image backbone call while logits retain the
 normal crop/flip aggregation recorded by TGDA. PCA/CKA do not establish causality.
 
+## Paired FP/W3 t-SNE on nano4
+
+`run_tsne_nano4.sh` reads the original serial's `samples.json`,
+`fp/final.npy`, and `w3_g128/final.npy` files. The compact local download does
+not include these arrays, so generate the plots where the source exports live.
+The Python environment needs NumPy, Matplotlib, and scikit-learn; the launcher
+defaults to `opencode_env` and accepts `ANALYSIS_PYTHON` as an override.
+
+```bash
+cd /work/kyle0724/project/quant_analysis
+bash five_dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run
+sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 --stage preflight
+sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 \
+  --datasets cub --models vit_b16 --modes ft
+sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004
+```
+
+The default final job selects all 16 datasets, three models, and three modes
+(144 plots). Each plot samples at most 2,000 paired test images, covering every
+class when the sample budget permits; if there are more classes than the
+budget, it samples fewer classes with repeated examples where possible.
+It L2-normalizes final features,
+optionally reduces more than 50 dimensions with one shared PCA-50 fit, and fits
+one t-SNE to the concatenated FP/W3 samples. Both panels use the same resulting
+coordinates and class colors. `--max-samples`, `--perplexity`, `--iterations`,
+and `--seed` control cost and reproducibility. Each pair writes `tsne.png`,
+`coordinates.csv` (the selected original row indices and paired coordinates),
+and `method.json` under `<input-root>/20004/analysis/tsne/<dataset>/<model>/<mode>/`.
+The source export remains untouched. Matching completed outputs are skipped on
+rerun; `--overwrite` recomputes generated plots when parameters change.
+
+Preflight requires every selected source pair and checks its identity, W3/g128
+configuration, sample pairing, final feature shapes, and source hashes before
+plotting. A full job may take substantial CPU time; start with one pair to
+measure runtime on nano4. t-SNE axes are arbitrary, plots fitted for different
+pairs have unrelated coordinates, and dense or sparse regions are exploratory
+visuals rather than accuracy or causal metrics. CAL features are from the first
+raw-image backbone call, whereas CAL accuracy uses crop/flip aggregation.
+
 ## Legacy 21-condition workflow
 
 `analyze.py`, `smoke.py`, and `run_local.ps1` retain support for the older
