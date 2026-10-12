@@ -107,7 +107,8 @@ normal crop/flip aggregation recorded by TGDA. PCA/CKA do not establish causalit
 `fp/final.npy`, and `w3_g128/final.npy` files. The compact local download does
 not include these arrays, so generate the plots where the source exports live.
 The Python environment needs NumPy, Matplotlib, and scikit-learn; the launcher
-defaults to `opencode_env` and accepts `ANALYSIS_PYTHON` as an override.
+defaults to `tgda`, matching the existing nano4 feature-analysis launcher, and
+accepts `ANALYSIS_CONDA_ENV` or `ANALYSIS_PYTHON` as an override.
 
 ```bash
 cd /work/kyle0724/project/quant_analysis

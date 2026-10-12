@@ -35,7 +35,7 @@ Usage: sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 [options]
   --dry-run           Show the exact Python command only.
 
 Environment: ANALYSIS_PROJECT_ROOT, ANALYSIS_INPUT_ROOT, ANALYSIS_OUTPUT_ROOT,
-             ANALYSIS_CONDA_ENV (opencode_env), ANALYSIS_PYTHON.
+             ANALYSIS_CONDA_ENV (tgda), ANALYSIS_PYTHON.
 Requires NumPy, Matplotlib and scikit-learn in the selected Python environment.
 All selected pairs are checked before any plot is written. FP and W3 share one fit.
 EOF
@@ -116,7 +116,7 @@ INPUT_ROOT="${INPUT_ROOT%/}"
 if [[ "$INPUT_ROOT" == */"$SERIAL" ]]; then INPUT_ROOT="${INPUT_ROOT%/*}"; fi
 OUTPUT_ROOT="${OUTPUT_ROOT:-$INPUT_ROOT/$SERIAL/analysis/tsne}"
 if [[ "$OUTPUT_ROOT" != /* ]]; then OUTPUT_ROOT="$PWD/$OUTPUT_ROOT"; fi
-ANALYSIS_CONDA_ENV="${ANALYSIS_CONDA_ENV:-opencode_env}"
+ANALYSIS_CONDA_ENV="${ANALYSIS_CONDA_ENV:-tgda}"
 ANALYSIS_PYTHON="${ANALYSIS_PYTHON:-${HOME}/.conda/envs/${ANALYSIS_CONDA_ENV}/bin/python}"
 THREADS="${SLURM_CPUS_PER_TASK:-8}"
 [[ "$THREADS" =~ ^[1-9][0-9]*$ ]] || fail 'SLURM_CPUS_PER_TASK must be positive'
