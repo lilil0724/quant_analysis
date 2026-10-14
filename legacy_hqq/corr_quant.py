@@ -13,14 +13,15 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTCOME = 'accuracy_ratio'
 CONTEXT_COLUMNS = ['dataset_name', 'model_name', 'ckpt_path', 'ckpt_kind']
-DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results_all', 'quant', 'corr')
+DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results', 'main', 'corr')
 DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'factor_ablation_accuracy.csv')
+DEFAULT_PREPARED_OUTPUT = os.path.join(BASE_DIR, 'data', 'processed', 'main', 'prepared_accuracy_cells.csv')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Analyze HQQ accuracy-ratio factor relationships.')
     parser.add_argument(
-        '--input-file', default=os.path.join(BASE_DIR, 'results_all', 'quant', 'quant_summary.csv'),
+        '--input-file', default=os.path.join(BASE_DIR, 'data', 'processed', 'main', 'quant_summary.csv'),
         help='full path of the summary CSV produced by summarize_quant.py')
     parser.add_argument(
         '--output-file', default=DEFAULT_OUTPUT,
@@ -28,6 +29,9 @@ def parse_args():
     parser.add_argument(
         '--results-dir', default=DEFAULT_RESULTS_DIR,
         help='directory for correlation tables, factor models, Markdown reports, and run_config.json')
+    parser.add_argument(
+        '--prepared-output', default=DEFAULT_PREPARED_OUTPUT,
+        help='full path of baseline-matched cells used by the plot stage')
     parser.add_argument(
         '--serials', nargs='+', type=int,
         help='optional HQQ source serials to retain; matches any serial in hqq_source_serials')
@@ -151,8 +155,10 @@ def main():
     args = parse_args()
     args.results_dir = os.path.abspath(args.results_dir)
     args.output_file = os.path.abspath(args.output_file)
+    args.prepared_output = os.path.abspath(args.prepared_output)
     os.makedirs(args.results_dir, exist_ok=True)
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
+    os.makedirs(os.path.dirname(args.prepared_output), exist_ok=True)
     write_run_config(os.path.join(args.results_dir, 'run_config.json'), args)
     data = pd.read_csv(args.input_file)
     required = [OUTCOME, 'baseline_matched', 'hqq_source_serials', 'hqq_nbits', 'hqq_group_size', *CONTEXT_COLUMNS]
@@ -164,7 +170,7 @@ def main():
     data = data[is_true(data['baseline_matched'])].dropna(subset=[OUTCOME]).copy()
     if data.empty:
         raise ValueError('No baseline-matched accuracy cells remain.')
-    data.to_csv(os.path.join(args.results_dir, 'prepared_accuracy_cells.csv'), index=False)
+    data.to_csv(args.prepared_output, index=False)
 
     legacy_correlations = original_correlation_rows(data)
     legacy_correlations.to_csv(os.path.join(args.results_dir, 'correlations_accuracy.csv'), index=False)

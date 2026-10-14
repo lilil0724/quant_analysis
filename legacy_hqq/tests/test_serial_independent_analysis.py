@@ -4,8 +4,8 @@ import unittest
 
 import pandas as pd
 
-from corr_quant import source_serials_match
-from summarize_quant import checkpoint_kind, prepare_summary
+from legacy_hqq.corr_quant import source_serials_match
+from legacy_hqq.summarize_quant import checkpoint_kind, prepare_summary
 
 
 def summary_args(serials=None):

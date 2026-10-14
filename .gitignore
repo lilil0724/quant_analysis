@@ -1,9 +1,23 @@
 __pycache__/
 *.py[cod]
-results_all/
+# Keep input data local at the repository root and inside analysis modules.
 data/
-hqq_confidence/results/
-hqq_confidence/data/
+results_all/
+# Ignore generated results in every analysis module, including archived outputs.
+results/
+legacy_hqq/data/raw/backbones_quant_*.csv
+legacy_hqq/data/raw/*.log
+legacy_hqq/data/raw/run_config.json
+legacy_hqq/data/raw/source_manifest.json
+legacy_hqq/data/processed/
+dataset_robustness/data/upstream/legacy/
+dataset_robustness/data/upstream/source_manifest.json
+granularity_robustness/data/upstream/
+hqq_confidence/data/artifacts/
+hqq_confidence/data/serial_100003/
+hqq_confidence/data/processed/
+hqq_confidence/data/selected_runs.csv
+hqq_confidence/data/run_config.json
 *.html
 
 # Generated experiment data and analysis outputs stay local/server-side.

@@ -18,7 +18,7 @@ from wandb.apis.public.runs import _create_runs_query
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'data')
+DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'data', 'raw')
 DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'backbones_quant.csv')
 CONFIG_COLUMNS = [
     'serial', 'dataset_name', 'model_name', 'seed', 'image_size', 'batch_size',

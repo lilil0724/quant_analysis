@@ -21,7 +21,7 @@ import pandas as pd
 import seaborn as sns
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 CONTEXT = ['model_name', 'ckpt_kind']
 SETTING = ['hqq_nbits', 'hqq_group_size']
 KEY = CONTEXT + ['dataset_name'] + SETTING
@@ -407,7 +407,7 @@ def make_report(cells, excluded, tables, output, quality, config):
         '- `metric_agreement.csv` / `scope_sensitivity.csv`：指標與 bit 範圍敏感度。',
         '- `baseline_audit.csv` / `coverage.csv` / `excluded_cells.csv`：資料稽核。',
         '- `plots_manifest.csv`：所有圖片及其來源表；`run_config.json`：參數與來源指紋。',
-        '- `legacy/`：從原始 CSV 重跑的 summary、correlation、XLSX 與原有圖表。', '',
+        '- `data/upstream/legacy/`：固定版本的上游 summary、稽核表、XLSX 與原有圖表。', '',
     ]
     (output / 'report.md').write_text('\n'.join(lines), encoding='utf-8')
 
@@ -415,8 +415,8 @@ def make_report(cells, excluded, tables, output, quality, config):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input-file', type=Path,
-                        default=ROOT / 'results_all/dataset_robustness/legacy/quant_summary.csv')
-    parser.add_argument('--results-dir', type=Path, default=ROOT / 'results_all/dataset_robustness')
+                        default=ROOT / 'data/upstream/legacy/quant_summary.csv')
+    parser.add_argument('--results-dir', type=Path, default=ROOT / 'results/main')
     parser.add_argument('--primary-bits', type=float, nargs='+', default=[2., 3., 4.])
     args = parser.parse_args()
     if sorted(set(args.primary_bits)) != [2., 3., 4.]:

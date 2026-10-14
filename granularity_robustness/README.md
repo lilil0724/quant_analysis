@@ -29,12 +29,20 @@ Use `opencode_env` from the repository root:
 
 ```powershell
 conda run -n opencode_env python -m granularity_robustness.analyze
-conda run -n opencode_env python -m unittest granularity_robustness.test_analysis
+conda run -n opencode_env python -m unittest discover -s granularity_robustness/tests -v
 conda run -n opencode_env python -m granularity_robustness.verify
 ```
 
 The default input is
-`results_all/dataset_robustness/legacy/quant_summary.csv`. Outputs are isolated
-under `results_all/granularity_robustness/`. Start with `report.md`; use
+`granularity_robustness/data/upstream/quant_summary.csv`. The fixed dataset
+mapping is `granularity_robustness/data/source/dataset_granularity_mapping.csv`.
+Outputs are isolated under `granularity_robustness/results/main/`. Start with `report.md`; use
 `dataset_granularity_mapping.csv`, `granularity_coverage.csv` and
 `run_config.json` to audit inclusion and provenance.
+
+For a compact heatmap of one quantization condition, run
+`conda run -n opencode_env python -m granularity_robustness.plot_retention_condition`
+from the repository root. By default it shows 3-bit, group size 128 across the
+three models and checkpoint kinds. Use `--bits` and `--group-size` to select
+other conditions. The plot and a `.source.json` file recording the source table
+and its SHA-256 are written under `results/main/plots/`.

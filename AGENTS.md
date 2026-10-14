@@ -1,41 +1,25 @@
-# AGENTS.md - quant_analysis
+# AGENTS.md — quant_analysis
 
-This repository contains a standalone four-stage analysis pipeline for legacy
-HQQ quantization experiments from Weights & Biases. The legacy workflow is not
-a Python package and has no lint, type-check, build, or CI configuration. Its
-serial-independent summary behaviour is covered by a small `unittest` suite.
+This repository holds independent HQQ analyses. Each analysis owns its code, `data/`, `results/`, tests and operating README. Use `conda run -n opencode_env python ...` for all Python commands.
 
-A separate matched-sample confidence workflow, including its own tests and
-operating contract, is documented in `hqq_confidence/README.md`. Keep its data,
-outputs, and changes isolated under `hqq_confidence/`; do not change the four
-legacy scripts when working on it.
+## Choose the analysis first
 
-## Layout
+- Legacy accuracy-ratio work: read `legacy_hqq/README.md`. Its baseline is exact checkpoint-and-seed FP32. The four scripts are inside `legacy_hqq/`.
+- Dataset ranking stability: read `dataset_robustness/README.md`. It consumes a fixed, baseline-matched legacy summary in its own `data/upstream/`.
+- FGIR / Ultra-FGIR contrasts: read `granularity_robustness/README.md`. Its group mapping is in `data/source/`.
+- Matched-sample confidence: read `hqq_confidence/README.md`. Its baseline is matched AMP unquantized, with separate data and outputs. Keep its analysis changes inside that module.
+- Five-dataset feature geometry: read `five_dataset_features/README.md`. Its full inference arrays are large and may live in an external input root during the remaining layout migration.
 
-```text
-quant_analysis/
-|-- download_save_wandb_data.py       # Download finished TiT legacy HQQ runs
-|-- summarize_quant.py                # Validate, baseline-match, summarize, XLSX export
-|-- corr_quant.py                     # Accuracy-ratio statistics and inference
-|-- plot_quant_acc_bit_group.py       # Heatmaps, line plots, and factor figures
-|-- requirements.txt
-|-- tests/                            # Legacy serial-independent regression tests
-|-- hqq_confidence/                    # Parallel artifact/confidence workflow
-|   `-- README.md                      # Its CLI, schemas, metrics, and tests
-|-- data/
-|   |-- backbones_quant.csv            # Downloaded raw legacy HQQ schema
-`-- results_all/quant/
-    |-- quant_summary.csv              # Input to corr_quant.py
-    |-- completeness.csv               # Observed-condition validation
-    |-- configuration_quality.csv      # Fixed-config validation
-    |-- quant_<dataset>.xlsx           # One accuracy workbook per dataset
-    |-- corr/                          # Statistical tables, Markdown, model metadata
-    `-- plots/                         # All generated PNG figures
-```
+## Work sequence
 
-Generated files under `results_all/quant/` are reproducible outputs. Do not
-edit them manually; rerun their owning stage instead.
+1. Inspect `git status` and the relevant module README. Preserve existing uncommitted work and archived outputs.
+2. Change the owning module and its tests. Give every new input a recorded source and SHA-256. Keep stage output inside the owning module.
+3. Run its tests in `opencode_env`, then run the changed downstream stages against existing local inputs. Verify the saved artifacts using the module's verifier where available.
+4. Update the module README and the root index when commands or paths change.
 
+<<<<<<< HEAD
+`legacy_hqq/run.py` and `hqq_confidence/run.py` expose `acquire → prepare → analyze → plot`. Dataset and granularity robustness currently combine calculation and plotting; their split is recorded in `docs/repository_layout_plan.md`. Do not manually edit generated CSV, XLSX, Markdown or PNG outputs; rerun their owning stage. W&B downloading is only needed when local inputs are missing or an explicit refresh is requested.
+=======
 ## Environment
 
 Operational inference data and feature-analysis results reside on nano4, not
@@ -174,3 +158,4 @@ CSV before downloading new WandB data. Confirm that:
 4. `results_all/quant/corr/` contains no PNG files.
 5. `results_all/quant/plots/` contains the overview, heatmaps, line plots, and
    factor-contribution plot.
+>>>>>>> 8dea61bfc1447b4788acbe69d706d79f78a728bb

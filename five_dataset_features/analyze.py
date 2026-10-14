@@ -16,6 +16,9 @@ from pathlib import Path
 
 import numpy as np
 
+from .analysis_snapshot import (ANALYSIS_CODE, SNAPSHOT_FILE,
+                                record_dataset, record_report, sha256,
+                                source_identity, verify_dataset, verify_report)
 from .metrics import (centered_linear_cka, class_equal_cosine_distances,
                       norm_quantiles, pca_fit, pca_project, prediction_metrics,
                       regularized_h_score, spearman_description)
@@ -33,14 +36,6 @@ def grid():
             result += [stem, f'{stem}_a8', f'{stem}_a8_qkv',
                        f'{stem}_a4', f'{stem}_a4_qkv']
     return result
-
-
-def sha256(path):
-    digest = hashlib.sha256()
-    with open(path, 'rb') as stream:
-        for block in iter(lambda: stream.read(4 * 1024 * 1024), b''):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def read_csv(path):
@@ -163,6 +158,7 @@ def make_figures(out, dataset, layers, summary, coords, fp_rows, predictions, ex
 
 
 def analyze_dataset(root, dataset):
+    initial_sources = source_identity(root, dataset, grid())
     meta, arrays, predictions = check_dataset(root, dataset)
     output = root / 'analysis' / dataset
     output.mkdir(parents=True, exist_ok=True)
@@ -219,6 +215,7 @@ def analyze_dataset(root, dataset):
                                'absolute_storage_delta': None if full is None or rounded is None else abs(full - rounded)})
     write_csv(output / 'precision_probe.csv', probe_rows)
     make_figures(output, dataset, layers, summary, coords, fp_rows, predictions, explained, labels)
+    record_dataset(root, dataset, grid(), initial_sources)
     return summary
 
 
@@ -226,6 +223,7 @@ def aggregate_report(root):
     out = root / 'analysis'
     summaries, indicators = [], []
     for dataset in DATASETS:
+        verify_dataset(root, dataset, grid())
         summaries.extend(read_csv(out / dataset / 'summary.csv'))
         indicators.append(json.loads((out / dataset / 'fp_indicators.json').read_text(encoding='utf-8')))
     write_csv(out / 'all_conditions.csv', summaries)
@@ -264,12 +262,12 @@ def aggregate_report(root):
               '- `<dataset>/fp_pca.npz`: FP-only PCA basis; all condition coordinates share this projection.', '',
               'Undefined values remain empty in CSV, including relative loss at zero FP accuracy and R without swaps.', '']
     (out / 'REPORT.md').write_text('\n'.join(report), encoding='utf-8')
-    version_files = [Path(__file__), Path(__file__).with_name('metrics.py'),
-                     Path(__file__).with_name('smoke.py')]
+    version_files = [Path(__file__).with_name(name) for name in ANALYSIS_CODE]
     (out / 'analysis_version.json').write_text(json.dumps(
         {path.name: sha256(path) for path in version_files}, indent=2) + '\n',
         encoding='utf-8')
     make_cross_scatter(out, indicators, summaries, scopes)
+    record_report(root, DATASETS, grid())
 
 
 def make_cross_scatter(out, indicators, summaries, scopes):
@@ -333,12 +331,17 @@ def checked_exemplars(root, dataset, meta):
 
 
 def package(root):
+    verify_report(root, DATASETS, grid())
     out = root / 'analysis'
+<<<<<<< HEAD
+=======
     if not (out / 'REPORT.md').is_file():
         raise RuntimeError('Run report after all selected dataset analyses')
+>>>>>>> 8dea61bfc1447b4788acbe69d706d79f78a728bb
     stage = Path(tempfile.mkdtemp(prefix='.download-package-', dir=out))
     try:
-        for name in ('REPORT.md', 'analysis_version.json', 'all_conditions.csv', 'fp_indicators.csv',
+        for name in ('REPORT.md', 'analysis_version.json', SNAPSHOT_FILE,
+                     'all_conditions.csv', 'fp_indicators.csv',
                      'descriptive_spearman.csv', 'fp_predictors_vs_loss.png'):
             shutil.copy2(out / name, stage / name)
         for dataset in DATASETS:
@@ -347,7 +350,7 @@ def package(root):
             dest = stage / dataset
             dest.mkdir()
             for name in ('summary.csv', 'layer_metrics.csv', 'precision_probe.csv',
-                         'fp_indicators.json', 'cka_heatmap.png', 'cka_curves.png',
+                         'fp_indicators.json', SNAPSHOT_FILE, 'cka_heatmap.png', 'cka_curves.png',
                          'pca_distribution_correct_swap.png', 'activation_transition.png'):
                 shutil.copy2(source / name, dest / name)
             shutil.copy2(root / dataset / 'dataset.json', dest / 'dataset.json')

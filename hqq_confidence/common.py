@@ -9,7 +9,7 @@ import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
-PREPARED_DIR = os.path.join(BASE_DIR, 'results', 'prepared')
+PREPARED_DIR = os.path.join(BASE_DIR, 'data', 'processed', 'main')
 STATS_DIR = os.path.join(BASE_DIR, 'results', 'stats')
 PLOTS_DIR = os.path.join(BASE_DIR, 'results', 'plots')
 HQQ_NBITS = (1, 1.58, 2, 3, 4, 8)

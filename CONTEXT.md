@@ -79,3 +79,7 @@ _Avoid_: A single margin-to-accuracy or OECE-to-accuracy mechanism
 **Exploratory dataset quantization difficulty**:
 The mean within-condition percentile rank of relative accuracy loss across 3-bit and 4-bit HQQ with group sizes 8 and 128. Median relative accuracy loss is reported as a secondary effect-size outcome; the construct is valid as a common difficulty score only when condition rankings are sufficiently concordant.
 _Avoid_: Universal dataset difficulty, causal dataset effect
+
+**Feature-analysis snapshot**:
+The five dataset-model feature analyses and their aggregate report when each is traceable to the same recorded inference artifacts and analysis rules. A result assembled from different input or analysis versions is not one snapshot.
+_Avoid_: Treating a ZIP file alone as evidence that its contents came from one analysis run

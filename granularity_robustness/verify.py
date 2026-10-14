@@ -102,6 +102,5 @@ def verify(root: Path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results-dir", type=Path,
-                        default=Path(__file__).resolve().parents[1]
-                        / "results_all/granularity_robustness")
+                        default=Path(__file__).resolve().parent / "results/main")
     print(json.dumps(verify(parser.parse_args().results_dir.resolve()), indent=2))

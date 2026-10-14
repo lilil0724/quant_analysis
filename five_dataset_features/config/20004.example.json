@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "run_id": "20004",
+  "input_root": "data/20004",
+  "output_root": "five_dataset_features/results/20004",
+  "expected_dataset_count": 16,
+  "source_format": "tgda_manifest_v1",
+  "baseline_condition": "fp",
+  "primary_condition": null,
+  "sensitivity_conditions": [],
+  "conditions": null,
+  "group_mapping_file": null,
+  "feature_shape": null,
+  "position_names": null,
+  "chunk_size": 1024,
+  "resampling_seed": 100,
+  "bootstrap_repeats": 2000,
+  "permutation_repeats": 9999,
+  "cka_sampling_repeats": 30,
+  "cka_sampling_n_max": 512,
+  "correlation_equivalence_bound": null,
+  "division_epsilon": 1e-8
+}

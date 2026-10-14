@@ -15,7 +15,7 @@ import pandas as pd
 import seaborn as sns
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 GROUPS = ("FGIR", "Ultra-FGIR")
 KEY = ["dataset_name", "model_name", "ckpt_kind", "hqq_nbits", "hqq_group_size"]
 STRATUM = ["model_name", "ckpt_kind", "hqq_group_size"]
@@ -668,11 +668,11 @@ def run(input_file: Path, mapping_file: Path, output: Path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-file", type=Path,
-                        default=ROOT / "results_all/dataset_robustness/legacy/quant_summary.csv")
+                        default=ROOT / "data/upstream/quant_summary.csv")
     parser.add_argument("--mapping-file", type=Path,
-                        default=Path(__file__).with_name("dataset_granularity_mapping.csv"))
+                        default=ROOT / "data/source/dataset_granularity_mapping.csv")
     parser.add_argument("--results-dir", type=Path,
-                        default=ROOT / "results_all/granularity_robustness")
+                        default=ROOT / "results/main")
     args = parser.parse_args()
     config, manifest = run(args.input_file.resolve(), args.mapping_file.resolve(),
                            args.results_dir.resolve())

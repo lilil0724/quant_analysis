@@ -17,8 +17,8 @@ import pandas as pd
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results_all', 'quant')
-DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'quant_summary.csv')
+DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results', 'main', 'summary')
+DEFAULT_OUTPUT = os.path.join(BASE_DIR, 'data', 'processed', 'main', 'quant_summary.csv')
 CKPT_PATTERN = re.compile(r'/(?:ckpt/)?(cal|ft|fz)(?:_ckpts)?/', re.IGNORECASE)
 IDENTITY_COLUMNS = ['dataset_name', 'model_name', 'ckpt_path', 'seed_key']
 CONTEXT_COLUMNS = ['dataset_name', 'model_name', 'ckpt_path', 'ckpt_kind']
@@ -90,7 +90,7 @@ def highlight_top_k(series, largest=True, k=5, color='lightgreen'):
 def parse_args():
     parser = argparse.ArgumentParser(description='Summarize HQQ accuracy against exact checkpoint-and-seed FP32 baselines.')
     parser.add_argument(
-        '--input-file', default=os.path.join(BASE_DIR, 'data', 'backbones_quant.csv'),
+        '--input-file', default=os.path.join(BASE_DIR, 'data', 'raw', 'backbones_quant.csv'),
         help='full path of the downloaded HQQ CSV')
     parser.add_argument(
         '--output-file', default=DEFAULT_OUTPUT,

@@ -29,18 +29,14 @@ modify the four legacy scripts.
 
 ## Reproduce
 
-Use `opencode_env` from the repository root. All outputs below are isolated from
-the existing `results_all/quant` snapshots; downloading is not required.
+Use `opencode_env` from the repository root. The fixed upstream summary and
+legacy validation snapshot are in `dataset_robustness/data/upstream/legacy/`.
+Downloading is not required.
 
 ```powershell
-conda activate opencode_env
-python summarize_quant.py --input-file data/backbones_quant.csv --output-file results_all/dataset_robustness/legacy/quant_summary.csv --results-dir results_all/dataset_robustness/legacy
-python corr_quant.py --input-file results_all/dataset_robustness/legacy/quant_summary.csv --output-file results_all/dataset_robustness/legacy/corr/factor_ablation_accuracy.csv --results-dir results_all/dataset_robustness/legacy/corr
-python plot_quant_acc_bit_group.py --input-file results_all/dataset_robustness/legacy/corr/prepared_accuracy_cells.csv --corr-dir results_all/dataset_robustness/legacy/corr --ablation-file results_all/dataset_robustness/legacy/corr/factor_ablation_accuracy.csv --results-dir results_all/dataset_robustness/legacy/plots --output-file results_all/dataset_robustness/legacy/plots/overview.png
-python -m dataset_robustness.analyze
-python -m unittest discover -s tests
-python -m unittest dataset_robustness.test_analysis
-python -m dataset_robustness.verify
+conda run -n opencode_env python -m dataset_robustness.analyze
+conda run -n opencode_env python -m unittest discover -s dataset_robustness/tests -v
+conda run -n opencode_env python -m dataset_robustness.verify
 ```
 
 The analyzer accepts `--input-file` and `--results-dir`. The explicit
@@ -49,7 +45,30 @@ changing report interpretation. It reads `configuration_quality.csv` beside the
 summary when available. Source summary and analyzer SHA-256 hashes are recorded
 in `run_config.json`.
 
-Start with `results_all/dataset_robustness/report.md`. The report links the main
+## PCA of dataset loss profiles
+
+After the main analysis and its verifier pass, run the exploratory PCA stage:
+
+```powershell
+conda run -n opencode_env python -m dataset_robustness.pca_profiles
+conda run -n opencode_env python -m dataset_robustness.verify_pca
+```
+
+Start with `dataset_robustness/results/pca_phase1/report.md`. Each fit uses one
+dataset per row and the complete bit × group grid per column within a fixed
+model/checkpoint-kind context. The primary outcome is `1 - accuracy_ratio` for
+2/3/4-bit conditions; separate fits use absolute accuracy drop and 3/4-bit
+conditions. The script uses NumPy SVD, so no scikit-learn installation is
+required. Each condition is centered across datasets, with no variance scaling
+or missing-value imputation. `coverage.csv` records cohort inclusion.
+
+The output contains PCA scores, loadings, explained variance, a full-profile
+distance sensitivity table, plots, source/code/output SHA-256 hashes, and a
+report. Different PCA fits do not share coordinate axes. Quantization settings
+are repeated observations of dataset-specific checkpoints, not independent
+training seeds; PCA is descriptive and does not identify a dataset-only effect.
+
+Start with `dataset_robustness/results/main/report.md`. The report links the main
 figures; `plots_manifest.csv` maps all plots to source tables. CSVs preserve the
 full per-condition results and all pairwise stability comparisons. Reported
 rank summaries are descriptive of equally weighted, observed conditions; their

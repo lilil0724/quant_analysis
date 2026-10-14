@@ -1,187 +1,39 @@
-# HQQ Quantization Analysis
+# Quantization analysis workspace
 
-Reusable four-stage analysis flow for legacy HQQ quantization experiments
-stored in Weights & Biases. The pipeline validates experiment coverage, pairs
-each HQQ result with the correct FP32 baseline, analyzes accuracy retention,
-and produces statistical tables plus PNG figures.
+每個分析各自管理程式、資料與結果。使用 `opencode_env`，從此目錄執行 Python module。
 
-The only primary outcome is:
-
-```text
-accuracy_ratio = hqq_top1 / fp32_top1
-```
-
-Resource, timing, loss, and top-k analyses are intentionally out of scope.
-
-## Pipeline
-
-```text
-W&B TiT runs
-  -> download_save_wandb_data.py
-  -> data/backbones_quant.csv
-  -> summarize_quant.py
-  -> results_all/quant/quant_summary.csv + XLSX workbooks
-  -> corr_quant.py
-  -> results_all/quant/corr/ statistical tables and Markdown
-  -> plot_quant_acc_bit_group.py
-  -> results_all/quant/plots/ PNG figures
-```
-
-| Stage | Script | Purpose |
-|---|---|---|
-| Download | `download_save_wandb_data.py` | Downloads finished legacy HQQ runs from `nycu_pcs/TiT`. |
-| Summarize | `summarize_quant.py` | Observes recorded HQQ conditions, pairs exact FP32 baselines, averages repeated experiments, and exports per-dataset XLSX files. |
-| Correlate | `corr_quant.py` | Calculates correlations, trend/levels models, and delta R2 ablations. |
-| Plot | `plot_quant_acc_bit_group.py` | Generates heatmaps, line plots, factor plots, and coefficient figures as PNG files. |
-
-## Requirements
-
-Use the `opencode_env` Conda environment:
-
-```powershell
-conda activate opencode_env
-pip install -r requirements.txt
-```
-
-Downloading from W&B requires authentication. Set `WANDB_API_KEY` or run:
-
-```powershell
-wandb login
-```
-
-## Quick Start
-
-From the repository root, run the default complete pipeline:
-
-```powershell
-python download_save_wandb_data.py
-python summarize_quant.py
-python corr_quant.py
-python plot_quant_acc_bit_group.py
-```
-
-If `data/backbones_quant.csv` already exists, skip download and run the last
-three commands.
-
-## Baseline Pairing
-
-Each HQQ condition is paired with an FP32 baseline from the same dataset,
-normalized model name, complete checkpoint path, and seed. This prevents
-different checkpoints or seeds from being mixed without relying on serial
-number conventions. A condition with any unmatched seed remains in the summary
-as `baseline_matched=false` and is excluded from correlation and figures.
-
-Checkpoint paths must contain one of:
-
-```text
-/cal_ckpts/
-/ft_ckpts/
-/fz_ckpts/
-/ckpt/cal/
-/ckpt/ft/
-/ckpt/fz/
-```
-
-## Outputs
-
-### Summary
-
-`results_all/quant/` contains:
-
-- `quant_summary.csv`: one row per aggregated HQQ experiment cell.
-- `completeness.csv`: observed nbits, group sizes, seed coverage, and baseline status per checkpoint context.
-- `configuration_quality.csv`: checks that non-factor HQQ settings are fixed.
-- `quant_<dataset>.xlsx`: accuracy-only workbook for each dataset.
-
-Repeated runs with the same dataset, model, checkpoint path, seed, nbits, and
-group size are combined even when they came from different serials. HQQ and
-FP32 values are paired within each seed before the summary aggregates seeds.
-The summary retains source serial lists and counts as provenance, alongside
-median, standard deviation, run count, and seed count.
-
-### Statistics
-
-`results_all/quant/corr/` contains:
-
-- `correlations_accuracy.csv`: global and within-context correlation results.
-- `factor_effects_accuracy_trend.csv`: continuous trend-model coefficients.
-- `factor_effects_accuracy_levels.csv`: categorical-level model coefficients.
-- `factor_ablation_accuracy.csv`: legacy descriptive factor contribution,
-  measured as delta R2.
-- `data_quality.md` and `report.md`: concise analysis reports.
-
-The correlation, trend/levels, and delta R2 ablation analysis are descriptive
-association methods, not causal claims.
-
-### Figures
-
-`results_all/quant/plots/` contains PNG figures only, including:
-
-- `quant_accuracy_overview.png`
-- checkpoint, dataset, and model heatmaps
-- nbits/group-size and nbits/checkpoint interaction lines
-- per-checkpoint Top-1 accuracy lines with 90% FP32 references
-- factor-contribution and factor-relationship plots
-
-## Reusable CLI
-
-Every stage has defaults that connect to the next stage, but can be redirected
-with full paths:
-
-| Stage | Primary input | Primary output | Supporting output directory |
+| 分析 | 入口與說明 | 資料 | 結果 |
 |---|---|---|---|
-| Download | W&B | `--output-file` raw CSV | `--results-dir` |
-| Summarize | `--input-file` raw CSV | `--output-file` summary CSV | `--results-dir` |
-| Correlate | `--input-file` summary CSV | `--output-file` model CSV | `--results-dir` |
-| Plot | `--input-file` prepared cells CSV | `--output-file` overview PNG | `--results-dir` |
+| Legacy HQQ accuracy ratio | [legacy_hqq/README.md](legacy_hqq/README.md) | `legacy_hqq/data/` | `legacy_hqq/results/` |
+| Dataset robustness | [dataset_robustness/README.md](dataset_robustness/README.md) | `dataset_robustness/data/` | `dataset_robustness/results/` |
+| Granularity robustness | [granularity_robustness/README.md](granularity_robustness/README.md) | `granularity_robustness/data/` | `granularity_robustness/results/` |
+| Matched-sample HQQ confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | `hqq_confidence/data/` | `hqq_confidence/results/` |
+| Five-dataset features | [five_dataset_features/README.md](five_dataset_features/README.md) | `five_dataset_features/data/` (current local copy) | `five_dataset_features/analysis/` |
+| 16-dataset all-layer features (20004) | [five_dataset_features/README.md](five_dataset_features/README.md#16-dataset-all-layer-workflow-20004) | `data/20004/` | `five_dataset_features/results/20004/` |
 
-`--serials` accepts explicit integer lists only and is optional. It narrows the
-raw rows considered by summary, or selects rows whose HQQ provenance contains a
-serial in correlation. When subsetting summary input, include any exact
-checkpoint-and-seed FP32 baseline rows needed for matching.
+## Common flow
 
-Example with custom input and output paths:
-
-```powershell
-python summarize_quant.py `
-  --input-file D:\runs\raw.csv `
-  --output-file D:\analysis\summary\quant_summary.csv `
-  --results-dir D:\analysis\summary
-
-python corr_quant.py `
-  --input-file D:\analysis\summary\quant_summary.csv `
-  --output-file D:\analysis\corr\factor_ablation_accuracy.csv `
-  --results-dir D:\analysis\corr
-
-python plot_quant_acc_bit_group.py `
-  --input-file D:\analysis\corr\prepared_accuracy_cells.csv `
-  --ablation-file D:\analysis\corr\factor_ablation_accuracy.csv `
-  --corr-dir D:\analysis\corr `
-  --output-file D:\analysis\plots\overview.png `
-  --results-dir D:\analysis\plots
+```text
+acquire (read/download) → prepare (validate/pair) → analyze (compute/report) → plot
 ```
 
-Use `--help` on any script for the full argument list:
+The legacy and HQQ confidence workflows now have stage entry points:
 
 ```powershell
-python summarize_quant.py --help
+conda run -n opencode_env python -m legacy_hqq.run --stage all --run-name main
+conda run -n opencode_env python -m hqq_confidence.run --stage all --run-name main
 ```
 
-## Parallel Confidence Workflow
+Both reuse existing raw data by default. A new W&B download requires missing input or an explicit `--refresh`. Dataset and granularity robustness currently retain their existing combined analysis command; their data and results have been separated, and the stage split is the next migration step. The five-dataset feature geometry test reads the current local copy under `five_dataset_features/data/` and writes separate outputs under `five_dataset_features/analysis/geometry_robustness/`.
 
-Matched per-sample confidence and HQQ fragility analysis lives entirely under
-[`hqq_confidence/`](hqq_confidence/README.md). It has its own four-stage CLI,
-cache, prepared data, statistics, plots, and CPU-only tests. The baseline in
-that workflow is matched-AMP unquantized inference, not FP32; the legacy
-accuracy-ratio workflow documented above is unchanged.
+The five-dataset inter/intra-class distance test uses the verified saved aggregate snapshot: `conda run -n opencode_env python -m five_dataset_features.distance_hypothesis`. Its tables and slide figures are in `five_dataset_features/analysis/distance_hypothesis/`.
 
-## Verification
+Quantized inter/intra-class distances for all 100 quantized dataset-condition pairs run with `conda run -n opencode_env python -m five_dataset_features.quantized_class_distance`. The final CLS distances, matched FP changes, verification hashes, report, and PNG/SVG figures are in `five_dataset_features/analysis/quantized_class_distance/`.
 
-After changing the code, rerun the downstream stages against the checked-in raw
-CSV and confirm:
+FP-to-quantized distance drop fractions versus accuracy run with `conda run -n opencode_env python -m five_dataset_features.distance_accuracy`. Matched ratios, fixed-condition correlations, within-dataset A4-exclusion checks, reports, and figures are in `five_dataset_features/analysis/distance_accuracy/`.
 
-1. `completeness.csv` reports observed conditions and every unmatched baseline.
-2. `configuration_quality.csv` reports unexpected non-fixed setup values.
-3. A workbook exists for every dataset.
-4. `results_all/quant/corr/` contains no PNG files.
-5. `results_all/quant/plots/` contains all expected PNG figures.
+The exploratory dataset loss-profile PCA runs with `conda run -n opencode_env python -m dataset_robustness.pca_profiles`. Its report and figures are in `dataset_robustness/results/pca_phase1/`.
+
+The paired model-feature PCA runs with `conda run -n opencode_env python -m five_dataset_features.paired_feature_pca`, followed by `conda run -n opencode_env python -m five_dataset_features.verify_paired_feature_pca`. It compares full-test final CLS features in each dataset's FP PCA basis and writes its report, sample table, and figures to `five_dataset_features/analysis/paired_feature_pca/`.
+
+See [docs/repository_layout_plan.md](docs/repository_layout_plan.md) for the target layout and remaining steps. Archived results from the old `results_all/` layout are kept in each analysis's `results/archived_*` directories. They are snapshots, while `results/main/` is the newly generated run.

@@ -12,15 +12,15 @@ import seaborn as sns
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CORR_DIR = os.path.join(BASE_DIR, 'results_all', 'quant', 'corr')
-DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results_all', 'quant', 'plots')
+DEFAULT_CORR_DIR = os.path.join(BASE_DIR, 'results', 'main', 'corr')
+DEFAULT_RESULTS_DIR = os.path.join(BASE_DIR, 'results', 'main', 'plots')
 DEFAULT_OUTPUT = os.path.join(DEFAULT_RESULTS_DIR, 'quant_accuracy_overview.png')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Create HQQ accuracy PNG figures.')
     parser.add_argument(
-        '--input-file', default=os.path.join(DEFAULT_CORR_DIR, 'prepared_accuracy_cells.csv'),
+        '--input-file', default=os.path.join(BASE_DIR, 'data', 'processed', 'main', 'prepared_accuracy_cells.csv'),
         help='full path of prepared_accuracy_cells.csv produced by corr_quant.py')
     parser.add_argument(
         '--output-file', default=DEFAULT_OUTPUT,

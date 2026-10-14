@@ -12,13 +12,19 @@ the same AMP FP16 setting as HQQ. It is not an FP32 baseline.
 Run from the repository root with the `opencode_env` Conda environment:
 
 ```powershell
-python -m hqq_confidence.download_artifacts
-python -m hqq_confidence.prepare_pairs
-python -m hqq_confidence.analyze_fragility
-python -m hqq_confidence.plot_fragility
-python -m hqq_confidence.analyze_overconfidence
-python -m hqq_confidence.analyze_dataset_difficulty
-python -m hqq_confidence.analyze_sample_margin_mechanism
+conda run -n opencode_env python -m hqq_confidence.run --stage all --run-name main
+```
+
+The stage runner reuses `hqq_confidence/data/selected_runs.csv` when present and
+runs the download, prepare, fragility statistics and plot stages in order. Use
+`--stage` to run one stage; `--refresh` explicitly downloads again. The
+additional overconfidence, dataset-difficulty and sample-margin analyses retain
+their separate commands:
+
+```powershell
+conda run -n opencode_env python -m hqq_confidence.analyze_overconfidence
+conda run -n opencode_env python -m hqq_confidence.analyze_dataset_difficulty
+conda run -n opencode_env python -m hqq_confidence.analyze_sample_margin_mechanism
 ```
 
 The defaults connect these stages:
@@ -26,7 +32,7 @@ The defaults connect these stages:
 | Stage | Default input | Default output |
 |---|---|---|
 | download | finished `nycu_pcs/TiT` W&B runs | `hqq_confidence/data/selected_runs.csv` and `data/artifacts/<run-id>/<version>/` |
-| prepare | selected-runs manifest | `hqq_confidence/results/prepared/` |
+| prepare | selected-runs manifest | `hqq_confidence/data/processed/main/` |
 | analyze | prepared summaries and matched pairs | `hqq_confidence/results/stats/` |
 | plot | prepared and statistical tables | `hqq_confidence/results/plots/` |
 
@@ -241,6 +247,6 @@ $env:MPLCONFIGDIR = Join-Path $env:TEMP 'quant-analysis-mpl'
 python -m unittest discover -s hqq_confidence/tests -p "test_*.py"
 ```
 
-Run the legacy scripts separately against `data/backbones_quant.csv` when
+Run the legacy scripts separately against `legacy_hqq/data/raw/backbones_quant.csv` when
 changing shared repository dependencies. This workflow does not import or
 modify any of the four legacy stages.
