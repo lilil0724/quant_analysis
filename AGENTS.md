@@ -17,6 +17,34 @@ This repository holds independent HQQ analyses. Each analysis owns its code, `da
 3. Run its tests in `opencode_env`, then run the changed downstream stages against existing local inputs. Verify the saved artifacts using the module's verifier where available.
 4. Update the module README and the root index when commands or paths change.
 
+## Required Slurm script header
+
+Every new or modified server Bash script intended for `sbatch` submission must
+start with the following header, before any executable commands. Keep
+`--partition=8gpus` and `--account=MST114495` fixed. Fill every other field with
+a concrete value appropriate to the job; the empty values below are template
+placeholders. This requirement applies to Slurm launchers, including CPU-based
+analysis jobs; Python modules use their Bash launcher for these directives.
+
+```bash
+#!/usr/bin/env bash
+#SBATCH --job-name=
+#SBATCH --partition=8gpus
+#SBATCH --account=MST114495
+#SBATCH --nodes=
+#SBATCH --gpus-per-node=
+#SBATCH --cpus-per-task=
+#SBATCH --mem=
+#SBATCH --time=
+#SBATCH --output=
+#SBATCH --error=
+```
+
+Before delivering a script, verify that all listed directives are present,
+all values are filled, and output/error filenames distinguish jobs (for example,
+`analysis_%j.out` and `analysis_%j.err`). Additional Slurm directives may be
+included as required by the job.
+
 <<<<<<< HEAD
 `legacy_hqq/run.py` and `hqq_confidence/run.py` expose `acquire → prepare → analyze → plot`. Dataset and granularity robustness currently combine calculation and plotting; their split is recorded in `docs/repository_layout_plan.md`. Do not manually edit generated CSV, XLSX, Markdown or PNG outputs; rerun their owning stage. W&B downloading is only needed when local inputs are missing or an explicit refresh is requested.
 =======

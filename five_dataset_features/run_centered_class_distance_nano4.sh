@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=centered_distance
-#SBATCH --partition=normal
+#SBATCH --partition=8gpus
 #SBATCH --account=MST114495
 #SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G

@@ -98,7 +98,9 @@ sbatch five_dataset_features/run_centered_class_distance_nano4.sh \
   --output-root five_dataset_features/results/20004/centered_fp_distance_pilot
 ```
 
-The launcher requests 4 CPU cores, 8 GB RAM and 6 hours in `normal`, with no GPU.
+The launcher requests one node, one GPU, 4 CPU cores, 8 GB RAM and 6 hours in
+`8gpus`, with account `MST114495`. NumPy distance computation still uses CPUs;
+the GPU allocation follows the required Slurm launcher header.
 Override scheduling resources through `sbatch` if required by the actual cluster.
 It defaults to `$HOME/.conda/envs/tgda/bin/python`, invoking that executable
 directly. Use another existing NumPy environment with:
