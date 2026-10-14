@@ -9,6 +9,7 @@
 | Granularity robustness | [granularity_robustness/README.md](granularity_robustness/README.md) | `granularity_robustness/data/` | `granularity_robustness/results/` |
 | Matched-sample HQQ confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | `hqq_confidence/data/` | `hqq_confidence/results/` |
 | Five-dataset features | [five_dataset_features/README.md](five_dataset_features/README.md) | `five_dataset_features/data/` (current local copy) | `five_dataset_features/analysis/` |
+| Centered FP backbone class distances (20004) | [five_dataset_features/CENTERED_CLASS_DISTANCE.md](five_dataset_features/CENTERED_CLASS_DISTANCE.md) | external paired FP/W3 raw exports | `five_dataset_features/results/20004/centered_fp_distance_cal/` (documented CAL submission) |
 | 16-dataset all-layer features (20004) | [five_dataset_features/README.md](five_dataset_features/README.md#16-dataset-all-layer-workflow-20004) | `data/20004/` | `five_dataset_features/results/20004/` |
 
 ## Common flow

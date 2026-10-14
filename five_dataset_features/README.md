@@ -1,5 +1,11 @@
 # nano4 paired FP/W3 feature analysis
 
+For global-mean-centered FP backbone class distances from existing Serial 20004
+exports, use `python -m five_dataset_features.centered_class_distance` or the CPU
+launcher `run_centered_class_distance_nano4.sh`. See
+[CENTERED_CLASS_DISTANCE.md](CENTERED_CLASS_DISTANCE.md) for input requirements,
+CAL-only/full-matrix submission commands, metric definitions and output paths.
+
 The current `run_nano4.sh` analyzes TGDA's existing `w3_g128_analysis` exports on
 nano4. It reads the source manifest and per-layer FP/W3 arrays through
 `five_dataset_features.paired`, reusing the established feature metrics. It does
