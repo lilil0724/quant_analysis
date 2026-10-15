@@ -6,3 +6,4 @@ seaborn
 openpyxl
 jinja2
 scipy
+scikit-learn

@@ -22,12 +22,16 @@ Usage: sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 [options]
   --serial N          Required W3/g128 source serial.
   --input-root PATH   Parent w3_g128_analysis directory; default <repo>/../../data/w3_g128_analysis.
                       A selected serial directory is accepted too.
-  --output-root PATH  Default: <input-root>/<serial>/analysis/tsne.
+  --output-root PATH  Default: <input-root>/<serial>/analysis/tsne_classes (classes mode).
   --stage NAME        run (default) or preflight (no outputs).
   --datasets CSV      Default: all 16 datasets.
   --models CSV        Default: all 3 models.
   --modes CSV         Default: ft,fz,cal.
-  --max-samples N     Paired sample budget per plot, default 2000.
+  --sampling NAME     classes (default): select classes, keep all their samples;
+                      samples: legacy paired point budget, output defaults to analysis/tsne.
+  --class-fraction X  Class fraction, default 0.1; ceil then clamp to 5-20 classes,
+                      or all available classes if fewer than 5 exist.
+  --max-samples N     Legacy samples-mode budget, default 2000; ignored in classes mode.
   --perplexity X      Requested t-SNE perplexity, default 30.
   --iterations N      t-SNE iterations, default 750 (minimum 250).
   --seed N            Sampling/embedding seed, default 100.
@@ -61,6 +65,8 @@ STAGE=run
 INPUT_ROOT="${ANALYSIS_INPUT_ROOT:-}"
 OUTPUT_ROOT="${ANALYSIS_OUTPUT_ROOT:-}"
 MAX_SAMPLES=2000
+SAMPLING=classes
+CLASS_FRACTION=0.1
 PERPLEXITY=30
 ITERATIONS=750
 SEED=100
@@ -75,7 +81,7 @@ ALLOWED_MODES=" ${MODES[*]} "
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --serial|--input-root|--output-root|--stage|--datasets|--models|--modes|--max-samples|--perplexity|--iterations|--seed)
+        --serial|--input-root|--output-root|--stage|--datasets|--models|--modes|--sampling|--class-fraction|--max-samples|--perplexity|--iterations|--seed)
             require_value "$@"
             case "$1" in
                 --serial) SERIAL="$2" ;;
@@ -86,6 +92,8 @@ while [[ $# -gt 0 ]]; do
                 --models) read_selection "$1" "$2"; IFS=',' read -r -a MODELS <<< "$2" ;;
                 --modes) read_selection "$1" "$2"; IFS=',' read -r -a MODES <<< "$2" ;;
                 --max-samples) MAX_SAMPLES="$2" ;;
+                --sampling) SAMPLING="$2" ;;
+                --class-fraction) CLASS_FRACTION="$2" ;;
                 --perplexity) PERPLEXITY="$2" ;;
                 --iterations) ITERATIONS="$2" ;;
                 --seed) SEED="$2" ;;
@@ -100,6 +108,7 @@ done
 
 [[ "$SERIAL" =~ ^[1-9][0-9]*$ ]] || fail 'Specify --serial N'
 [[ "$STAGE" == run || "$STAGE" == preflight ]] || fail 'Stage must be run or preflight'
+[[ "$SAMPLING" == classes || "$SAMPLING" == samples ]] || fail 'Sampling must be classes or samples'
 [[ "$MAX_SAMPLES" =~ ^[1-9][0-9]*$ && "$MAX_SAMPLES" -ge 2 ]] || fail 'max-samples must be >= 2'
 [[ "$ITERATIONS" =~ ^[1-9][0-9]*$ && "$ITERATIONS" -ge 250 ]] || fail 'iterations must be >= 250'
 [[ "$SEED" =~ ^[0-9]+$ ]] || fail 'seed must be nonnegative'
@@ -114,7 +123,9 @@ INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
 INPUT_ROOT="${INPUT_ROOT%/}"
 if [[ "$INPUT_ROOT" == */"$SERIAL" ]]; then INPUT_ROOT="${INPUT_ROOT%/*}"; fi
-OUTPUT_ROOT="${OUTPUT_ROOT:-$INPUT_ROOT/$SERIAL/analysis/tsne}"
+OUTPUT_NAME=tsne_classes
+if [[ "$SAMPLING" == samples ]]; then OUTPUT_NAME=tsne; fi
+OUTPUT_ROOT="${OUTPUT_ROOT:-$INPUT_ROOT/$SERIAL/analysis/$OUTPUT_NAME}"
 if [[ "$OUTPUT_ROOT" != /* ]]; then OUTPUT_ROOT="$PWD/$OUTPUT_ROOT"; fi
 ANALYSIS_CONDA_ENV="${ANALYSIS_CONDA_ENV:-tgda}"
 ANALYSIS_PYTHON="${ANALYSIS_PYTHON:-${HOME}/.conda/envs/${ANALYSIS_CONDA_ENV}/bin/python}"
@@ -126,6 +137,7 @@ cd "$REPO"
 COMMAND=("$ANALYSIS_PYTHON" -B -u -m five_dataset_features.tsne_paired "$STAGE"
     --input-root "$INPUT_ROOT" --serial "$SERIAL" --output-root "$OUTPUT_ROOT"
     --datasets "${DATASETS[@]}" --models "${MODELS[@]}" --modes "${MODES[@]}"
+    --sampling "$SAMPLING" --class-fraction "$CLASS_FRACTION"
     --max-samples "$MAX_SAMPLES" --perplexity "$PERPLEXITY"
     --iterations "$ITERATIONS" --seed "$SEED")
 if (( OVERWRITE )); then COMMAND+=(--overwrite); fi

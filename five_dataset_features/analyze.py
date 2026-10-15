@@ -333,11 +333,8 @@ def checked_exemplars(root, dataset, meta):
 def package(root):
     verify_report(root, DATASETS, grid())
     out = root / 'analysis'
-<<<<<<< HEAD
-=======
     if not (out / 'REPORT.md').is_file():
         raise RuntimeError('Run report after all selected dataset analyses')
->>>>>>> 8dea61bfc1447b4788acbe69d706d79f78a728bb
     stage = Path(tempfile.mkdtemp(prefix='.download-package-', dir=out))
     try:
         for name in ('REPORT.md', 'analysis_version.json', SNAPSHOT_FILE,

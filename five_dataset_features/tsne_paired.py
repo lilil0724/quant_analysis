@@ -2,7 +2,8 @@
 
 Each dataset/model/mode uses the same selected sample rows for FP and W3 and
 fits one joint t-SNE. Coordinates from separately fitted t-SNE runs must not
-be compared. Source arrays are read only; outputs live under analysis/tsne.
+be compared. Class sampling keeps every sample from 10% of classes (5-20
+classes, or all when fewer than 5 exist). Source arrays are read only.
 """
 
 import argparse
@@ -10,6 +11,7 @@ import csv
 import inspect
 import itertools
 import json
+import math
 import os
 from pathlib import Path
 
@@ -19,6 +21,18 @@ from .analyze import DATASETS, sha256
 from .paired import MODELS, MODES, digest
 
 CONDITIONS = ('fp', 'w3_g128')
+
+
+def class_sample_indices(targets, fraction, seed):
+    """Choose classes reproducibly, then retain all their original rows."""
+    labels = np.asarray(targets)
+    if (labels.ndim != 1 or not len(labels) or not np.isfinite(fraction)
+            or not 0 < fraction <= 1):
+        raise ValueError('Expected nonempty 1D labels and class-fraction in (0, 1]')
+    classes = np.unique(labels)
+    count = min(len(classes), 20, max(5, math.ceil(len(classes) * fraction)))
+    selected = np.random.default_rng(seed).choice(classes, size=count, replace=False)
+    return np.flatnonzero(np.isin(labels, selected))
 
 
 def sample_indices(targets, limit, seed):
@@ -176,9 +190,11 @@ def _plot(path, coords, labels, pair, chosen, effective_perplexity):
     colorbar = fig.colorbar(scatter, ax=axes, label='class ID',
                             fraction=.027, pad=.025)
     if discrete:
-        ticks = np.unique(np.linspace(0, len(unique) - 1,
-                                      min(len(unique), 6), dtype=int))
-        colorbar.set_ticks(ticks, labels=[str(unique[i]) for i in ticks])
+        # Every selected class has its own labeled color, including population.
+        _, populations = np.unique(labels, return_counts=True)
+        colorbar.set_ticks(np.arange(len(unique)), labels=[
+            f'{label} (n={population})' for label, population in zip(unique, populations)])
+        colorbar.ax.tick_params(labelsize=7)
     fig.suptitle(f"{pair['dataset']} / {pair['model']} / {pair['mode']}\n"
                  f"{count:,} paired samples of {pair['n']:,}; "
                  f"{len(unique):,} classes shown; perplexity {effective_perplexity:.1f}")
@@ -186,8 +202,14 @@ def _plot(path, coords, labels, pair, chosen, effective_perplexity):
     plt.close(fig)
 
 
-def _render_pair(pair, destination, max_samples, perplexity, iterations, seed, overwrite):
-    params = dict(max_samples=max_samples, perplexity=perplexity,
+def _render_pair(pair, destination, chosen, max_samples, perplexity, iterations,
+                 seed, overwrite, sampling, class_fraction):
+    params = dict(sampling=sampling,
+                  class_fraction=class_fraction if sampling == 'classes' else None,
+                  min_classes=5 if sampling == 'classes' else None,
+                  max_classes=20 if sampling == 'classes' else None,
+                  max_samples=max_samples if sampling == 'samples' else None,
+                  perplexity=perplexity,
                   iterations=iterations, seed=seed, normalization='per-sample L2',
                   fit='joint FP and W3, with shared PCA-50 when width > 50')
     code_sha256 = sha256(Path(__file__))
@@ -208,7 +230,6 @@ def _render_pair(pair, destination, max_samples, perplexity, iterations, seed, o
         raise ValueError(f'Existing t-SNE differs; use --overwrite: {destination}')
     if not overwrite and (plot_path.exists() or csv_path.exists()):
         raise ValueError(f'Incomplete t-SNE output; use --overwrite: {destination}')
-    chosen = sample_indices(pair['targets'], max_samples, seed)
     data = []
     for condition in CONDITIONS:
         arr = np.load(pair['folder'] / condition / 'final.npy', mmap_mode='r',
@@ -225,6 +246,7 @@ def _render_pair(pair, destination, max_samples, perplexity, iterations, seed, o
     csv_tmp = destination / '.coordinates.csv.tmp'
     method_tmp = destination / '.method.json.tmp'
     labels = pair['targets'][chosen]
+    classes, populations = np.unique(labels, return_counts=True)
     _plot(png_tmp, coords, labels, pair, chosen, effective_perplexity)
     with csv_tmp.open('w', encoding='utf-8', newline='') as stream:
         writer = csv.writer(stream)
@@ -237,6 +259,8 @@ def _render_pair(pair, destination, max_samples, perplexity, iterations, seed, o
                 total_samples=pair['n'], selected_samples=len(chosen),
                 total_classes=int(len(np.unique(pair['targets']))),
                 selected_classes=int(len(np.unique(labels))), fit_points=len(coords),
+                selected_class_ids=classes.tolist(),
+                class_sample_counts={str(label): int(n) for label, n in zip(classes, populations)},
                 effective_perplexity=effective_perplexity,
                 pca_components=pca_components, sklearn_version=sklearn_version,
                 parameters=params, code_sha256=code_sha256,
@@ -255,14 +279,16 @@ def _render_pair(pair, destination, max_samples, perplexity, iterations, seed, o
 
 def run(input_root, serial, datasets, models, modes, *, output_root=None,
         max_samples=2000, perplexity=30.0, iterations=750, seed=100,
-        overwrite=False, stage='run'):
+        overwrite=False, stage='run', sampling='classes', class_fraction=.1):
     """Preflight the selected matrix, then generate or resume isolated outputs."""
     if type(serial) is not int or serial <= 0:
         raise ValueError('serial must be a positive integer')
-    if (stage not in ('run', 'preflight') or max_samples < 2
+    if (stage not in ('run', 'preflight') or sampling not in ('classes', 'samples')
+            or (sampling == 'samples' and max_samples < 2)
+            or not np.isfinite(class_fraction) or not 0 < class_fraction <= 1
             or not np.isfinite(perplexity) or perplexity <= 0
             or iterations < 250 or type(seed) is not int or seed < 0):
-        raise ValueError('Invalid stage, max-samples, perplexity, iterations, or seed')
+        raise ValueError('Invalid stage, sampling, class-fraction, max-samples, perplexity, iterations, or seed')
     for values, allowed, label in ((datasets, DATASETS, 'datasets'),
                                    (models, MODELS, 'models'),
                                    (modes, MODES, 'modes')):
@@ -272,8 +298,9 @@ def run(input_root, serial, datasets, models, modes, *, output_root=None,
     if root.name == str(serial):
         root = root.parent
     serial_root = root / str(serial)
+    output_name = 'tsne_classes' if sampling == 'classes' else 'tsne'
     output = (Path(output_root).expanduser() if output_root else
-              serial_root / 'analysis' / 'tsne').resolve()
+              serial_root / 'analysis' / output_name).resolve()
     if (output in (root, serial_root) or _inside(root, output)
             or (_inside(output, root)
                 and not _inside(output, serial_root / 'analysis'))):
@@ -284,13 +311,31 @@ def run(input_root, serial, datasets, models, modes, *, output_root=None,
         if _inside(output, folder.resolve()) or _inside(folder.resolve(), output):
             raise ValueError(f'Output overlaps input pair: {folder}')
         pairs.append(_source_pair(folder, serial, dataset, model, mode))
+    # Select before any output is written, so a bad subset cannot leave a
+    # partially rendered matrix. Class IDs must agree across models/modes.
+    selected_by_dataset = {}
+    for pair in pairs:
+        chosen = (class_sample_indices(pair['targets'], class_fraction, seed)
+                  if sampling == 'classes' else
+                  sample_indices(pair['targets'], max_samples, seed))
+        if len(chosen) < 2:
+            raise ValueError(f'Too few selected samples: {pair["folder"]}')
+        pair['chosen'] = chosen
+        classes = np.unique(pair['targets'][chosen]).tolist()
+        if sampling == 'classes':
+            previous = selected_by_dataset.setdefault(pair['dataset'], classes)
+            if previous != classes:
+                raise ValueError(f'Selected class IDs differ across pairs: {pair["dataset"]}')
+        print(f'SELECTED {pair["dataset"]}/{pair["model"]}/{pair["mode"]}: '
+              f'{len(classes)} classes, {len(chosen)}/{pair["n"]} samples; '
+              f'{2 * len(chosen)} joint fit points', flush=True)
     print(f'PREFLIGHT complete: {len(pairs)} paired exports', flush=True)
     if stage == 'preflight':
         return output
     for pair in pairs:
         destination = output / pair['dataset'] / pair['model'] / pair['mode']
-        _render_pair(pair, destination, max_samples, perplexity, iterations,
-                     seed, overwrite)
+        _render_pair(pair, destination, pair['chosen'], max_samples, perplexity,
+                     iterations, seed, overwrite, sampling, class_fraction)
     return output
 
 
@@ -303,7 +348,12 @@ def main():
     parser.add_argument('--datasets', nargs='+', choices=DATASETS, default=list(DATASETS))
     parser.add_argument('--models', nargs='+', choices=MODELS, default=list(MODELS))
     parser.add_argument('--modes', nargs='+', choices=MODES, default=list(MODES))
-    parser.add_argument('--max-samples', type=int, default=2000)
+    parser.add_argument('--sampling', choices=('classes', 'samples'), default='classes',
+                        help='classes: 10%% of classes (5-20), all their samples; samples: legacy point budget')
+    parser.add_argument('--class-fraction', type=float, default=.1,
+                        help='Fraction of classes before clamping to 5-20 (default .1)')
+    parser.add_argument('--max-samples', type=int, default=2000,
+                        help='Paired point budget for --sampling samples only; ignored in classes mode')
     parser.add_argument('--perplexity', type=float, default=30.0)
     parser.add_argument('--iterations', type=int, default=750)
     parser.add_argument('--seed', type=int, default=100)
@@ -313,7 +363,8 @@ def main():
         run(args.input_root, args.serial, args.datasets, args.models, args.modes,
             output_root=args.output_root, max_samples=args.max_samples,
             perplexity=args.perplexity, iterations=args.iterations,
-            seed=args.seed, overwrite=args.overwrite, stage=args.stage)
+            seed=args.seed, overwrite=args.overwrite, stage=args.stage,
+            sampling=args.sampling, class_fraction=args.class_fraction)
     except (ValueError, OSError, KeyError, TypeError) as error:
         parser.exit(1, f'ERROR: {error}\n')
 

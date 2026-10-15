@@ -391,25 +391,60 @@ sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004
 ```
 
 The default final job selects all 16 datasets, three models, and three modes
-(144 plots). Each plot samples at most 2,000 paired test images, covering every
-class when the sample budget permits; if there are more classes than the
-budget, it samples fewer classes with repeated examples where possible.
+(144 plots). The default `--sampling classes --class-fraction 0.1` selects
+`min(C, 20, max(5, ceil(0.1 * C)))` classes, where C is the number of observed
+test classes. It randomly chooses class IDs using `--seed`, then keeps **all
+test samples in those classes**, with no 2,000-point truncation. For example,
+Pets selects 5 classes, Cotton 8, and CUB/SoyGlobal/iNat17 20 each. Class IDs
+are selected from sorted labels, independently of sample order/populations,
+so the same dataset uses the same IDs across models/modes; preflight rejects
+a selected-class mismatch before writing any plots. A dataset with fewer than
+5 classes keeps all its classes. `--class-fraction` can change the fraction;
+the 5-20 bounds still apply.
+
+Each selected class uses its own discrete color, with every class ID and its
+sample count labeled on the color key. Source arrays remain unchanged.
+Preflight prints selected classes, paired samples and joint fit points for
+each pair. Keeping all selected-class samples can use more time/memory than
+the old budget, especially for populous classes. Preflight does not measure
+the eventual t-SNE runtime or memory use.
+
+To reproduce the previous sampling policy, use `--sampling samples
+--max-samples 2000`: this covers every class when the point budget permits;
+if there are more classes than the budget, it chooses fewer classes with
+repeated examples where possible. `--max-samples` is ignored in classes mode.
 It L2-normalizes final features,
 optionally reduces more than 50 dimensions with one shared PCA-50 fit, and fits
 one t-SNE to the concatenated FP/W3 samples. Both panels use the same resulting
-coordinates and class colors. `--max-samples`, `--perplexity`, `--iterations`,
+coordinates and class colors. `--class-fraction`, `--perplexity`, `--iterations`,
 and `--seed` control cost and reproducibility. Each pair writes `tsne.png`,
 `coordinates.csv` (the selected original row indices and paired coordinates),
-and `method.json` under `<input-root>/20004/analysis/tsne/<dataset>/<model>/<mode>/`.
+and `method.json` under `<input-root>/20004/analysis/tsne_classes/<dataset>/<model>/<mode>/`.
+Legacy samples mode defaults to `analysis/tsne/`. `--output-root` overrides
+either destination. Method metadata records sampling parameters, selected
+class IDs, and per-class sample counts along with source/output hashes.
 The source export remains untouched. Matching completed outputs are skipped on
 rerun; `--overwrite` recomputes generated plots when parameters change.
 
 Preflight requires every selected source pair and checks its identity, W3/g128
 configuration, sample pairing, final feature shapes, and source hashes before
-plotting. A full job may take substantial CPU time; start with one pair to
+plotting. Start with ViT-B/16 and inspect the complete selected populations:
+
+```bash
+sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 \
+  --models vit_b16 --stage preflight
+sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 \
+  --models vit_b16
+```
+
+A full job may take substantial CPU time; start with one pair to
 measure runtime on nano4. t-SNE axes are arbitrary, plots fitted for different
 pairs have unrelated coordinates, and dense or sparse regions are exploratory
-visuals rather than accuracy or causal metrics. CAL features are from the first
+visuals rather than accuracy or causal metrics. The class subset is selected
+**before** PCA/t-SNE fitting: it shows local structure among those classes,
+not the full dataset's class separation. Removing other classes can change
+the neighborhoods. Repeat sampling seeds to assess subset dependence rather
+than choosing the most separated plot. CAL features are from the first
 raw-image backbone call, whereas CAL accuracy uses crop/flip aggregation.
 
 ## Legacy 21-condition workflow
