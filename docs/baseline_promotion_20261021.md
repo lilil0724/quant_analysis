@@ -19,6 +19,10 @@ Git ref `codex/backup-before-baseline-promotion-20261021` preserves 6409f80.
 The owning stages regenerate these outputs at their formal locations. Runtime
 receipts and source paths refer to this checkout, not the source worktree.
 The previous dated recovery and comparison remain historical reference runs.
+Historical comparison source paths that named the old main files are resolved
+by [the relocation receipt](../outputs/baseline_recovery/comparison_20261021/source_relocation.json)
+to hash-matching files in the pre-promotion backup. Use that backup when doing a
+new before/after comparison; main now contains the corrected values.
 
 ## Provenance and contract
 
@@ -84,4 +88,14 @@ analysis directories intact. Git alone does not restore ignored data/results.
 
 ## Execution
 
-Promotion and final verification are in progress; the receipt determines success.
+Promotion completed on 2026-10-21. Source commit `195c485` was fast-forwarded
+locally into main. All default results were rebuilt at their formal main paths.
+The final promotion gate passed at 10:09 Asia/Taipei: 144 baselines, 4,608 full-grid
+pairs, 4,320 matched legacy cells, 144 W6A4 ratios, zero missing/unmatched cells,
+all values equal to the completed recovery, and 3,840 unaffected legacy values
+unchanged. The 35 regression tests passed in main. The gate reran the three owning
+verifiers and checked raw/import-receipt integrity and W6A4 artifact hashes.
+
+Visual checks covered the formal 20007 heatmap and the default PCA score plot.
+No new inference, training, remote push, worktree removal or unrelated result
+replacement occurred. The existing TGDA/agent.md also records the promotion.

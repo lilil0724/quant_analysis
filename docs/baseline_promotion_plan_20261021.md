@@ -20,15 +20,15 @@ destination is C:/project/quant_analysis on main. Both start at 6409f80.
 
 ## Tasks
 
-- [ ] 1. Verify clean destinations; create Git backup refs and a file archive.
-- [ ] 2. Version the recovery/reproduction source and run its regression tests;
+- [x] 1. Verify clean destinations; create Git backup refs and a file archive.
+- [x] 2. Version the recovery/reproduction source and run its regression tests;
   obtain a fresh code review before integration.
-- [ ] 3. Commit the reviewed source and fast-forward quant_analysis main locally.
-- [ ] 4. Import snapshots, archive the old active directories, regenerate legacy
+- [x] 3. Commit the reviewed source and fast-forward quant_analysis main locally.
+- [x] 4. Import snapshots, archive the old active directories, regenerate legacy
   main, downstream main/PCA, and outputs/serial_20007/results/main.
-- [ ] 5. Run all verifiers; compare with immutable reference tables, verify source
+- [x] 5. Run all verifiers; compare with immutable reference tables, verify source
   hashes and absence of active worktree dependencies, and record the receipt.
-- [ ] 6. Update quant_analysis/agent.md, main report pointers and the existing
+- [x] 6. Update quant_analysis/agent.md, main report pointers and the existing
   TGDA/agent.md cross-project log; commit locally and verify the final state.
 
 ## Recovery

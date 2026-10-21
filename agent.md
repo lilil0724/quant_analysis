@@ -9,6 +9,14 @@ Read [the promotion record](docs/baseline_promotion_20261021.md) for provenance,
 verification and rollback. The preserved recovery worktrees are historical inputs,
 not dependencies of the formal outputs.
 
+Promotion verification passed on 2026-10-21: 144 baselines, 4,608 full-grid pairs,
+4,320 matched legacy cells, 144 usable W6A4 ratios and no missing/unmatched cells.
+All formal numeric results match the completed recovery; 3,840 unaffected legacy
+cells match the archived original. The 35 regression tests passed after local
+integration. Receipt: `outputs/baseline_recovery/promotion_20261021/verification.json`.
+Backup: `outputs/backups/baseline-promotion-20261021/manifest.json`, with Git ref
+`codex/backup-before-baseline-promotion-20261021`. Worktrees were retained; no push.
+
 For baseline-based reruns, use the verified cohort in
 `data/baseline_recovery/selected_20261021/`. It contains 144 unquantized AMP
 baselines plus 4,608 HQQ conditions. The legacy/dataset/granularity main cohort
