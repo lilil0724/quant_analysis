@@ -1,5 +1,9 @@
 # Quantization analysis workspace
 
+目前預設結果已採用修正版 baseline。入口、來源與回復方式見
+[正式替換紀錄](docs/baseline_promotion_20261021.md)；操作契約見 [agent.md](agent.md)。
+原 worktree 重跑紀錄保留於 [2026-10-21 報告](docs/baseline_recovery_20007_20261021.md)。
+
 每個分析各自管理程式、資料與結果。使用 `opencode_env`，從此目錄執行 Python module。
 
 | 分析 | 入口與說明 | 資料 | 結果 |
@@ -7,6 +11,7 @@
 | Legacy HQQ accuracy ratio | [legacy_hqq/README.md](legacy_hqq/README.md) | `legacy_hqq/data/` | `legacy_hqq/results/` |
 | Dataset robustness | [dataset_robustness/README.md](dataset_robustness/README.md) | `dataset_robustness/data/` | `dataset_robustness/results/` |
 | Granularity robustness | [granularity_robustness/README.md](granularity_robustness/README.md) | `granularity_robustness/data/` | `granularity_robustness/results/` |
+| Serial 20007 corrected baseline | [promotion record](docs/baseline_promotion_20261021.md) | `data/baseline_recovery/` | `outputs/serial_20007/results/main/` |
 | Matched-sample HQQ confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | `hqq_confidence/data/` | `hqq_confidence/results/` |
 | Five-dataset features | [five_dataset_features/README.md](five_dataset_features/README.md) | `five_dataset_features/data/` (current local copy) | `five_dataset_features/analysis/` |
 | Paired FP/W3 t-SNE | [sampling and nano4 commands](five_dataset_features/README.md#paired-fpw3-t-sne-on-nano4) | external paired raw exports | `<serial>/analysis/tsne_classes/` (10% classes, 5-20, all their samples) |

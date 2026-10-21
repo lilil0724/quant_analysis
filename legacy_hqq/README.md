@@ -1,5 +1,11 @@
 # Legacy HQQ accuracy-ratio analysis
 
+The current main run uses the corrected BEiTv2 cohort. See
+[the promotion record](../docs/baseline_promotion_20261021.md) for source,
+downstream entrypoints and rollback. Refresh baseline-based runs through
+`python -m legacy_hqq.recover_baselines`, then import its verified curated
+15-dataset CSV; a raw W&B download alone does not select the corrected cohort.
+
 This standalone workflow downloads finished TiT HQQ runs, matches each HQQ row to the FP32 baseline with the same dataset, normalized model, complete checkpoint path and seed, computes `accuracy_ratio = hqq_top1 / fp32_top1`, and draws the corresponding figures. Serials are provenance and optional filters; they do not define quantization conditions.
 
 ## Run
