@@ -1,5 +1,10 @@
 # 分析目錄重整提案
 
+> 歷史規劃：2026-10-21 起，新的分析與遷移採用
+> [新版規範](analysis_conventions_proposal.md)。下方 `results/`、固定 `main`
+> run、多份階段報告、保留 tests/ 等目標已被新版的 `result/<run_id>/`、
+> 唯一 REPORT.md 與外部暫存測試規則取代。未遷移模組仍依各 README 的現行命令執行。
+
 狀態：**分階段實作中**。本文件原以 2026-09-28 的工作樹提出目標架構。第一階段已將 `other_test/` 的四個分析目錄移回頂層，將 legacy 程式、資料與舊結果歸入 `legacy_hqq/`，並把 dataset/granularity 的輸入及結果歸入各自目錄；舊 snapshot 已保留。下方的目標樹仍包含尚未完成的階段拆分與 five-dataset feature 資料搬移。
 
 ## 目標

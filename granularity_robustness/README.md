@@ -1,5 +1,20 @@
 # Granularity robustness analysis
 
+## 2026-10-21 規範採用狀態與 codebase
+
+新規範見根目錄 [AGENTS.md](../AGENTS.md)。此模組仍待 result/reports 遷移；目前繼續使用
+本文的 data/source/、data/upstream/ 與 results/ 路徑，保留原本 cohort 與數值。
+
+| 程式 | 職責 |
+|---|---|
+| analyze.py | 用固定分組 mapping 與 matched summary 計算 FGIR/UFGIR contrasts、sensitivities、leave-one-out 及圖表。 |
+| plot_retention_condition.py | 從保存的 retention table 畫指定 bits/group size 的圖。 |
+| verify.py | 核對來源 hash、分組、strata、統計公式與輸出完整性。 |
+
+功能測試已封存至 outputs/layout_adoption_20261021/development_checks/；
+verify.py 為真實結果驗證而保留。新的功能測試使用 repo 外暫存目錄。
+
+
 This module implements `dataset_robustness/granularity_analysis_proposal.md`
 without changing the four legacy pipeline scripts. It compares externally
 defined FGIR and Ultra-FGIR dataset groups within matched model, checkpoint and
@@ -29,7 +44,6 @@ Use `opencode_env` from the repository root:
 
 ```powershell
 conda run -n opencode_env python -m granularity_robustness.analyze
-conda run -n opencode_env python -m unittest discover -s granularity_robustness/tests -v
 conda run -n opencode_env python -m granularity_robustness.verify
 ```
 

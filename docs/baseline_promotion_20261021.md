@@ -1,5 +1,7 @@
 # Corrected baseline promotion — 2026-10-21
 
+> Later layout adoption: serial 20007 now runs through [w6a4_analysis](../w6a4_analysis/README.md). The outputs listed below remain the immutable pre-migration reference; other module paths remain current pending their own migration.
+
 This record defines the approved promotion from codex/baseline-recovery-20007
 to the local quant_analysis main checkout. The file archive is
 `outputs/backups/baseline-promotion-20261021/`; its manifest records 215 original

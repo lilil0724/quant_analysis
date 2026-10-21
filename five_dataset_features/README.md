@@ -1,5 +1,25 @@
 # nano4 paired FP/W3 feature analysis
 
+## 2026-10-21 規範採用狀態與 codebase
+
+新規範見根目錄 [AGENTS.md](../AGENTS.md)。此模組有多種歷史輸出 schema，完整原始 inference
+arrays 未全部位於本機，故本批保留現行 data/、analysis/、results/ 與 server
+輸入根目錄，不以缺少 raw arrays 的情況宣稱已完成遷移或重算。
+
+| 程式群 | 職責 |
+|---|---|
+| run.py、run_config.py、run_snapshot.py、unified_inputs.py | 16-dataset all-layer 分析的選取、身分／manifest 驗證與階段協調。 |
+| layer_analysis.py、layer_pca.py、plot_run.py、report_run.py | 各層指標、PCA、圖表與報告。 |
+| analyze.py、inputs.py、metrics.py、analysis_snapshot.py | 舊 21-condition schema 的讀取、統計與 snapshot 核對。 |
+| paired.py、tsne_paired.py、paired_feature_pca.py | 成對 FP/W3 指標與共同取樣、t-SNE/PCA。 |
+| centered_class_distance.py、quantized_class_distance.py、distance_hypothesis.py、distance_accuracy.py | class-distance 與 accuracy 關係分析。 |
+| verify_paired_feature_pca.py、smoke.py | 驗證已取得的真實 artifact／real-batch 資料，不產生 synthetic fixture。 |
+
+功能測試已封存至 outputs/layout_adoption_20261021/development_checks/。
+smoke.py 雖名為 smoke，實際讀取與驗證真實推論輸出，屬正式資料驗證流程而保留。
+新增功能測試使用 repo 外暫存目錄；歷史 source/hash receipts 原樣保存。
+
+
 For global-mean-centered FP backbone class distances from existing Serial 20004
 exports, use `python -m five_dataset_features.centered_class_distance` or the CPU
 launcher `run_centered_class_distance_nano4.sh`. See
@@ -319,14 +339,11 @@ are separated into `weight_only`, `A8`, `A4`, and `QKV` using manifest settings
 (not condition-name guessing); unknown families stay undefined. These rows are
 available in `comparisons.csv` and the report, including for a single dataset.
 
-Synthetic regression coverage is in `tests/test_run_workflow.py`, covering
-imports/probes, paired row reordering, explicit feature semantics, undefined
-metrics, inference strata, family/group coverage, and full `all`/resume/verify
-with raw corruption rejection. Run the module suite from the repository root:
+Functional regression sources have been archived with hashes under
+`outputs/layout_adoption_20261021/development_checks/`. Run development checks
+from a temporary location outside the production tree. Production validation
+still checks sample pairing, feature semantics, coverage and source corruption.
 
-```powershell
-conda run -n opencode_env python -m unittest discover -s five_dataset_features/tests -v
-```
 =======
 # Repackage the matching selected analysis scope.
 sbatch five_dataset_features/run_nano4.sh --serial 20005 --stage package

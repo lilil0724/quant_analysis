@@ -1,5 +1,8 @@
 __pycache__/
 *.py[cod]
+# Adopted analysis layout: immutable input snapshots and full per-run output.
+**/data/
+**/result/
 # Keep input data local at the repository root and inside analysis modules.
 data/
 results_all/

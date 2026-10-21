@@ -1,30 +1,68 @@
 # AGENTS.md — quant_analysis
 
-This repository holds independent HQQ analyses. Each analysis owns its code, `data/`, `results/`, tests and operating README. Use `conda run -n opencode_env python ...` for all Python commands.
+本檔是本 repository 的操作規範入口。開始修改或執行分析前，先讀對應模組的
+README.md；新增或遷移分析時，再讀 [完整目錄規範](docs/analysis_conventions_proposal.md)。
 
-## Choose the analysis first
+## 工作順序
 
-- Legacy accuracy-ratio work: read `legacy_hqq/README.md`. Its baseline is exact checkpoint-and-seed FP32. The four scripts are inside `legacy_hqq/`.
-- Dataset ranking stability: read `dataset_robustness/README.md`. It consumes a fixed, baseline-matched legacy summary in its own `data/upstream/`.
-- FGIR / Ultra-FGIR contrasts: read `granularity_robustness/README.md`. Its group mapping is in `data/source/`.
-- Matched-sample confidence: read `hqq_confidence/README.md`. Its baseline is matched AMP unquantized, with separate data and outputs. Keep its analysis changes inside that module.
-- Five-dataset feature geometry: read `five_dataset_features/README.md`. Its full inference arrays are large and may live in an external input root during the remaining layout migration.
+1. 檢查 git status 與模組 README，保留未提交修改、輸入及既有結果。
+2. 在 owning module 完成修改，使用既有本機資料驗證來源、配對、coverage、
+   公式與保存產物；完成條件以實際命令與輸出為證據。
+3. 命令、資料路徑或行為改變時，同步更新模組 README 與根 README 索引。
 
-## Work sequence
+所有 Python 命令使用 `conda run -n opencode_env python ...`。
 
-1. Inspect `git status` and the relevant module README. Preserve existing uncommitted work and archived outputs.
-2. Change the owning module and its tests. Give every new input a recorded source and SHA-256. Keep stage output inside the owning module.
-3. Run its tests in `opencode_env`, then run the changed downstream stages against existing local inputs. Verify the saved artifacts using the module's verifier where available.
-4. Update the module README and the root index when commands or paths change.
+## 分析資料與產物的七項規則
 
-## Required Slurm script header
+1. **輸入**：放在該分析的 `data/<input_id>/`。每次匯入記錄來源身分、取得時間、
+   檔案大小與 SHA-256；保留原始 manifest。新增輸入版本使用新 ID。
+2. **輸出**：本次整理後資料、統計表、完整圖集、log 與 provenance 全部放在
+   `result/<run_id>/`，使用單數 result。run.json 記錄時間／時區、命令、參數、
+   輸入與輸出 hash、程式／環境、驗證及狀態；失敗 run 明確標示 failed。
+3. **模組說明**：每個分析根目錄保留一份 README.md，說明用途、codebase 分工、
+   資料契約、指標／baseline、執行命令、依賴、輸出與驗證方式。
+4. **唯一報告**：每次 run 只產生一份 `reports/<run_id>/REPORT.md`，包含分析時間、
+   輸入來源、方法、結果、限制與重現命令。`reports/<run_id>/figures/` 只放實際
+   引用的圖片，並核對與 `result/<run_id>/figures/` 中對應圖片的 SHA-256 相同。
+5. **正式 codebase**：保留分析流程與真實資料驗證。功能測試、mock／synthetic
+   fixtures、probe 和一次性 debug code 在 repository 外的暫存位置執行並清理。
+   既有獨有程式先核對封存，再移出正式目錄。
+6. **每次獨立**：重跑使用新的 run ID；已有 input/run/report 目錄時拒絕覆寫。
+   完成的 run 與歷史 manifest 固定保存，路徑遷移使用 relocation receipt 記錄。
+7. **Git 與備份**：所有 `data/` 和 `result/` 內容 gitignore；分析程式、README、
+   唯一報告及其引用圖片保持可追蹤。忽略資料另行備份，branch 不是這些檔案的備份。
 
-Every new or modified server Bash script intended for `sbatch` submission must
-start with the following header, before any executable commands. Keep
-`--partition=8gpus` and `--account=MST114495` fixed. Fill every other field with
-a concrete value appropriate to the job; the empty values below are template
-placeholders. This requirement applies to Slurm launchers, including CPU-based
-analysis jobs; Python modules use their Bash launcher for these directives.
+重用已驗證輸入；僅在缺少輸入或使用者明確要求 refresh 時下載。W&B 下載需要
+WANDB_API_KEY 或 wandb login。產物由 owning stage 重算，修改公式或資料後產生新 run。
+
+## 選擇分析與目前遷移狀態
+
+| 分析 | 先讀 | 狀態與 baseline |
+|---|---|---|
+| W6A4 serial 20007 | [w6a4_analysis/README.md](w6a4_analysis/README.md) | 已遷移；matched unquantized AMP。 |
+| Legacy ratios | [legacy_hqq/README.md](legacy_hqq/README.md) | 待遷移；修正版 baseline 為 unquantized AMP。 |
+| Dataset ranking／PCA | [dataset_robustness/README.md](dataset_robustness/README.md) | 待遷移；使用固定 upstream legacy snapshot。 |
+| FGIR／UFGIR | [granularity_robustness/README.md](granularity_robustness/README.md) | 待遷移；保留原分組 mapping 與 matched summary。 |
+| Confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | 待遷移；matched-sample unquantized AMP。 |
+| Feature geometry | [five_dataset_features/README.md](five_dataset_features/README.md) | 待遷移；部分完整 inference arrays 仍在 nano4。 |
+
+新分析與已遷移模組遵守上述目錄契約。待遷移模組先沿用其 README 的現行
+`results/`、`analysis/`、`data/processed/` 或 server input-root，完成實際驗證後再遷移；
+分階段修改時明列尚未完成項目。
+
+Baseline 配對核對完整 checkpoint 路徑、dataset、model、mode、seed、classifier、
+precision 與已記錄評估設定。`fp32_top1` 是 legacy 欄位名稱，不代表純 FP32。
+缺少可比資料保留 N/A；checkpoint 路徑／config 相同不能證明權重 bytes 相同。
+
+需要重新規劃目錄遷移時，讀 [實作與進度紀錄](docs/analysis_layout_implementation_20261021.md)。
+需要 baseline provenance、舊結果或回復資訊時，讀 [分析歷史紀錄](docs/analysis_history_20261021.md)。
+既有 worktree 封存保持原狀；本次目錄整理沿用主 checkout。
+
+## Slurm launcher 必要 header
+
+新增或修改供 sbatch 提交的 Bash script，須在任何可執行命令前包含以下 header。
+partition 固定 8gpus、account 固定 MST114495；其餘欄位填入該工作的具體值。
+output/error 檔名要能區分 job，例如 analysis_%j.out 與 analysis_%j.err。
 
 ```bash
 #!/usr/bin/env bash
@@ -40,150 +78,5 @@ analysis jobs; Python modules use their Bash launcher for these directives.
 #SBATCH --error=
 ```
 
-Before delivering a script, verify that all listed directives are present,
-all values are filled, and output/error filenames distinguish jobs (for example,
-`analysis_%j.out` and `analysis_%j.err`). Additional Slurm directives may be
-included as required by the job.
-
-<<<<<<< HEAD
-`legacy_hqq/run.py` and `hqq_confidence/run.py` expose `acquire → prepare → analyze → plot`. Dataset and granularity robustness currently combine calculation and plotting; their split is recorded in `docs/repository_layout_plan.md`. Do not manually edit generated CSV, XLSX, Markdown or PNG outputs; rerun their owning stage. W&B downloading is only needed when local inputs are missing or an explicit refresh is requested.
-=======
-## Environment
-
-Operational inference data and feature-analysis results reside on nano4, not
-on the development Windows computer. Server checkouts are
-`/work/kyle0724/project/TGDA` and `/work/kyle0724/project/quant_analysis`;
-data reside under `/work/kyle0724/data/`.
-
-Legacy CSV/confidence workflows use `opencode_env`. The nano4 feature-analysis
-launcher currently defaults to the user's selected `tgda` environment, matching
-inference; override it with `ANALYSIS_CONDA_ENV=opencode_env` if desired. Initialize
-the module like TGDA's inference script and invoke the selected Python directly:
-
-```bash
-ml purge
-ml load miniconda3
-"$HOME/.conda/envs/opencode_env/bin/python" -m pip install -r requirements.txt
-```
-
-Downloading requires `WANDB_API_KEY` or `wandb login`.
-
-## nano4 feature analysis
-
-- Submit `sbatch five_dataset_features/run_nano4.sh --serial N` from the nano4
-  quant_analysis checkout. Use Bash with `--dry-run` to inspect commands.
-- `--input-root` names the parent `<checkout>/../../data/w3_g128_analysis` directory.
-  Selected input is `<input-root>/<serial>`, organized as dataset/model/checkpoint
-  mode, using TGDA paired FP/W3 manifests and layer files.
-  Output defaults to `<input-root>/<serial>/analysis`; preserve all source files.
-- The launcher calls `five_dataset_features.paired` and requires the complete
-  selected 16-dataset × 3-model × ft/fz/cal matrix by default. Scope can be narrowed
-  explicitly with `--datasets`, `--models`, and `--modes`; never silently skip pairs.
-- Resources are partition 8gpus and one GPU per node. Module loading and direct
-  Python execution match TGDA inference; default environment is tgda. Analysis
-  metrics/PCA use NumPy CPUs despite GPU allocation.
-- Validate source completion, identity, checksums, sample pairing and variable
-  layer shapes before writing analysis output. Preserve source provenance in
-  aggregate reports; package only a whitelist of compact generated results.
-- The older `five_dataset_hqq` 21-condition schema remains supported by the
-  separate analyze.py/smoke.py/run_local.ps1 entrypoints; do not mix its data with
-  paired W3 exports or change the legacy CSV/confidence scripts.
-- Environment overrides: `ANALYSIS_PROJECT_ROOT`, `ANALYSIS_INPUT_ROOT`,
-  `ANALYSIS_OUTPUT_ROOT`, `ANALYSIS_CONDA_ENV`, `ANALYSIS_PYTHON`.
-- Launcher checks on the development computer do not establish nano4 completion,
-  resource sufficiency, environment availability or source data validity.
-
-## Pipeline
-
-Run stages from the repository root in this order:
-
-```powershell
-python download_save_wandb_data.py
-python summarize_quant.py
-python corr_quant.py
-python plot_quant_acc_bit_group.py
-```
-
-All stages write `run_config.json` next to their output. The summary stage
-reads `data/backbones_quant.csv`; correlation reads
-`results_all/quant/quant_summary.csv`; plotting reads correlation outputs.
-
-## CLI conventions
-
-The pipeline uses command-line arguments only; there is no project config file.
-Every stage keeps defaults that connect to the next stage, while accepting full
-paths for reusable runs:
-
-| Stage | `--input-file` | `--output-file` | `--results-dir` |
-|---|---|---|---|
-| download | N/A | downloaded raw CSV | downloader `run_config.json` |
-| summarize | raw WandB CSV | primary summary CSV | validation CSVs and XLSX files |
-| corr | summary CSV | primary factor-ablation CSV | correlations, factor models, and Markdown |
-| plot | prepared accuracy-cell CSV | primary overview PNG | all generated PNGs |
-
-`--serials` accepts explicit integer lists only; it does not expand ranges. It
-is optional in the analysis stages: summary uses it to narrow raw rows and
-correlation matches it against HQQ source-serial provenance. When subsetting
-summary input, include any exact checkpoint-and-seed FP32 baseline rows needed
-for matching.
-
-Example with custom paths in PowerShell:
-
-```powershell
-python summarize_quant.py --input-file D:\runs\raw.csv `
-  --output-file D:\analysis\summary.csv `
-  --results-dir D:\analysis\summary
-python corr_quant.py --input-file D:\analysis\summary.csv `
-  --output-file D:\analysis\corr\factor_ablation_accuracy.csv `
-  --results-dir D:\analysis\corr
-python plot_quant_acc_bit_group.py `
-  --input-file D:\analysis\corr\prepared_accuracy_cells.csv `
-  --ablation-file D:\analysis\corr\factor_ablation_accuracy.csv `
-  --corr-dir D:\analysis\corr --results-dir D:\analysis\plots `
-  --output-file D:\analysis\plots\overview.png
-```
-
-## Condition and baseline rules
-
-- Analysis conditions come from raw `hqq_nbits` and `hqq_group_size`; serial is
-  provenance and an optional manual filter only.
-- A baseline only matches rows with the same dataset, normalized model name,
-  complete checkpoint path, and seed. Same-identity FP32 repeats use median
-  top-1.
-- Repeated HQQ rows from multiple serials are combined within a seed. Seeds are
-  paired before aggregation; a condition with any unmatched seed remains an
-  audit row and does not enter correlation or figures.
-- `completeness.csv` reports observed nbits/group sizes, seed coverage, and
-  unmatched conditions without assuming a serial grid.
-- Checkpoint paths must include either `/cal_ckpts/`, `/ft_ckpts/`,
-  `/fz_ckpts/`, or `/ckpt/cal/`, `/ckpt/ft/`, `/ckpt/fz/`.
-
-## Analysis scope
-
-The sole analysis outcome is:
-
-```text
-accuracy_ratio = hqq_top1 / fp32_top1
-```
-
-The factors are `hqq_nbits`, `hqq_group_size`, checkpoint kind, dataset, and
-model. Checkpoint path is retained as context/provenance. Resource, timing,
-loss, and top-k count outputs are intentionally out of scope. The summary
-retains legacy HQQ fields because they are the schema currently logged by the
-TiT project.
-
-`corr_quant.py` produces global and within-context correlation supplements,
-trend/levels factor models, and delta R2 ablation tables.
-
-## Verification
-
-After code changes, run the complete downstream pipeline against the checked-in
-CSV before downloading new WandB data. Confirm that:
-
-1. `completeness.csv` reports all observed contexts and identifies unmatched conditions.
-2. `configuration_quality.csv` identifies any non-fixed HQQ setup fields.
-3. Every dataset has an accuracy-only XLSX workbook.
-4. `results_all/quant/corr/` contains no PNG files.
-5. `results_all/quant/plots/` contains the overview, heatmaps, line plots, and
-   factor-contribution plot.
->>>>>>> 8dea61bfc1447b4788acbe69d706d79f78a728bb
+交付前核對所有 directives 與填值。保留 server inference 來源與 provenance；
+本機 launcher／合成檢查不代表 nano4 已完成、資源足夠或缺少的 raw arrays 已通過驗證。

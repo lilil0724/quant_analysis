@@ -1,17 +1,24 @@
 # Quantization analysis workspace
 
+2026-10-21 起採用 [分析目錄與資料規範](docs/analysis_conventions_proposal.md)，
+操作規則見 [AGENTS.md](AGENTS.md)，實作進度見
+[第一批遷移計畫](docs/analysis_layout_implementation_20261021.md)。
+W6A4 已採用自己的 `data/<input_id>/`、`result/<run_id>/` 與唯一
+`reports/<run_id>/REPORT.md`。其餘模組保留下表的現行路徑，待逐模組驗證遷移。
+
 目前預設結果已採用修正版 baseline。入口、來源與回復方式見
-[正式替換紀錄](docs/baseline_promotion_20261021.md)；操作契約見 [agent.md](agent.md)。
+[正式替換紀錄](docs/baseline_promotion_20261021.md)；操作契約見 [AGENTS.md](AGENTS.md)。
 原 worktree 重跑紀錄保留於 [2026-10-21 報告](docs/baseline_recovery_20007_20261021.md)。
 
 每個分析各自管理程式、資料與結果。使用 `opencode_env`，從此目錄執行 Python module。
 
 | 分析 | 入口與說明 | 資料 | 結果 |
 |---|---|---|---|
+| W6A4 serial 20007（新規範） | [用途與命令](w6a4_analysis/README.md) | `w6a4_analysis/data/baseline_20261021/` | [唯一報告](w6a4_analysis/reports/20261021_163522_084281_w6a4_s20007/REPORT.md)；完整產物在 `w6a4_analysis/result/` |
 | Legacy HQQ accuracy ratio | [legacy_hqq/README.md](legacy_hqq/README.md) | `legacy_hqq/data/` | `legacy_hqq/results/` |
 | Dataset robustness | [dataset_robustness/README.md](dataset_robustness/README.md) | `dataset_robustness/data/` | `dataset_robustness/results/` |
 | Granularity robustness | [granularity_robustness/README.md](granularity_robustness/README.md) | `granularity_robustness/data/` | `granularity_robustness/results/` |
-| Serial 20007 corrected baseline | [promotion record](docs/baseline_promotion_20261021.md) | `data/baseline_recovery/` | `outputs/serial_20007/results/main/` |
+| Serial 20007 corrected baseline（歷史比對） | [promotion record](docs/baseline_promotion_20261021.md) | `data/baseline_recovery/` | `outputs/serial_20007/results/main/`（保留，不覆寫） |
 | Matched-sample HQQ confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | `hqq_confidence/data/` | `hqq_confidence/results/` |
 | Five-dataset features | [five_dataset_features/README.md](five_dataset_features/README.md) | `five_dataset_features/data/` (current local copy) | `five_dataset_features/analysis/` |
 | Paired FP/W3 t-SNE | [sampling and nano4 commands](five_dataset_features/README.md#paired-fpw3-t-sne-on-nano4) | external paired raw exports | `<serial>/analysis/tsne_classes/` (10% classes, 5-20, all their samples) |

@@ -1,5 +1,25 @@
 # HQQ Confidence Fragility Analysis
 
+## 2026-10-21 規範採用狀態與 codebase
+
+新規範見根目錄 [AGENTS.md](../AGENTS.md)。此模組的完整 data/result/reports 遷移仍待執行；
+現行命令與 data/processed/、results/、analysis/ 路徑保持相容。Baseline
+維持 matched-sample unquantized AMP，不與其他 checkpoint/seed 混配。
+
+| 程式 | 職責 |
+|---|---|
+| run.py | 協調 acquire → prepare → analyze → plot；重用既有 artifacts。 |
+| download_artifacts.py | 取得有明確 run/artifact 版本的 prediction artifacts。 |
+| prepare_pairs.py、common.py | schema、logits、sample ID、target、checkpoint/precision 驗證與 matched pairs。 |
+| analyze_fragility.py、plot_fragility.py | damage/rescue、confidence bins、bootstrap 與圖表。 |
+| analyze_overconfidence.py、analyze_dataset_difficulty.py、analyze_sample_margin_mechanism.py | 分別回答 calibration、dataset difficulty 與 sample margin 問題。 |
+| analyze_bias_competitors.py、bias_competitor_core.py、server_bias_competitors.py | cross-fit bias／competitor 機制分析與 server adapter。 |
+
+功能測試已封存至 outputs/layout_adoption_20261021/development_checks/；
+流程內的 provenance／sample pairing 驗證保留。Serial 100004 的 margin-matching
+未提交程式仍在 worktree archive，未在本批偷偷恢復或套用舊結果。
+
+
 This directory contains a reproducible four-stage workflow for matched
 unquantized/HQQ prediction artifacts. It is independent of the repository's
 legacy accuracy-ratio pipeline.
@@ -240,12 +260,9 @@ for cross-fitting; corrected accuracy is a retrospective mechanism diagnostic,
 not an independently calibrated benchmark. The baseline uses AMP FP16 and the
 checkpoint family is ViT-B/16 FT; do not infer BEiTv2 results from this analysis.
 
-CPU-only synthetic tests do not require W&B credentials:
-
-```powershell
-$env:MPLCONFIGDIR = Join-Path $env:TEMP 'quant-analysis-mpl'
-python -m unittest discover -s hqq_confidence/tests -p "test_*.py"
-```
+Development checks use a temporary directory outside the production tree.
+Input provenance, matched-sample alignment and saved-result validation remain
+part of the production analysis flow.
 
 Run the legacy scripts separately against `legacy_hqq/data/raw/backbones_quant.csv` when
 changing shared repository dependencies. This workflow does not import or

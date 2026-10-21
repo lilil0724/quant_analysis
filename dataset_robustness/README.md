@@ -1,5 +1,21 @@
 # Dataset robustness stability audit
 
+## 2026-10-21 規範採用狀態與 codebase
+
+新規範見根目錄 [AGENTS.md](../AGENTS.md)。此模組的 result/reports 遷移尚未執行；目前仍
+使用本文的 data/upstream/ 與 results/ 命令，保留歷史 snapshot/receipts。
+
+| 程式 | 職責 |
+|---|---|
+| analyze.py | 讀固定 upstream summary，計算 context 內／間的 ranking stability、coverage、排除稽核及圖表。 |
+| pca_profiles.py | 由驗證後的 loss profiles 做 NumPy SVD/PCA 與 sensitivity。 |
+| verify.py | 核對真實輸入、統計表、配對／排名公式及完整產物。 |
+| verify_pca.py | 核對 PCA 輸入／輸出 hash、特徵值、正交性及重建。 |
+
+功能測試已封存至 outputs/layout_adoption_20261021/development_checks/；
+上述真實資料 verifier 屬於正式分析流程並保留。新的功能測試使用 repo 外暫存目錄。
+
+
 Descriptive comparisons of the legacy HQQ experiments. The main question is
 whether dataset accuracy-retention rankings persist across quantization settings
 and model/checkpoint contexts. This is separate from `hqq_confidence` and does not
@@ -35,7 +51,6 @@ Downloading is not required.
 
 ```powershell
 conda run -n opencode_env python -m dataset_robustness.analyze
-conda run -n opencode_env python -m unittest discover -s dataset_robustness/tests -v
 conda run -n opencode_env python -m dataset_robustness.verify
 ```
 
