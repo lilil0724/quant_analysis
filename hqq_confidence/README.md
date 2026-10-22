@@ -14,10 +14,14 @@
 | analyze_fragility.py、plot_fragility.py | damage/rescue、confidence bins、bootstrap 與圖表。 |
 | analyze_overconfidence.py、analyze_dataset_difficulty.py、analyze_sample_margin_mechanism.py | 分別回答 calibration、dataset difficulty 與 sample margin 問題。 |
 | analyze_bias_competitors.py、bias_competitor_core.py、server_bias_competitors.py | cross-fit bias／competitor 機制分析與 server adapter。 |
+| margin_matching.py、analyze_margin_matching.py | baseline normalized-margin overlap matching；100004 NPZ 與 server 20004 FP/W3-G128 輸入。 |
+| run_margin_matching_nano4.sh | serial-specific preflight、快照匯入與分析的 Slurm launcher。 |
 
 功能測試已封存至 outputs/layout_adoption_20261021/development_checks/；
-流程內的 provenance／sample pairing 驗證保留。Serial 100004 的 margin-matching
-未提交程式仍在 worktree archive，未在本批偷偷恢復或套用舊結果。
+流程內的 provenance／sample pairing 驗證保留。2026-10-22 已從 worktree archive
+恢復並整理 Serial 100004 margin matching，新增 server 20004 入口；原封存保持原狀。
+這個新入口採用 `data/<input_id>/`、`result/<run_id>/` 與 `reports/<run_id>/REPORT.md`。
+其他 confidence 流程仍沿用下述舊路徑，尚未完成整體遷移。
 
 
 This directory contains a reproducible four-stage workflow for matched
@@ -267,3 +271,175 @@ part of the production analysis flow.
 Run the legacy scripts separately against `legacy_hqq/data/raw/backbones_quant.csv` when
 changing shared repository dependencies. This workflow does not import or
 modify any of the four legacy stages.
+
+## Margin matching: Soy + cotton versus Other, server serial 20004
+
+這個入口回答：將兩組 baseline normalized-margin 分布標準化後，FP→Q accuracy
+retention 的組間差距如何改變？它不執行 bias correction、competitor fitting、
+推論或 W&B 下載。只有 `analyze_margin_matching` 使用下列新目錄契約。
+
+預設分組（依本次需求，不是物種或 FGIR 分類）：
+
+| Group label | Datasets |
+|---|---|
+| `soy_cotton`（5） | soyageing, soygene, soyglobal, soylocal, cotton |
+| `other`（11） | aircraft, cars, cub, dogs, flowers, food, inat17, moe, nabirds, pets, vegfru |
+
+原始組內每個 dataset 等權。使用 FP 的 `(top1_logit-top2_logit)/std(class_logits,ddof=0)`，
+主分析 bin width 0.05，敏感度 0.025／0.10。以兩組 histogram 的逐 bin minimum
+正規化為共同目標 q；相同 sample weights 同時套用到 FP 與 Q correctness。
+Ratio 是 **加權 Q accuracy / 加權 FP accuracy**，不是 dataset ratios 的算術平均。
+匹配後 dataset mass 可能改變，所有樣本（包含 baseline 錯誤）都納入。
+
+### Input contract and validation
+
+Server source 預期為既有 paired W3/G128 exporter 的格式：
+
+```text
+/work/kyle0724/data/w3_g128_analysis/20004/<dataset>/<model>/<ft|fz|cal>/
+  manifest.json          # complete; top-level serial/dataset/model/checkpoint_mode
+  samples.json           # ordered sample_ids and targets
+  fp/logits.npy          # float32 [N,C], unquantized matched precision
+  fp/predictions.csv
+  w3_g128/logits.npy      # weight-only W3/G128, activations unquantized
+  w3_g128/predictions.csv
+```
+
+完整預設矩陣為 **16 datasets × 3 models × 3 modes = 144 pairs**，各 model/mode
+分開產生 9 組比較。Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
+`beitv2_base_patch16_224`。任何指定 cell 缺少都失敗，不靜默縮減矩陣。
+只具備 aggregate summary／feature arrays 不足以執行本分析。
+新的 unified exporter schema 2（每個 condition 獨立 identity/manifest）不會被當成
+舊 paired schema；需提供上述 serial 20004 原始配對 exports。
+
+沿用 `server_bias_competitors.check_pair/preflight`，檢查 source status、serial、
+dataset/model/mode、checkpoint/test-CSV/config/code/HQQ hashes、seed、quantization、
+precision、sample/target digest、CSV/logit winner/margin/true-margin 一致性。
+同 model/mode 內 export/precision/quantization protocol 必須相同；每個 dataset 的
+checkpoint、pooling、preprocessing 保留在 coverage，允許依訓練設定不同。
+Tie winner 沿用已驗證的 stored winner，margin 仍由 logits 重算。
+這些是 exporter 宣告的 checkpoint bytes identity，分析不重新讀取權重／圖片。
+
+`import-server` 只複製 manifest、samples、兩組 logits/predictions 到本分析
+`data/<input_id>/`，不複製 layer features。原始 manifest 保留原樣；
+`source_manifest.json` 記錄原路徑、匯入相對路徑、時間、檔案大小、SHA-256、
+selection 與 status，作為 relocation receipt。匯入前後核對 hash，來源與快照
+分開保存；**需另有容納所選 logits 副本的磁碟空間**，inat17 可能很大。
+新輸入 ID 拒絕覆寫，失敗匯入標記 failed，改用新的 ID。
+
+### Run on nano4
+
+先同步目前分支程式到 server 的 quant_analysis checkout；可用這次交付的
+`dist/margin_matching_server_20261022.zip`，在新的目錄解壓縮後使用。
+ZIP 包含分析及其 validator 相依程式、README、launcher、requirements，不含資料或歷史結果。
+需要 NumPy、pandas、matplotlib、SciPy、scikit-learn、threadpoolctl，
+不需要 torch／TGDA／HQQ／W&B。統一使用 `opencode_env`：
+
+```bash
+cd /work/kyle0724/project/quant_analysis
+ml purge
+ml load miniconda3
+conda run -n opencode_env python -m pip install -r hqq_confidence/requirements_margin_matching.txt
+
+# Print commands only: no modules, import, or computation.
+bash hqq_confidence/run_margin_matching_nano4.sh \
+  --serial 20004 --input-id server20004_v1 --run-id margin20004_v1 --dry-run
+
+# Read-only check of the complete selection. Submit large hash scans to Slurm.
+sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20004 --stage preflight
+
+# Import a NEW input snapshot and calculate all 9 model/mode comparisons.
+sbatch hqq_confidence/run_margin_matching_nano4.sh \
+  --serial 20004 --input-id server20004_v1 --run-id margin20004_v1
+```
+
+Launcher header 固定 `8gpus`／`MST114495`，1 node、1 GPU、8 CPUs、64G、24h；
+計算在 CPU 上進行，log 為 `margin_matching_<job>.out/.err`。資源額度是提交設定，
+本機測試不代表 20004 exports 已完成、server 可用或資源已實測足夠。
+
+若先 pilot，用兩組都有的 dataset selection；pilot 與完整矩陣使用不同 input/run IDs：
+
+```bash
+sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20004 \
+  --datasets cotton,soylocal,cub,inat17 --models vit_b16 --modes ft \
+  --input-id server20004_pilot_v1 --run-id margin20004_pilot_v1
+
+# Reuse an existing completed snapshot. Dataset/model/mode selection comes from it.
+sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20004 --stage run \
+  --input-id server20004_v1 --run-id margin20004_v2
+```
+
+使用 `--source-root` 改 upstream（亦接受 `--input-root`），`--workspace` 改 owning
+分析資料夾。例如磁碟空間位於 `/work/kyle0724/data/margin_matching` 時，將該路徑
+傳給 `--workspace`；其下仍維持 data/result/reports 契約。外部 workspace 的 reports
+要另行同步保存，才會出現在本機 checkout。`ANALYSIS_PROJECT_ROOT` 指向程式 checkout，
+`ANALYSIS_CONDA` 可指定 conda 可執行檔；環境固定 `opencode_env`。
+
+也可在適合的 compute node 直接執行：
+
+```bash
+conda run -n opencode_env python -m hqq_confidence.analyze_margin_matching import-server \
+  --source-root /work/kyle0724/data/w3_g128_analysis --serial 20004 --input-id server20004_v1
+conda run -n opencode_env python -m hqq_confidence.analyze_margin_matching run \
+  --input-id server20004_v1 --serial 20004 --run-id margin20004_direct_v1
+```
+
+### Outputs and interpretation
+
+| Path under `result/<run_id>/` | Meaning |
+|---|---|
+| `tables/group_metrics.csv` | Per-model/mode/condition/group/bin-width raw and matched FP/Q accuracy, ratio, drop and status |
+| `tables/gaps.csv` | Other minus focus ratio gaps, raw/matched changes; zero original gap reduction fraction = N/A |
+| `tables/balance.csv` | Original, target, matched bin proportions and balance error |
+| `tables/diagnostics.csv` | ESS, common support, overlap coefficient, weighted KS and weight amplification |
+| `tables/dataset_weights.csv`, `dataset_metrics.csv` | Dataset composition change and primary-width within-dataset metrics |
+| `tables/coverage.csv` | Dataset/model/mode/checkpoint/seed/precision and source identity |
+| `prepared/<model>/<mode>/sample_weights.npz` | IDs, targets, baseline correctness, margin, base and three matching weights; pickle-free |
+| `figures/` | Actual matching distributions and accuracy ratios per setting |
+| `provenance/source_manifest.json`, `provenance/source/` | Input receipt and code snapshot including uncommitted source |
+| `run.json` | Atomic status, commands/timezone/environment, input/output/report hashes, validation and error |
+
+唯一報告在 `reports/<run_id>/REPORT.md`，引用圖片與 result/figures 副本 hash 相同。
+`data/`、`result/` ignored，reports 可追蹤。同 run/report ID 拒絕覆寫；修正後建立新 run。
+所有 accuracy/drop/damage/rescue/ratio 欄位是 fraction；乘以 100 才是百分比或 pp。
+此入口的 `damage_rate/rescue_rate` 沿用歷史 matching 欄名，表示**無條件加權 mass**，
+不同於上方 legacy fragility 的 conditional rates；驗證 `Q = FP - damage + rescue`。
+
+缺少 common margin-bin support 的 matched estimates 保留 N/A 與
+`no_common_support`；weighted FP accuracy 為零則 ratio 為 N/A。
+這些未定義估計不等同 I/O／配對失敗，完整 workflow 可完成但在 run/report 明列數量。
+匹配只統一 bin proportions，不能統一 baseline correctness、類別數、checkpoint 訓練、
+擾動或 rescue/damage；dataset 組成與 ESS 會改變。結果是共同支撐區域的描述性比較，
+不做因果歸因或顯著性宣稱；不可把 cotton 當作 soybean 或推論跨 model/mode 的獨立重複。
+
+### Reproduce the archived serial 100004 analysis
+
+原封存的 selected_runs.csv 含歷史絕對 npz_path，保持原樣。
+明確給定 `--source-root` 後，以 `artifacts/<run_id>/<artifact_version>/predictions.npz`
+定位並核對每個 SHA-256；不以 basename 尋找檔案，也不依賴舊 prepared cache。
+重新驗證完整 13 條件、logit-derived fields、sample IDs/targets、checkpoint full path/hash、
+seed、classifier/evaluation config 與 provenance；量化正確性從原始 NPZ 取得。
+
+```powershell
+conda run -n opencode_env python -m hqq_confidence.analyze_margin_matching import-confidence `
+  --source-root outputs/worktree_archive/20261021-154622/serial-100004-logits-analysis/files/hqq_confidence/data/serial_100004 `
+  --serial 100004 --input-id serial100004_archive_20261022
+conda run -n opencode_env python -m hqq_confidence.analyze_margin_matching run `
+  --input-id serial100004_archive_20261022 --serial 100004 `
+  --run-id 20261022_margin_s100004_verified --grouping legacy-soy
+```
+
+`legacy-soy` 明確保留歷史 soy4/other10（該快照沒有 cotton/inat17），只用於歷史重現。
+新的 server 20004 預設為本次要求的 soy+cotton / other-including-inat17。
+
+2026-10-22 本機驗證：已匯入 182 份原始 NPZ（14 datasets × 13 conditions），
+用新版入口重算 227,830 筆樣本；三種 bin width 的全部 sample IDs/weights 與封存一致。
+144 列 group metrics 的 FP/Q accuracy、ratio、absolute drop、damage/rescue mass、ESS
+七個欄位與原 CSV 最大差異皆為 0（驗收容差 rtol/atol 各 1e-12）。
+唯一報告見 [100004 歷史重現驗證](reports/20261022_margin_s100004_verified/REPORT.md)。
+完整 output/report hashes、唯一 Markdown 與引用圖片 hash 均已重新核對。
+暫存開發驗證包含 93 項 confidence 回歸測試，以及最後修正後 23 項 matching 相關檢查，
+另通過 Bash syntax 與 launcher dry-run；測試／合成資料留在 repo 外暫存位置並於交付清理。
+這些本機證據不代表 serial 20004 在 nano4 已執行或全矩陣可用。
+上述真實資料已在本機存在，照抄 input/run ID 會拒絕覆寫；重跑必須換新 run ID，
+已有完整 snapshot 時直接使用 `run`，不要重新 `import-confidence`。

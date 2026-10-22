@@ -20,6 +20,7 @@ W6A4 已採用自己的 `data/<input_id>/`、`result/<run_id>/` 與唯一
 | Granularity robustness | [granularity_robustness/README.md](granularity_robustness/README.md) | `granularity_robustness/data/` | `granularity_robustness/results/` |
 | Serial 20007 corrected baseline（歷史比對） | [promotion record](docs/baseline_promotion_20261021.md) | `data/baseline_recovery/` | `outputs/serial_20007/results/main/`（保留，不覆寫） |
 | Matched-sample HQQ confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | `hqq_confidence/data/` | `hqq_confidence/results/` |
+| Soy+cotton / Other normalized-margin matching (20004 server; 100004 reproduction) | [方法、資料契約與 Slurm 命令](hqq_confidence/README.md#margin-matching-soy--cotton-versus-other-server-serial-20004) | `hqq_confidence/data/<input_id>/` | `hqq_confidence/result/<run_id>/`；唯一報告在 `hqq_confidence/reports/<run_id>/REPORT.md` |
 | Five-dataset features | [five_dataset_features/README.md](five_dataset_features/README.md) | `five_dataset_features/data/` (current local copy) | `five_dataset_features/analysis/` |
 | Paired FP/W3 t-SNE | [sampling and nano4 commands](five_dataset_features/README.md#paired-fpw3-t-sne-on-nano4) | external paired raw exports | `<serial>/analysis/tsne_classes/` (10% classes, 5-20, all their samples) |
 | Centered FP backbone class distances (20004) | [five_dataset_features/CENTERED_CLASS_DISTANCE.md](five_dataset_features/CENTERED_CLASS_DISTANCE.md) | external paired FP/W3 raw exports | `five_dataset_features/results/20004/centered_fp_distance_cal/` (documented CAL submission) |
