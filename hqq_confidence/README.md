@@ -330,16 +330,21 @@ selection 與 status，作為 relocation receipt。匯入前後核對 hash，來
 ### Run on nano4
 
 先同步目前分支程式到 server 的 quant_analysis checkout；可用這次交付的
-`dist/margin_matching_server_20261022.zip`，在新的目錄解壓縮後使用。
+`dist/margin_matching_server_20261022_tgda.zip`，在新的目錄解壓縮後使用。
 ZIP 包含分析及其 validator 相依程式、README、launcher、requirements，不含資料或歷史結果。
 需要 NumPy、pandas、matplotlib、SciPy、scikit-learn、threadpoolctl，
-不需要 torch／TGDA／HQQ／W&B。統一使用 `opencode_env`：
+不需要 torch／TGDA／HQQ／W&B 的分析功能。Server launcher 比照 TGDA 的
+`scripts/run_exp_nano5.sh`／`scripts/run_feature_analysis.sh`，預設直接執行
+`$HOME/.conda/envs/tgda/bin/python`，不依賴 shell activation 或 `conda run`
+選擇 interpreter。本機開發與上方其他分析命令仍使用 `opencode_env`。
+先確認 tgda 有所需分析依賴：
 
 ```bash
 cd /work/kyle0724/project/quant_analysis
 ml purge
 ml load miniconda3
-conda run -n opencode_env python -m pip install -r hqq_confidence/requirements_margin_matching.txt
+TGDA_PYTHON="${TGDA_PYTHON:-$HOME/.conda/envs/${TGDA_CONDA_ENV:-tgda}/bin/python}"
+"$TGDA_PYTHON" -m pip install -r hqq_confidence/requirements_margin_matching.txt
 
 # Print commands only: no modules, import, or computation.
 bash hqq_confidence/run_margin_matching_nano4.sh \
@@ -373,14 +378,25 @@ sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20004 --stage run \
 分析資料夾。例如磁碟空間位於 `/work/kyle0724/data/margin_matching` 時，將該路徑
 傳給 `--workspace`；其下仍維持 data/result/reports 契約。外部 workspace 的 reports
 要另行同步保存，才會出現在本機 checkout。`ANALYSIS_PROJECT_ROOT` 指向程式 checkout，
-`ANALYSIS_CONDA` 可指定 conda 可執行檔；環境固定 `opencode_env`。
+`TGDA_CONDA_ENV` 預設 `tgda`，用來組合 `$HOME/.conda/envs/<env>/bin/python`。
+若環境放在其他路徑，設定 `TGDA_PYTHON`；`ANALYSIS_PYTHON` 有更高覆寫優先序。
+真正執行前會載入 miniconda3、核對 interpreter 可執行性與所需套件，並在 job log
+列出實際 `sys.executable`／套件版本。`run.json` 與報告的重現命令使用這次真正的
+`sys.executable`，不再寫死 `opencode_env`。例如：
+
+```bash
+TGDA_PYTHON=/home/kyle0724/.conda/envs/tgda/bin/python \
+sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20004 \
+  --input-id server20004_v1 --run-id margin20004_v1
+```
 
 也可在適合的 compute node 直接執行：
 
 ```bash
-conda run -n opencode_env python -m hqq_confidence.analyze_margin_matching import-server \
+TGDA_PYTHON="${TGDA_PYTHON:-$HOME/.conda/envs/${TGDA_CONDA_ENV:-tgda}/bin/python}"
+"$TGDA_PYTHON" -m hqq_confidence.analyze_margin_matching import-server \
   --source-root /work/kyle0724/data/w3_g128_analysis --serial 20004 --input-id server20004_v1
-conda run -n opencode_env python -m hqq_confidence.analyze_margin_matching run \
+"$TGDA_PYTHON" -m hqq_confidence.analyze_margin_matching run \
   --input-id server20004_v1 --serial 20004 --run-id margin20004_direct_v1
 ```
 

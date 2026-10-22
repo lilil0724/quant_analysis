@@ -11,6 +11,8 @@ W6A4 已採用自己的 `data/<input_id>/`、`result/<run_id>/` 與唯一
 原 worktree 重跑紀錄保留於 [2026-10-21 報告](docs/baseline_recovery_20007_20261021.md)。
 
 每個分析各自管理程式、資料與結果。使用 `opencode_env`，從此目錄執行 Python module。
+Margin matching 的 server launcher 依 TGDA 設定使用 `tgda` 環境的 Python，
+路徑覆寫與提交命令見 [server 說明](hqq_confidence/README.md#run-on-nano4)。
 
 | 分析 | 入口與說明 | 資料 | 結果 |
 |---|---|---|---|

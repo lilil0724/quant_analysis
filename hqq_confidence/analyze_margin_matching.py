@@ -432,7 +432,7 @@ def run_analysis(args,argv):
     output.mkdir(parents=True,exist_ok=False)
     start=time.monotonic()
     receipt=dict(schema=1,run_id=args.run_id,status='running',started_at=now(),timezone='Asia/Taipei',
-        command=shlex.join(['conda','run','-n','opencode_env','python','-m','hqq_confidence.analyze_margin_matching',*argv]),
+        command=shlex.join([sys.executable,'-B','-u','-m','hqq_confidence.analyze_margin_matching',*argv]),
         parameters=vars(args),input_id=args.input_id,input_path=str(workspace/'data'/args.input_id),
         output_path=str(output),report_path=str(report/'REPORT.md'),
         environment=dict(python=sys.version,platform=platform.platform(),numpy=np.__version__,pandas=pd.__version__,

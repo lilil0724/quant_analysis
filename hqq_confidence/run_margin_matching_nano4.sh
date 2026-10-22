@@ -31,7 +31,9 @@ Soy+cotton = soyageing,soygene,soyglobal,soylocal,cotton; Other includes inat17.
 Run stage uses the snapshot's full imported matrix. Use --stage run to reuse it.
 All/import refuse an existing input ID; every analysis refuses an existing run ID.
 CPU analysis, no inference. Queue reserves one GPU per repository policy.
-Environment: ANALYSIS_PROJECT_ROOT, ANALYSIS_CONDA (default conda).
+Environment: ANALYSIS_PROJECT_ROOT, TGDA_CONDA_ENV (default tgda), TGDA_PYTHON.
+Default Python: $HOME/.conda/envs/tgda/bin/python (same as TGDA launchers).
+ANALYSIS_PYTHON, when set, overrides TGDA_PYTHON. No conda activation is required.
 EOF
 }
 fail() { echo "Error: $*" >&2; exit 2; }
@@ -81,11 +83,13 @@ if [[ "$WORKSPACE" != /* ]]; then WORKSPACE="$PWD/$WORKSPACE"; fi
 if [[ "$SOURCE_ROOT" != /* ]]; then SOURCE_ROOT="$PWD/$SOURCE_ROOT"; fi
 RUN_ID="${RUN_ID:-$(TZ=Asia/Taipei date +%Y%m%d_%H%M%S)_margin_s$SERIAL}"
 [[ "$RUN_ID" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$ ]] || fail 'Invalid --run-id'
-CONDA_BIN="${ANALYSIS_CONDA:-conda}"
+TGDA_CONDA_ENV="${TGDA_CONDA_ENV:-tgda}"
+TGDA_PYTHON="${ANALYSIS_PYTHON:-${TGDA_PYTHON:-${HOME}/.conda/envs/${TGDA_CONDA_ENV}/bin/python}}"
+export TGDA_PYTHON
 export PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}" OPENBLAS_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}" MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
 cd "$REPO"
-PREFIX=("$CONDA_BIN" run --no-capture-output -n opencode_env python -B -u -m hqq_confidence.analyze_margin_matching)
+PREFIX=("$TGDA_PYTHON" -B -u -m hqq_confidence.analyze_margin_matching)
 execute() {
     printf '%q ' "$@"; printf '\n'
     if (( ! DRY_RUN )); then "$@"; fi
@@ -93,6 +97,10 @@ execute() {
 if (( ! DRY_RUN )); then
     ml purge
     ml load miniconda3
+    [[ "$TGDA_PYTHON" = /* && -x "$TGDA_PYTHON" ]] || fail "Python not found or not executable: $TGDA_PYTHON; set TGDA_PYTHON to the absolute Python path in the tgda environment"
+    echo "SLURM job ID: ${SLURM_JOB_ID:-local}"
+    echo "Python: $TGDA_PYTHON"
+    "$TGDA_PYTHON" -c 'import sys, numpy, pandas, matplotlib, scipy, sklearn, threadpoolctl; print("Interpreter:", sys.executable); print("NumPy:", numpy.__version__, "pandas:", pandas.__version__, "matplotlib:", matplotlib.__version__, "SciPy:", scipy.__version__, "sklearn:", sklearn.__version__)'
 fi
 if [[ "$STAGE" == preflight ]]; then
     execute "${PREFIX[@]}" preflight-server --source-root "$SOURCE_ROOT" --serial "$SERIAL" --chunk-size "$CHUNK" "${SELECT[@]}"
