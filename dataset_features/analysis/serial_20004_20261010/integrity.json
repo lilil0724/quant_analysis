@@ -1,0 +1,58 @@
+{
+  "serial": 20004,
+  "source_root": "C:\\project\\quant_analysis\\five_dataset_features\\data\\w3_g128_results",
+  "status": "complete",
+  "datasets": 16,
+  "models": 3,
+  "modes": 3,
+  "pairs": 144,
+  "verified_compact_hashes": 579,
+  "intentionally_omitted_coordinate_files": 288,
+  "present_files": 580,
+  "layer_rows": 4896,
+  "source_manifest_sha256": "4bf50637c0602e38887580ca3bdf4253abaa87966053ba1286cea8d32f9f73ec",
+  "source_code_sha256": "a543431486848653d9e5ef46171f43cffa5dd79403292bf6e33bc0b219245bcf",
+  "scope": {
+    "serial": 20004,
+    "datasets": [
+      "aircraft",
+      "cars",
+      "cub",
+      "dogs",
+      "flowers",
+      "food",
+      "inat17",
+      "moe",
+      "nabirds",
+      "pets",
+      "soyageing",
+      "soygene",
+      "soyglobal",
+      "soylocal",
+      "vegfru",
+      "cotton"
+    ],
+    "models": [
+      "vit_b16",
+      "swin_base_patch4_window7_224_in22k",
+      "beitv2_base_patch16_224"
+    ],
+    "modes": [
+      "ft",
+      "fz",
+      "cal"
+    ],
+    "input_root": "/work/kyle0724/data/w3_g128_analysis"
+  },
+  "validation": "All compact output hashes, grid, coverage, summaries, identities and count/rate algebra checked.",
+  "limits": "Raw features/logits/predictions/coords absent; cannot independently recompute metrics or verify original source checksums.",
+  "aggregation": "Equal dataset weight within model/mode; 9-setting dataset means are descriptive summaries, not 144 independent samples.",
+  "correlations": "Spearman uses average tied ranks. Partial rank correlations residualize both ranks on intercept and ranks of FP accuracy, classes, samples; exploratory n=16, no significance or prediction claim.",
+  "condition": "FP versus W3/g128 weight-only; source exporter code contract, not new inference.",
+  "calculations": {
+    "relative_loss": "1-W3_acc/FP_acc",
+    "accuracy_drop": "FP_acc-W3_acc",
+    "h_score_retention": "W3_H/FP_H",
+    "separability_delta": "W3_sep-FP_sep"
+  }
+}

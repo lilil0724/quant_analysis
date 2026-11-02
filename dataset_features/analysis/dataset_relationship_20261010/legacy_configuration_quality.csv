@@ -1,0 +1,9 @@
+column,n_unique,values,fixed
+hqq_exclude,1,head,True
+hqq_offload_meta,1,False,True
+hqq_compute_dtype,1,float16,True
+hqq_quant_zero,1,True,True
+hqq_quant_scale,1,True,True
+image_size,1,224,True
+batch_size,3,"1024, 2048, 64",False
+host,0,,True

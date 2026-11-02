@@ -1,0 +1,2 @@
+# Preserve original source bytes and manifest SHA-256 across Git checkouts.
+* -text

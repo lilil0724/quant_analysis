@@ -1,0 +1,14 @@
+{
+  "common_dataset_count": 15,
+  "old_mean_accuracy_pct": 53.02666666666666,
+  "new_mean_accuracy_pct": 53.0358002686152,
+  "mean_absolute_difference_pp": 0.1431138714929432,
+  "max_absolute_difference_pp": 0.4966666666666715,
+  "max_absolute_fp_difference_pp": 0.016532352149340568,
+  "reference_plot_cells_verified": 32,
+  "sources_sha256": {
+    "C:\\project\\quant_analysis\\data\\backbones_quant.csv": "ee879ce9ba4bce27db9b6d02ce998aa15ea5ac4133a5cfea5dcfe8d520b2594b",
+    "C:\\project\\quant_analysis\\five_dataset_features\\data\\w3_g128_results\\all_pairs.csv": "b523e644d27b54d4dce24b5284e4587832a7a66fa2391797e69a9080400f0cab",
+    "C:\\google drive\\my_project\\quant_analysis\\results_all\\quant\\serial_10000\\corr\\prepared_accuracy_cells.csv": "5b7914bb0df0f82eb71d3d7be7d6677f39c1c6af6a3e928ab8cdeed4be44a820"
+  }
+}
