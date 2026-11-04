@@ -16,7 +16,7 @@ Margin matching 的 server launcher 依 TGDA 設定使用 `tgda` 環境的 Pytho
 
 | 分析 | 入口與說明 | 資料 | 結果 |
 |---|---|---|---|
-| W6A4 serial 20007（新規範） | [用途與命令](w6a4_analysis/README.md) | `w6a4_analysis/data/baseline_20261021/` | [唯一報告](w6a4_analysis/reports/20261021_163522_084281_w6a4_s20007/REPORT.md)；完整產物在 `w6a4_analysis/result/` |
+| Weight／activation accuracy（新規範；含歷史 W6A4） | [用途、W&B 匯入與篩選命令](activation_quant/README.md) | `activation_quant/data/<input_id>/`；含 `baseline_20261021`、`wandb_s20008_20261104` | [Serial 20008 通用流程驗證](activation_quant/reports/20261104_s20008_general_validated/REPORT.md)；[W3／4／5 dataset×A 圖](activation_quant/reports/20261104_s20008_dataset_activation/REPORT.md)；[歷史 W6A4 報告](activation_quant/reports/20261021_163522_084281_w6a4_s20007/REPORT.md)；完整產物在 `activation_quant/result/` |
 | Legacy HQQ accuracy ratio | [legacy_hqq/README.md](legacy_hqq/README.md) | `legacy_hqq/data/` | `legacy_hqq/results/` |
 | Dataset robustness | [dataset_robustness/README.md](dataset_robustness/README.md) | `dataset_robustness/data/` | `dataset_robustness/results/` |
 | Granularity robustness | [granularity_robustness/README.md](granularity_robustness/README.md) | `granularity_robustness/data/` | `granularity_robustness/results/` |
@@ -30,6 +30,14 @@ Margin matching 的 server launcher 依 TGDA 設定使用 `tgda` 環境的 Pytho
 | Legacy 21-condition / five-dataset feature code（封存） | [清單、SHA-256 與還原說明](archive/five_dataset_features_legacy_20261101/README.md) | historical inputs remain in place | historical outputs remain in place; archived code is not a relocated executable package |
 
 ## Common flow
+
+W3／4／5 的 [W+A minus weight-only delta 圖](activation_quant/reports/20261104_s20008_weight_delta/REPORT.md)
+使用 Top-1 百分點差。兩批資料的 scope/head 設定不同，因此為描述性比較；方法與
+`--weight-delta` 命令見 [模組說明](activation_quant/README.md)。
+同配對的 [acc_ratio delta 圖](activation_quant/reports/20261104_s20008_weight_delta_acc_ratio/REPORT.md)
+使用 `--weight-delta --delta-metric acc_ratio`，先各自除以共同 AMP baseline 再相減。
+另有 [acc_ratio(W+A) / acc_ratio(W-only) 圖](activation_quant/reports/20261104_s20008_weight_acc_ratio_quotient/REPORT.md)，
+使用 `--delta-metric acc_ratio_quotient`，每個配對先相除再取 context 平均，中性值為 1。
 
 ```text
 acquire (read/download) → prepare (validate/pair) → analyze (compute/report) → plot

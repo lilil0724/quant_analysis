@@ -1,0 +1,2 @@
+# Saved report bytes are referenced by immutable run manifests.
+reports/** -text
