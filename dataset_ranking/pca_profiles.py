@@ -1,7 +1,7 @@
 """Exploratory PCA of matched dataset quantization-loss profiles.
 
 Run from the repository root:
-    conda run -n opencode_env python -m dataset_robustness.pca_profiles
+    conda run -n opencode_env python -m dataset_ranking.pca_profiles
 
 Each fit has one row per dataset and one column per bit/group condition. Fits
 stay separate by model and checkpoint kind. PCA is descriptive, not a test of a
@@ -23,7 +23,7 @@ import pandas as pd
 from scipy.spatial.distance import pdist
 from scipy.stats import spearmanr
 
-from dataset_robustness.analyze import prepare_cells, short_model
+from dataset_ranking.analyze import prepare_cells, short_model
 
 
 ROOT = Path(__file__).resolve().parent
@@ -338,8 +338,10 @@ def write_report(output, summary, scores, loadings, sensitivity, source, config)
              '## 重現方式', '',
              '在 repository 根目錄執行：', '',
              '```powershell',
-             'conda run -n opencode_env python -m dataset_robustness.pca_profiles',
-             'conda run -n opencode_env python -m dataset_robustness.verify_pca',
+             'conda run -n opencode_env python -m dataset_ranking.pca_profiles '
+             f'--main-results "{config["results_dir"]}" --output-dir "{output}"',
+             'conda run -n opencode_env python -m dataset_ranking.verify_pca '
+             f'--output-dir "{output}"',
              '```', '',
              f'來源：`{source}`。輸入 SHA-256：`{config["input_sha256"]}`。'
              '`run_config.json` 記錄程式與輸出雜湊；`coverage.csv` 保留完整性稽核；'
@@ -354,6 +356,8 @@ def main():
     args = parser.parse_args()
     main_results = args.main_results.resolve()
     output = args.output_dir.resolve()
+    if output.exists():
+        raise FileExistsError(f'Output directory already exists: {output}')
     cells, excluded, source_config, source = load_verified_source(main_results)
     bits = tuple(float(value) for value in source_config['primary_bits'])
     groups = tuple(int(value) for value in source_config['group_sizes'])
@@ -363,7 +367,7 @@ def main():
     if REFERENCE not in {key[:2] for key in matrices}:
         raise ValueError('Reference ViT / ft context is absent.')
     sensitivity = distance_sensitivity(matrices)
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=False)
     tables = dict(pca_summary=summary, scores=scores, loadings=loadings,
                   variance=variance, coverage=coverage,
                   distance_sensitivity=sensitivity)

@@ -1,4 +1,21 @@
-# Dataset robustness stability audit
+# Dataset ranking stability audit
+
+## 2026-11-04 模組改名
+
+現行模組由 `dataset_robustness` 改名為 `dataset_ranking`。程式 import、CLI、
+現行索引與依賴工具使用新名稱；分析公式、dataset cohort 與 baseline 定義不變。
+歷史 `data/`、`results/main/`、報告及 manifest 保留原始內容。歷史文件內的
+`dataset_robustness/` 前綴對應目前的 `dataset_ranking/`，但這不會更新歷史
+run 所記錄的來源／程式 hash，也不代表它可由現行 verifier 重新認證。
+
+本機只有歷史 `results/main/`，沒有 `results/pca_phase1/`。重跑必須使用新的
+output directory；analyzer 與 PCA 入口拒絕覆寫已存在的目錄。現行 verifier
+必須指向由目前程式新產生的 run，PCA 也必須讀取該新 run，不能藉改寫歷史
+manifest 或略過 hash 檢查來通過驗證。歷史 baseline-promotion 工具仍須具備
+原始相符的 run、程式與 PCA 資料，不能視為已通過本次完整驗證。
+
+路徑對應與保存檔案清單見 [改名紀錄](relocations/20261104_module_rename/receipt.json)。
+這次只修復改名，不進行完整 `result/<run_id>/reports` 契約遷移。
 
 ## 2026-10-21 規範採用狀態與 codebase
 
@@ -46,12 +63,12 @@ modify the four legacy scripts.
 ## Reproduce
 
 Use `opencode_env` from the repository root. The fixed upstream summary and
-legacy validation snapshot are in `dataset_robustness/data/upstream/legacy/`.
+legacy validation snapshot are in `dataset_ranking/data/upstream/legacy/`.
 Downloading is not required.
 
 ```powershell
-conda run -n opencode_env python -m dataset_robustness.analyze
-conda run -n opencode_env python -m dataset_robustness.verify
+conda run -n opencode_env python -m dataset_ranking.analyze --results-dir dataset_ranking/results/20261104_ranking
+conda run -n opencode_env python -m dataset_ranking.verify --results-dir dataset_ranking/results/20261104_ranking
 ```
 
 The analyzer accepts `--input-file` and `--results-dir`. The explicit
@@ -65,11 +82,13 @@ in `run_config.json`.
 After the main analysis and its verifier pass, run the exploratory PCA stage:
 
 ```powershell
-conda run -n opencode_env python -m dataset_robustness.pca_profiles
-conda run -n opencode_env python -m dataset_robustness.verify_pca
+# To recompute, choose a new PCA output directory; existing directories are rejected.
+conda run -n opencode_env python -m dataset_ranking.pca_profiles --main-results dataset_ranking/results/20261104_ranking --output-dir dataset_ranking/results/20261104_ranking_pca
+conda run -n opencode_env python -m dataset_ranking.verify_pca --output-dir dataset_ranking/results/20261104_ranking_pca
 ```
 
-Start with `dataset_robustness/results/pca_phase1/report.md`. Each fit uses one
+Use a fresh run ID if the example directories already exist. Start with
+`dataset_ranking/results/20261104_ranking_pca/report.md` after generating it. Each fit uses one
 dataset per row and the complete bit × group grid per column within a fixed
 model/checkpoint-kind context. The primary outcome is `1 - accuracy_ratio` for
 2/3/4-bit conditions; separate fits use absolute accuracy drop and 3/4-bit
@@ -83,8 +102,12 @@ report. Different PCA fits do not share coordinate axes. Quantization settings
 are repeated observations of dataset-specific checkpoints, not independent
 training seeds; PCA is descriptive and does not identify a dataset-only effect.
 
-Start with `dataset_robustness/results/main/report.md`. The report links the main
+Start with `dataset_ranking/results/main/report.md`. The report links the main
 figures; `plots_manifest.csv` maps all plots to source tables. CSVs preserve the
 full per-condition results and all pairwise stability comparisons. Reported
 rank summaries are descriptive of equally weighted, observed conditions; their
 variation is not an uncertainty interval.
+
+Runtime dependencies: NumPy, pandas, Matplotlib, seaborn and SciPy; verification
+also uses Pillow and openpyxl for figure and upstream workbook checks. Use the
+existing `opencode_env`; no download or model inference is needed.

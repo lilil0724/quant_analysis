@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageStat
 
-from dataset_robustness.pca_profiles import ROOT, complete_matrix, load_verified_source
+from dataset_ranking.pca_profiles import ROOT, complete_matrix, load_verified_source
 
 
 def sha256(path):

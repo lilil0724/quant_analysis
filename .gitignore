@@ -30,6 +30,8 @@ hqq_confidence/data/run_config.json
 /hqq_confidence/analysis/
 /hqq_confidence/dist/
 /five_dataset_features/analysis/
+# Consolidated feature module; keep legacy ignore rules for old checkouts.
+/dataset_features/analysis/
 /five_dataset_features/data/
 /five_dataset_features/smoke/
 /five_dataset_features/aircraft/

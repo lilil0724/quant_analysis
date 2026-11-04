@@ -132,7 +132,7 @@ def load_config(path: str | Path) -> RunConfig:
         return (base / result).resolve() if not result.is_absolute() else result.resolve()
 
     input_root = resolve(raw.get("input_root"), base / "data" / "20004")
-    output_root = resolve(raw.get("output_root"), base / "five_dataset_features" /
+    output_root = resolve(raw.get("output_root"), base / "dataset_features" /
                           "results" / "20004")
     assert input_root is not None and output_root is not None
     if input_root == output_root or input_root in output_root.parents or output_root in input_root.parents:

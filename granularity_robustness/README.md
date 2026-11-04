@@ -15,7 +15,7 @@
 verify.py 為真實結果驗證而保留。新的功能測試使用 repo 外暫存目錄。
 
 
-This module implements `dataset_robustness/granularity_analysis_proposal.md`
+This module implements [the granularity proposal](../dataset_ranking/granularity_analysis_proposal.md)
 without changing the four legacy pipeline scripts. It compares externally
 defined FGIR and Ultra-FGIR dataset groups within matched model, checkpoint and
 HQQ group-size strata.

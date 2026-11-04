@@ -3,8 +3,8 @@
 This module reads existing paired FP/W3 exports. It uses CPU NumPy
 only, performs no model inference, and does not load checkpoints or images.
 Requirements: Python >= 3.9 and NumPy. Run from the `quant_analysis` repository
-root with `python -m five_dataset_features.centered_class_distance`. The dedicated
-Slurm launcher is `five_dataset_features/run_centered_class_distance_nano4.sh`.
+root with `conda run -n opencode_env python -m dataset_features.centered_class_distance` locally. The dedicated
+Slurm launcher is `dataset_features/run_centered_class_distance_nano4.sh`.
 
 The input schema is the original paired export:
 
@@ -66,36 +66,36 @@ the owning analysis module; source raw exports remain in the data directory:
 
 ```bash
 cd /work/kyle0724/project/quant_analysis
-bash -n five_dataset_features/run_centered_class_distance_nano4.sh
+bash -n dataset_features/run_centered_class_distance_nano4.sh
 
 # Plan 16 datasets x 3 models x CAL = 48 contexts. No files are written.
-bash five_dataset_features/run_centered_class_distance_nano4.sh \
+bash dataset_features/run_centered_class_distance_nano4.sh \
   --input-root /work/kyle0724/data/w3_g128_analysis \
   --serial 20004 --modes cal \
-  --output-root five_dataset_features/results/20004/centered_fp_distance_cal --dry-run
+  --output-root dataset_features/results/20004/centered_fp_distance_cal --dry-run
 
 # Compute the 48 CAL contexts from existing raw features.
-sbatch five_dataset_features/run_centered_class_distance_nano4.sh \
+sbatch dataset_features/run_centered_class_distance_nano4.sh \
   --input-root /work/kyle0724/data/w3_g128_analysis \
   --serial 20004 --modes cal \
-  --output-root five_dataset_features/results/20004/centered_fp_distance_cal
+  --output-root dataset_features/results/20004/centered_fp_distance_cal
 ```
 
 For all 144 FT/FZ/CAL contexts, omit `--modes cal`:
 
 ```bash
-sbatch five_dataset_features/run_centered_class_distance_nano4.sh \
+sbatch dataset_features/run_centered_class_distance_nano4.sh \
   --input-root /work/kyle0724/data/w3_g128_analysis --serial 20004 \
-  --output-root five_dataset_features/results/20004/centered_fp_distance_all
+  --output-root dataset_features/results/20004/centered_fp_distance_all
 ```
 
 To pilot one context before processing the whole selection:
 
 ```bash
-sbatch five_dataset_features/run_centered_class_distance_nano4.sh \
+sbatch dataset_features/run_centered_class_distance_nano4.sh \
   --input-root /work/kyle0724/data/w3_g128_analysis --serial 20004 \
   --datasets cub --models beitv2_base_patch16_224 --modes cal \
-  --output-root five_dataset_features/results/20004/centered_fp_distance_pilot
+  --output-root dataset_features/results/20004/centered_fp_distance_pilot
 ```
 
 The launcher requests one node, one GPU, 4 CPU cores, 8 GB RAM and 6 hours in
@@ -122,7 +122,7 @@ The Python CLI accepts space-separated names for `--datasets`, `--models` and
 The CAL submission above writes:
 
 ```text
-/work/kyle0724/project/quant_analysis/five_dataset_features/results/20004/centered_fp_distance_cal/
+/work/kyle0724/project/quant_analysis/dataset_features/results/20004/centered_fp_distance_cal/
 ├── centered_class_distances.csv
 ├── run_config.json
 └── means/<dataset>/<model>/<mode>/fp_mean.npy
@@ -163,3 +163,8 @@ The 2026-11-01 source cleanup leaves `centered_class_distance.py` and its launch
 unchanged. Current cleanup verification and limitations are recorded in
 [the cleanup record](../docs/superpowers/plans/2026-11-01-feature-code-cleanup.md).
 Full 16-dataset source verification still requires the original nano4 arrays.
+
+The 2026-11-04 module consolidation updates executable paths to
+`dataset_features`; source raw-export paths and calculation definitions are
+unchanged. Existing local results were relocated with byte verification; see
+the [relocation receipt](relocations/20261104_module_consolidation/README.md).

@@ -1,6 +1,6 @@
 """Read schema-2 TGDA exports independently of legacy/paired schema-1 workflows.
 
-CPU comparison: python -m five_dataset_features.unified_inputs --fp DIR --quant DIR --output DIR
+CPU comparison: python -m dataset_features.unified_inputs --fp DIR --quant DIR --output DIR
 """
 import argparse
 import csv

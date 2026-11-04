@@ -33,13 +33,18 @@
 部分來源已把 dataset 常數擴成 16，但其他 reader、palette、subplot 和 verifier
 仍沿用舊假設；不得把這份快照當成已通過 16-dataset 驗證的現行入口。
 
-現行流程見 [模組 README](../../five_dataset_features/README.md)。共用計算
+現行流程見 [模組 README](../../dataset_features/README.md)。共用計算
 `five_dataset_features/metrics.py` 原樣保留；其封存時 hash 列於 manifest 的
 `retained_dependencies`。現行 paired／t-SNE 只改從 `common.py` 匯入檔案工具與
 dataset 清單，已不依賴此封存區。
 
 舊 data、analysis、results、原始 manifests 和既有報告沒有搬動或改寫。
 此封存不包含那些大型輸入，也不取代其獨立備份。
+
+2026-11-04 路徑註記：上段描述封存當日的狀態。現行原始碼與本機資料／結果
+已統一至 `dataset_features/`，見 [搬移清單與 SHA-256 核對](../../dataset_features/relocations/20261104_module_consolidation/README.md)。
+此封存內的來源快照與 manifest 保持原樣；還原舊程式時仍使用 manifest 的
+`original_path`，不要將舊入口覆寫至現行模組。
 
 ## 核對與還原
 

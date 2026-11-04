@@ -38,11 +38,11 @@ def verify_raw_source(raw, curated, receipt):
 
 
 def verify_downstream(root):
-    from dataset_robustness.verify import verify as dataset_verify
-    from dataset_robustness.verify_pca import verify as pca_verify
+    from dataset_ranking.verify import verify as dataset_verify
+    from dataset_ranking.verify_pca import verify as pca_verify
     from granularity_robustness.verify import verify as granularity_verify
-    dataset_verify(root / 'dataset_robustness/results/main')
-    pca_verify(root / 'dataset_robustness/results/pca_phase1')
+    dataset_verify(root / 'dataset_ranking/results/main')
+    pca_verify(root / 'dataset_ranking/results/pca_phase1')
     granularity_verify(root / 'granularity_robustness/results/main')
 
 
@@ -91,7 +91,7 @@ def main():
     assert affected.sum() == 480
     for field in fields:
         np.testing.assert_allclose(comparison.loc[~affected, field+'_new'], comparison.loc[~affected, field+'_old'], rtol=0, atol=1e-12)
-    upstream = [ROOT / 'dataset_robustness/data/upstream/legacy/quant_summary.csv',
+    upstream = [ROOT / 'dataset_ranking/data/upstream/legacy/quant_summary.csv',
                 ROOT / 'granularity_robustness/data/upstream/quant_summary.csv']
     assert all(sha(path) == sha(summary_path) for path in upstream)
     pairs_dir = ROOT / 'outputs/serial_20007/results/main'
@@ -102,8 +102,8 @@ def main():
     np.testing.assert_allclose(pairs[['w6a4_top1_pct','baseline_top1_pct','accuracy_ratio']],
                                expected_pairs[['w6a4_top1_pct','baseline_top1_pct','accuracy_ratio']], rtol=0, atol=1e-12)
     verify_downstream(ROOT)
-    receipts = [ROOT / 'dataset_robustness/results/main/verification.json',
-                ROOT / 'dataset_robustness/results/pca_phase1/verification.json',
+    receipts = [ROOT / 'dataset_ranking/results/main/verification.json',
+                ROOT / 'dataset_ranking/results/pca_phase1/verification.json',
                 ROOT / 'granularity_robustness/results/main/verification.json',
                 pairs_dir / 'verification.json']
     for receipt in receipts:
@@ -113,8 +113,8 @@ def main():
             assert sha(local_input(name)) == expected_hash
         verify_artifacts(receipt.parent, result.get('artifacts', {}))
     for path in [ROOT / 'legacy_hqq/results/main/summary/run_config.json',
-                 ROOT / 'dataset_robustness/results/main/run_config.json',
-                 ROOT / 'dataset_robustness/results/pca_phase1/run_config.json',
+                 ROOT / 'dataset_ranking/results/main/run_config.json',
+                 ROOT / 'dataset_ranking/results/pca_phase1/run_config.json',
                  ROOT / 'granularity_robustness/results/main/run_config.json']:
         config = json.loads(path.read_text(encoding='utf-8'))
         for name in ('input_file', 'source', 'main_results'):

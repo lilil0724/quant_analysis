@@ -41,10 +41,10 @@ WANDB_API_KEY 或 wandb login。產物由 owning stage 重算，修改公式或�
 |---|---|---|
 | Activation quantization（含 W6A4） | [activation_quant/README.md](activation_quant/README.md) | 已遷移；matched unquantized AMP。 |
 | Legacy ratios | [legacy_hqq/README.md](legacy_hqq/README.md) | 待遷移；修正版 baseline 為 unquantized AMP。 |
-| Dataset ranking／PCA | [dataset_robustness/README.md](dataset_robustness/README.md) | 待遷移；使用固定 upstream legacy snapshot。 |
+| Dataset ranking／PCA | [dataset_ranking/README.md](dataset_ranking/README.md) | 已改名；result/reports 契約待遷移，使用固定 upstream legacy snapshot。 |
 | FGIR／UFGIR | [granularity_robustness/README.md](granularity_robustness/README.md) | 待遷移；保留原分組 mapping 與 matched summary。 |
 | Confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | 待遷移；matched-sample unquantized AMP。 |
-| Feature geometry | [five_dataset_features/README.md](five_dataset_features/README.md) | 待遷移；部分完整 inference arrays 仍在 nano4。 |
+| Feature geometry | [dataset_features/README.md](dataset_features/README.md) | 已統一模組名稱與本機資料路徑；完整 result/report 契約待遷移，部分 raw arrays 仍在 nano4。 |
 
 新分析與已遷移模組遵守上述目錄契約。待遷移模組先沿用其 README 的現行
 `results/`、`analysis/`、`data/processed/` 或 server input-root，完成實際驗證後再遷移；

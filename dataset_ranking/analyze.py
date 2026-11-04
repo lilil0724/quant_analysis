@@ -1,6 +1,6 @@
 """Compare dataset accuracy retention without assuming a universal ranking.
 
-Run with: python -m dataset_robustness.analyze --help
+Run with: conda run -n opencode_env python -m dataset_ranking.analyze --help
 The legacy summary owns checkpoint/seed pairing. This module never pools
 different checkpoint paths or treats quantization settings as replicates.
 """
@@ -423,7 +423,7 @@ def main():
         parser.error('This agreed analysis contract requires primary bits 2 3 4.')
     args.input_file = args.input_file.resolve()
     output = args.results_dir.resolve()
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=False)
     cells, excluded = prepare_cells(pd.read_csv(args.input_file))
     tables = analyze(cells, args.primary_bits)
     cells.to_csv(output / 'cells.csv', index=False)

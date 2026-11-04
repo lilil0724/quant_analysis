@@ -17,11 +17,11 @@ from scipy.stats import rankdata, spearmanr
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import summarize_quant
-from dataset_robustness.analyze import prepare_cells, analyze
+from dataset_ranking.analyze import prepare_cells, analyze
 
-SOURCE = ROOT / 'five_dataset_features/data/w3_g128_results'
-DISTANCES = ROOT / 'five_dataset_features/analysis/serial_20004_20261010/class_distances/final_class_distances.csv'
-OUT = ROOT / 'five_dataset_features/analysis/dataset_relationship_20261010'
+SOURCE = ROOT / 'dataset_features/data/w3_g128_results'
+DISTANCES = ROOT / 'dataset_features/analysis/serial_20004_20261010/class_distances/final_class_distances.csv'
+OUT = ROOT / 'dataset_features/analysis/dataset_relationship_20261010'
 SOY = {'soyageing', 'soygene', 'soyglobal', 'soylocal'}
 PLANT = SOY | {'cotton'}
 KEY = ['dataset', 'model', 'mode']

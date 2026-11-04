@@ -17,8 +17,8 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: sbatch five_dataset_features/run_nano4.sh --serial N [options]
-       bash five_dataset_features/run_nano4.sh --serial N --dry-run [options]
+Usage: sbatch dataset_features/run_nano4.sh --serial N [options]
+       bash dataset_features/run_nano4.sh --serial N --dry-run [options]
 
   --serial N          Required source experiment serial (for example 20005).
   --input-root PATH   Parent w3_g128_analysis directory (default: <repo>/../../data/w3_g128_analysis).
@@ -93,7 +93,7 @@ validate_names mode "$ALLOWED_MODES" "${MODES[@]}"
 
 # Slurm runs a spool copy; use its submission directory, like TGDA inference.
 ANALYSIS_PROJECT_ROOT="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$ANALYSIS_PROJECT_ROOT/five_dataset_features/paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$ANALYSIS_PROJECT_ROOT" && pwd)"
 INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
@@ -108,7 +108,7 @@ THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS="$THREADS" OPENBLAS_NUM_THREADS="$THREADS" MKL_NUM_THREADS="$THREADS" NUMEXPR_NUM_THREADS="$THREADS"
 cd "$REPO"
-COMMAND=("$ANALYSIS_PYTHON" -B -u -m five_dataset_features.paired "$STAGE"
+COMMAND=("$ANALYSIS_PYTHON" -B -u -m dataset_features.paired "$STAGE"
     --input-root "$INPUT_ROOT" --serial "$SERIAL" --output-root "$OUTPUT_ROOT"
     --datasets "${DATASETS[@]}" --models "${MODELS[@]}" --modes "${MODES[@]}")
 

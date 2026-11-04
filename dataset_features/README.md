@@ -24,7 +24,30 @@ Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
 
 本模組尚未完成根目錄 [AGENTS.md](../AGENTS.md) 的完整資料／結果目錄遷移。
 目前繼續使用既有 `data/`、`analysis/`、`results/` 與 server input-root；本次
-不搬動或改寫既有資料、結果和 manifests，也不宣稱已完成 raw-array 驗證。
+只統一模組路徑，不改寫既有資料、結果和 manifests，也不宣稱已完成 raw-array 驗證。
+
+### 2026-11-04 模組路徑統一
+
+現行程式與本機資料都集中於 `dataset_features/`。舊目錄
+`five_dataset_features/{data,analysis,results,__pycache__}/` 已逐檔核對後移入
+此目錄；`analysis/` 與原有歷史摘要合併，沒有覆寫檔案。搬移的 1,418 個檔案
+（218,255,389 bytes）及原有 70 個歷史產物均核對 SHA-256 一致。
+
+| 內容 | 現行位置 |
+|---|---|
+| Serial 20004 compact FP/W3 副本 | `data/w3_g128_results/` |
+| 歷史摘要、PCA、t-SNE 圖集 | `analysis/` |
+| 既有完整結果 | `results/` |
+| 遷移清單與核對紀錄 | [relocations/20261104_module_consolidation/](relocations/20261104_module_consolidation/README.md) |
+
+歷史 manifest、完成的報告、ZIP 與封存來源保留原始 bytes；其中的舊路徑屬於
+provenance，可依 relocation receipt 將 `five_dataset_features/` 前綴換成
+`dataset_features/` 定位目前檔案。歷史結果仍須配合當時程式與來源重現，不能
+因路徑已修正就視為通過現行 code-identity 或 raw-array 驗證。不要在舊目錄新增輸出。
+
+`data/`、`analysis/`、`results/` 均忽略新增產物；整理前已追蹤的歷史摘要維持
+追蹤。Git 不備份這次搬移的大型資料，需另行備份 `dataset_features/` 下的資料與結果。
+伺服器 raw exports 的來源路徑未更動；同步程式後使用下列新模組命令。
 
 ## Codebase 分工
 
@@ -54,8 +77,7 @@ Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
 從 repository root 執行。本機 Python 明確使用：
 
 ```powershell
-$python = 'C:\Users\Public\miniconda3\envs\opencode_env\python.exe'
-& $python -B -m five_dataset_features.run --help
+conda run -n opencode_env python -B -m dataset_features.run --help
 ```
 
 Paired 核心需要 NumPy、Matplotlib；t-SNE 另需 scikit-learn。完整逐層比較使用
@@ -89,12 +111,12 @@ precision、preprocessing 與評估設定；schema-2 還要求 checkpoint/data/c
 
 ```bash
 cd /work/kyle0724/project/quant_analysis
-bash five_dataset_features/run_nano4.sh --serial 20004 --dry-run
-sbatch five_dataset_features/run_nano4.sh --serial 20004 --stage preflight
+bash dataset_features/run_nano4.sh --serial 20004 --dry-run
+sbatch dataset_features/run_nano4.sh --serial 20004 --stage preflight
 # 完整矩陣
-sbatch five_dataset_features/run_nano4.sh --serial 20004
+sbatch dataset_features/run_nano4.sh --serial 20004
 # Pilot；後續 report/package 必須使用相同 scope
-sbatch five_dataset_features/run_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
+sbatch dataset_features/run_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
 ```
 
 Stages：`all,preflight,analyze,report,package`。`--dry-run` 只列印選取與命令，
@@ -120,10 +142,10 @@ FP final features 擬合一次，FP/W3 共用基底。
 `w3_g128/final.npy`；需要原始 arrays，compact copy 不足以執行。
 
 ```bash
-bash five_dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run
-sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 --stage preflight
-sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
-sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004
+bash dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run
+sbatch dataset_features/run_tsne_nano4.sh --serial 20004 --stage preflight
+sbatch dataset_features/run_tsne_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
+sbatch dataset_features/run_tsne_nano4.sh --serial 20004
 ```
 
 預設 `--sampling classes --class-fraction 0.1`，選取
@@ -166,17 +188,17 @@ hidden／incompatible backup directories 不當成 conditions。
 
 先複製 `config/20004.example.json` 為自己的 config，填入實際 paths、primary
 condition 和 condition grid。預設 input 為 repository 的 `data/20004/`，output
-為 `five_dataset_features/results/20004/`；`expected_dataset_count=16`。
+為 `dataset_features/results/20004/`；`expected_dataset_count=16`。
 若要 group contrasts，提供經驗證的 16-dataset mapping，欄位為
 `dataset_name,core_group,expanded_group`，labels 為 `FGIR`、`UFGIR`／`Ultra-FGIR`
 或 boundary 的空白；不自動沿用舊 15-dataset mapping。
 
 ```powershell
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage inventory
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage validate
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage metrics --dataset cub
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage pca --dataset cub
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage all
+conda run -n opencode_env python -B -m dataset_features.run --config dataset_features/config/20004.json --stage inventory
+conda run -n opencode_env python -B -m dataset_features.run --config dataset_features/config/20004.json --stage validate
+conda run -n opencode_env python -B -m dataset_features.run --config dataset_features/config/20004.json --stage metrics --dataset cub
+conda run -n opencode_env python -B -m dataset_features.run --config dataset_features/config/20004.json --stage pca --dataset cub
+conda run -n opencode_env python -B -m dataset_features.run --config dataset_features/config/20004.json --stage all
 ```
 
 Stages：`inventory,validate,metrics,pca,comparisons,plot,report,verify,all`。
@@ -202,7 +224,7 @@ schema-2 manifest、來源／execution／preprocessing hashes、sample pairing �
 `features/<layer>.npy`，輸出 `layer_metrics.csv` 和 `sources.json`。
 
 ```powershell
-& $python -B -m five_dataset_features.unified_inputs --fp <fp-condition> --quant <quant-condition> --output <new-output-directory>
+conda run -n opencode_env python -B -m dataset_features.unified_inputs --fp <fp-condition> --quant <quant-condition> --output <new-output-directory>
 ```
 
 Output 必須是來源外的新目錄。此入口不限制 dataset 名稱，但尚未提供完整
