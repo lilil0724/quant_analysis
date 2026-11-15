@@ -32,6 +32,11 @@ Margin matching 的 server launcher 依 TGDA 設定使用 `tgda` 環境的 Pytho
 
 ## Common flow
 
+Nano4 單一提交入口：[`dataset_features/run_all_nano4.sh`](dataset_features/run_all_nano4.sh)，
+可選擇或一次執行既有 W3/G128 paired、centered、bias、margin、t-SNE；原分析與 plot
+不變。乾跑、preflight、pilot、完整提交及輸出位置見
+[統一 launcher 說明](dataset_features/README.md#一次提交既有分析run_all_nano4sh)。
+
 Paired W3/G128 feature、t-SNE、centered-distance、bias/competitor 與 margin-matching
 分析現在同時接受 legacy paired 或新版 `feature_analysis` schema 2，沿用原本統計與
 plot。來源格式、必要檔案、明確跨 serial 選取及 Nano4 命令見

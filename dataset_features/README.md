@@ -73,6 +73,82 @@ precision、preprocessing 與評估設定；schema-2 還要求 checkpoint/data/c
 
 ## Paired FP/W3：nano4 主分析
 
+### 一次提交既有分析：run_all_nano4.sh
+
+`run_all_nano4.sh` → `python -m dataset_features.run_all` 是新增的協調入口，
+依序呼叫原本的 paired、centered、bias/competitor、margin matching、t-SNE；
+不修改公式、抽樣、統計或 plot。條件仍固定為 **W3/G128 weight-only**，不是
+10000–10016 accuracy-summary 或任意 bit/group grid 的分析器。
+
+先把目前 `quant_analysis` 程式（含 `dataset_features/run_all.py`、新 launcher 及
+先前的雙格式讀取器）同步到 Nano4，再從 repository root 提交：
+
+```bash
+cd /work/kyle0724/project/quant_analysis
+export ANALYSIS_PYTHON="$HOME/.conda/envs/tgda/bin/python"
+
+# 舊 paired input；新版改為實際 schema-2 serial 與 feature_analysis root。
+SERIAL=20004
+INPUT_ROOT=/work/kyle0724/data/w3_g128_analysis
+
+# 只列出所有命令；不讀 arrays、不建立輸出、不提交 job。
+bash dataset_features/run_all_nano4.sh \
+  --serial "$SERIAL" --input-root "$INPUT_ROOT" --dry-run
+
+# 唯讀檢查所有選取階段需要的來源；完成後檢查 Slurm log。
+sbatch dataset_features/run_all_nano4.sh \
+  --serial "$SERIAL" --input-root "$INPUT_ROOT" --preflight-only
+
+# Preflight 通過後執行；預設自動產生新的 run ID。
+sbatch dataset_features/run_all_nano4.sh \
+  --serial "$SERIAL" --input-root "$INPUT_ROOT"
+```
+
+預設為全部 16 datasets × 3 models × FT/FZ/CAL。每個實際 run 都先完成全部
+選取階段的 preflight，再開始分析；任何失敗都停止，已完成／失敗輸出固定保留。
+使用 `--run-id NEW_ID` 可自行命名，或用 `--output-root ABSOLUTE_NEW_DIRECTORY`
+指定一個全新的目錄；已有目錄一律拒絕，不會自動 overwrite/resume。
+
+只跑部分分析或先做小範圍 pilot：
+
+```bash
+# 單 dataset 的 feature pilot，不執行跨 dataset 的 bias/margin 比較。
+sbatch dataset_features/run_all_nano4.sh \
+  --serial "$SERIAL" --input-root "$INPUT_ROOT" \
+  --datasets cub --models vit_b16 --modes cal \
+  --analyses paired,centered,tsne
+
+# 兩組 dataset 都存在時，可執行完整流程；仍是 pilot scope，不是全矩陣結果。
+sbatch dataset_features/run_all_nano4.sh \
+  --serial "$SERIAL" --input-root "$INPUT_ROOT" \
+  --datasets cub,soygene --models vit_b16 --modes cal
+```
+
+`--datasets`、`--models`、`--modes`、`--analyses` 都接受逗號分隔的名稱。
+`--source-map PATH` 可明列舊 FT/FZ + 新 CAL，格式及來源一致性限制見下一節。
+Margin matching 沿用原本 soy+cotton／other 分組，所以選取中必須同時有兩組。
+其既有 import 會複製完整 FP/Q logits 作為不可變 input snapshot，需預留這部分
+額外 server 空間；不會重新下載 W&B 或重新 inference。
+
+產物根目錄為 `dataset_features/result/<run_id>/`：
+
+| 路徑 | 內容 |
+|---|---|
+| `run.json`、`logs/`、`provenance/` | 本次協調命令、階段／失敗狀態、來源清單、環境、實際程式快照及 hash |
+| `paired/` | 原本 paired 表、PCA、REPORT 與 compact ZIP |
+| `centered/` | centered distance CSV、means、run_config |
+| `bias/` | 原本 bias／competitor 表、報告與完成紀錄 |
+| `tsne/` | 各 context 的圖、coordinates.csv、method.json |
+| `margin/data/source/` | 原始 logits/predictions 的 input snapshot；通常不需下載回本機 |
+| `margin/result/analysis/`、`margin/reports/analysis/` | 原本 margin 統計、圖與報告 |
+
+這是既有分析的協調器，各子流程保留原本輸出／報告契約；不新增第二套統計報告。
+每個子流程成功後核對原本 completion receipts，頂層 `run.json` 才標記 complete。
+Slurm logs 為提交目錄的 `weight_only_analysis_<JOBID>.out/.err`。預設一個 GPU、
+8 CPU、64 GB、24 小時，計算仍以 CPU 為主；這些是 launcher 設定，並非全矩陣
+runtime/memory 的實測保證。現有 Python 環境需有 NumPy/pandas/Matplotlib/SciPy/
+scikit-learn/threadpoolctl，job 不自動安裝套件。
+
 ### 舊 paired 與新版 schema 2 共用原分析
 
 `paired`、`tsne_paired`、`centered_class_distance` 現在會逐 context 自動辨識
