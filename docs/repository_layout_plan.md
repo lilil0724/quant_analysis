@@ -1,5 +1,11 @@
 # 分析目錄重整提案
 
+> 2026-11-15 名稱更新：`granularity_robustness/` 已更名為 `dataset_static_feature/`，
+> `hqq_confidence/` 已更名為 `dataset_confidence/`。以下保留歷史規劃原文；
+> 現行目錄與命令見 [根 README](../README.md)。
+
+> 同日 `legacy_hqq/` 更名為 `quant_acc/`；現行 Python 入口使用 `python -m quant_acc...`。
+
 > 歷史規劃：2026-10-21 起，新的分析與遷移採用
 > [新版規範](analysis_conventions_proposal.md)。下方 `results/`、固定 `main`
 > run、多份階段報告、保留 tests/ 等目標已被新版的 `result/<run_id>/`、

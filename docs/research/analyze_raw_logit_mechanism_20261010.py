@@ -22,7 +22,7 @@ BASE = "fp_unquantized"
 SOY = {"soyageing", "soygene", "soyglobal", "soylocal"}
 BINS = np.array([0, .25, .5, 1, 2, 4, 8, np.inf])
 DEFAULT_SOURCE = Path(r"C:\Users\kyle\.codex\visualizations\2026\09\12\01a093a1-c8f1-7fd0-94a2-16db1fa2f2ab\hqq_confidence_serial_100004")
-DEFAULT_OUT = Path(r"C:\project\quant_analysis\hqq_confidence\analysis\dataset_relationship_20261010")
+DEFAULT_OUT = Path(r"C:\project\quant_analysis\dataset_confidence\analysis\dataset_relationship_20261010")
 DEFAULT_REFERENCE = Path(r"C:\Users\kyle\.codex\visualizations\2026\10\02\01a0fb4d-e996-79a0-8d58-cd96de264aad\hqq_confidence\q10_step1")
 
 
@@ -345,7 +345,7 @@ def main():
              "擾動與 margin 皆為相同測試 logits 的 retrospective measurement；不能聲稱 external prediction。跨 dataset baseline accuracy、類別數、資料家族、checkpoint 訓練/難度均混雜。RMS/Linf 不能直接指出哪一層造成錯誤，也沒有把量化擾動當成獨立或均勻噪音。margin 與 perturbation 都可能重要；相關不等於兩者的獨立貢獻或因果。", "",
              f"Primary source: `{manifest_path}`（SHA256 `{provenance['manifest_sha256']}`）及其中明列的70份 artifact；raw_logit_run_config.json 保留 run ID、W&B artifact digest/version、checkpoint SHA、原始 path，以及本次重新計算的70份 NPZ SHA256。W&B artifact digest 不等同 NPZ SHA256。", "",
              f"參照資料：`{args.reference_dir}`。14 baseline NPZ SHA256 與10/02 run_config source_hashes 的 baseline_artifact reference 全一致；本次14 Q10逐dataset與baseline_q10.csv誤差小於1e-12；56pairs的 swap、ratio、damage、rescue 亦與10/02 condition_metrics.csv全一致。56 quant raw NPZ沒有既有SHA256 reference，本次只記錄hash作未來provenance，並未聲稱與舊reference hash吻合。舊 summary 的 Q10→swap rho −0.967033 為四條件 median；本次四係數 median 同為 −0.967033，並無資料變化。", "",
-             "流程定義見 [hqq_confidence/README.md](../../README.md)；可重現腳本為 `docs/research/analyze_raw_logit_mechanism_20261010.py`。"]
+             "流程定義見 [dataset_confidence/README.md](../../README.md)；可重現腳本為 `docs/research/analyze_raw_logit_mechanism_20261010.py`。"]
     (args.output_dir / "raw_logit_mechanism_report.md").write_text("\n".join(text)+"\n",encoding="utf-8")
     print("OUTPUT", args.output_dir, "CELLS",len(cells),"GUARANTEED",total_guaranteed,"VIOLATIONS",cells.guarantee_flip_count.sum(),flush=True)
 

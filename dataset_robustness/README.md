@@ -18,7 +18,7 @@
 
 Descriptive comparisons of the legacy HQQ experiments. The main question is
 whether dataset accuracy-retention rankings persist across quantization settings
-and model/checkpoint contexts. This is separate from `hqq_confidence` and does not
+and model/checkpoint contexts. This is separate from `dataset_confidence` and does not
 modify the four legacy scripts.
 
 ## Contract

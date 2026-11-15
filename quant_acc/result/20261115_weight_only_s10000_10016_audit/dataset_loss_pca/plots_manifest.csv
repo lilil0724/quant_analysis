@@ -1,0 +1,6 @@
+file,source_table,description
+plots/vit_ft_primary_relative_loss.png,scores.csv,Dataset PCA scores; color encodes matched FP32 baseline
+plots/vit_ft_primary_absolute_drop.png,scores.csv,Dataset PCA scores; color encodes matched FP32 baseline
+plots/vit_ft_without_2bit_relative_loss.png,scores.csv,Dataset PCA scores; color encodes matched FP32 baseline
+plots/vit_ft_primary_relative_loss_loadings.png,loadings.csv,PC1 and PC2 weights by bit width and group size
+plots/vit_ft_primary_relative_loss_scree.png,variance.csv,Per-component and cumulative explained variance

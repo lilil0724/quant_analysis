@@ -66,11 +66,11 @@ def jobs(args):
                      commands=[command('dataset_features.tsne_paired', 'run', *tsne)]),
         # The centered CLI has no preflight command; call its original validator below.
         'centered': dict(preflight=[[]], commands=[command('dataset_features.centered_class_distance', *centered)]),
-        'bias': dict(preflight=[command('hqq_confidence.server_bias_competitors', *bias, '--preflight-only')],
-                     commands=[command('hqq_confidence.server_bias_competitors', *bias)]),
-        'margin': dict(preflight=[command('hqq_confidence.analyze_margin_matching', 'preflight-server', *margin_source)],
-                       commands=[command('hqq_confidence.analyze_margin_matching', 'import-server', *margin_source, *margin_workspace),
-                                 command('hqq_confidence.analyze_margin_matching', 'run', *margin_workspace, *serial, '--run-id', 'analysis')]),
+        'bias': dict(preflight=[command('dataset_confidence.server_bias_competitors', *bias, '--preflight-only')],
+                     commands=[command('dataset_confidence.server_bias_competitors', *bias)]),
+        'margin': dict(preflight=[command('dataset_confidence.analyze_margin_matching', 'preflight-server', *margin_source)],
+                       commands=[command('dataset_confidence.analyze_margin_matching', 'import-server', *margin_source, *margin_workspace),
+                                 command('dataset_confidence.analyze_margin_matching', 'run', *margin_workspace, *serial, '--run-id', 'analysis')]),
     }
     return [dict(name=name, **all_jobs[name]) for name in args.analyses]
 
@@ -127,7 +127,7 @@ def preflight_centered(args):
 
 def snapshot_code(out):
     records = {}
-    paths = [p for folder in ('dataset_features','hqq_confidence') for p in (ROOT/folder).glob('*.py')]
+    paths = [p for folder in ('dataset_features','dataset_confidence') for p in (ROOT/folder).glob('*.py')]
     paths.append(ROOT/'dataset_features/run_all_nano4.sh')
     for path in sorted(paths):
         relative = path.relative_to(ROOT)
@@ -243,7 +243,7 @@ def run(args):
                 if sha256(args.output_root/'provenance/source_map.json') != source_map['sha256']:
                     raise RuntimeError('Source map changed while saving its provenance copy')
         if 'margin' in args.analyses:
-            from hqq_confidence.analyze_margin_matching import focus
+            from dataset_confidence.analyze_margin_matching import focus
             focus(argparse.Namespace(grouping='soy-cotton'), args.datasets)
         for job in planned:
             for i, command in enumerate(job['preflight']):

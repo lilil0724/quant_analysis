@@ -48,7 +48,7 @@ ratio 不截斷。20008 的 W/A、model/mode 平均為 context 等權，不按�
   → reports/<run_id>/REPORT.md（唯一報告與實際引用圖片）
 ```
 
-配對規則已收回本目錄，不需要呼叫 `legacy_hqq` 或原 `w6a4_analysis`。
+配對規則已收回本目錄，不需要呼叫 `quant_acc` 或原 `w6a4_analysis`。
 新增 serial／不同矩陣須先另訂契約，不會自動套用目前公式與 coverage 假設。
 
 ## 執行與驗證
@@ -161,7 +161,7 @@ receipt 所列輸出／報告 hashes，20007 重新比對 reference、報告圖�
 
 使用者本次指定 **UFGIR = soyageing、soygene、soyglobal、soylocal、cotton（5 個）**；
 **FGIR = 其餘 11 個 datasets**，包含 food／inat17／moe。此為本次操作性分組，
-不修改 `granularity_robustness` 的歷史 8/4 core 規則。
+不修改 `dataset_static_feature` 的歷史 8/4 core 規則。
 
 新 input `wandb_s20008_soy_cotton_20261102_153946_160335` 重用原 W&B bytes，另保存
 `dataset_granularity_mapping.csv`、`grouping_definition.json` 與完整前代 manifests。

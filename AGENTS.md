@@ -29,8 +29,9 @@ README.md；新增或遷移分析時，再讀 [完整目錄規範](docs/analysis
    既有獨有程式先核對封存，再移出正式目錄。
 6. **每次獨立**：重跑使用新的 run ID；已有 input/run/report 目錄時拒絕覆寫。
    完成的 run 與歷史 manifest 固定保存，路徑遷移使用 relocation receipt 記錄。
-7. **Git 與備份**：所有 `data/` 和 `result/` 內容 gitignore；分析程式、README、
-   唯一報告及其引用圖片保持可追蹤。忽略資料另行備份，branch 不是這些檔案的備份。
+7. **Git 與備份**：`data/` 內容 gitignore（含 `result/` 內的原始輸入快照）；
+   `result/` 分析產物、分析程式、README、唯一報告及其引用圖片保持可追蹤。
+   忽略資料另行備份，branch 不是這些檔案的備份。
 
 重用已驗證輸入；僅在缺少輸入或使用者明確要求 refresh 時下載。W&B 下載需要
 WANDB_API_KEY 或 wandb login。產物由 owning stage 重算，修改公式或資料後產生新 run。
@@ -40,10 +41,10 @@ WANDB_API_KEY 或 wandb login。產物由 owning stage 重算，修改公式或�
 | 分析 | 先讀 | 狀態與 baseline |
 |---|---|---|
 | Activation quantization（20007 W6A4／20008 W/A grid） | [activation_quantization/README.md](activation_quantization/README.md) | 單一模組；依 serial 保留各自契約，matched unquantized AMP；20007 本機僅有歷史報告。 |
-| Legacy ratios | [legacy_hqq/README.md](legacy_hqq/README.md) | 待遷移；修正版 baseline 為 unquantized AMP。 |
+| Quantization accuracy ratios | [quant_acc/README.md](quant_acc/README.md) | 待遷移；修正版 baseline 為 unquantized AMP。 |
 | Dataset ranking／PCA | [dataset_robustness/README.md](dataset_robustness/README.md) | 待遷移；使用固定 upstream legacy snapshot。 |
-| FGIR／UFGIR | [granularity_robustness/README.md](granularity_robustness/README.md) | 待遷移；保留原分組 mapping 與 matched summary。 |
-| Confidence | [hqq_confidence/README.md](hqq_confidence/README.md) | 待遷移；matched-sample unquantized AMP。 |
+| FGIR／UFGIR | [dataset_static_feature/README.md](dataset_static_feature/README.md) | 待遷移；保留原分組 mapping 與 matched summary。 |
+| Confidence | [dataset_confidence/README.md](dataset_confidence/README.md) | 待遷移；matched-sample unquantized AMP。 |
 | Feature geometry | [five_dataset_features/README.md](five_dataset_features/README.md) | 待遷移；部分完整 inference arrays 仍在 nano4。 |
 
 新分析與已遷移模組遵守上述目錄契約。待遷移模組先沿用其 README 的現行

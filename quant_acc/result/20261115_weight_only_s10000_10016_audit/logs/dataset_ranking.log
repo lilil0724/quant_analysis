@@ -1,0 +1,2 @@
+Could not save font_manager cache [Errno 13] Permission denied: 'C:\\Users\\kyle\\.matplotlib\\fontlist-v3.11.0.json.matplotlib-lock'
+Analyzed 4490 matched cells; 29 figures. Report: C:\project\quant_analysis\legacy_hqq\result\20261115_weight_only_s10000_10016_audit\dataset_robustness\report.md

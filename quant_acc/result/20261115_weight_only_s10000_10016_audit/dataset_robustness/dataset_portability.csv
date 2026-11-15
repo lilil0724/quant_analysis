@@ -1,0 +1,17 @@
+dataset_name,n_contexts,best_context_median_rank,worst_context_median_rank,context_median_rank_span
+aircraft,9,3.0,12.0,9.0
+cars,9,2.0,11.5,9.5
+cotton,9,1.0,14.5,13.5
+cub,9,3.0,8.0,5.0
+dogs,9,4.0,11.0,7.0
+flowers,9,1.0,11.0,10.0
+food,9,2.0,10.0,8.0
+inat17,9,4.5,11.0,6.5
+moe,9,1.0,11.0,10.0
+nabirds,9,5.0,9.0,4.0
+pets,9,2.0,14.0,12.0
+soyageing,9,13.0,15.0,2.0
+soygene,9,10.5,16.0,5.5
+soyglobal,9,4.0,15.0,11.0
+soylocal,9,12.0,14.5,2.5
+vegfru,5,4.0,9.0,5.0

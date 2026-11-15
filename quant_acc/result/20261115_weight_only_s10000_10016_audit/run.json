@@ -1,0 +1,171 @@
+{
+  "run_id": "20261115_weight_only_s10000_10016_audit",
+  "status": "failed",
+  "input_source": "C:\\project\\quant_analysis\\legacy_hqq\\data\\wandb_weight_only_20261115_125000_675669\\runs.jsonl",
+  "input_sha256": "e20b36e60d2aeceee383d2c3927f4d8518deaee675f00aa1071774791e963dc5",
+  "started_at": "2026-11-15T12:53:14.282033+08:00",
+  "command": "python -B -u C:\\project\\quant_analysis\\.codex_tmp\\prepare_weight_only_20261115.py",
+  "code_commit": "ae7dbfe0439f64c1cca9439da918a3c7504b22a3",
+  "scope": "Historical 10000-10015 only; corrected CAL 10016 not returned by live query",
+  "selected_baselines": 141,
+  "selected_hqq": 4490,
+  "rejected_hqq": 0,
+  "missing_conditions": 118,
+  "complete_contexts": 140,
+  "expected_contexts": 144,
+  "corrected_cal_runs_found": 0,
+  "pending": "Do not substitute old CAL for the unavailable corrected serial 10016",
+  "stages": {
+    "summary": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "legacy_hqq.summarize_quant",
+        "--input-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\prepared\\curated_historical_runs.csv",
+        "--output-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\quant_summary.csv",
+        "--results-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy"
+      ],
+      "started_at": "2026-11-15T12:54:51.273401+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\summary.log"
+    },
+    "factors": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "legacy_hqq.corr_quant",
+        "--input-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\quant_summary.csv",
+        "--output-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\corr\\factor_ablation_accuracy.csv",
+        "--results-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\corr",
+        "--prepared-output",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\prepared\\prepared_accuracy_cells.csv"
+      ],
+      "started_at": "2026-11-15T12:54:57.398195+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\factors.log"
+    },
+    "plots": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "legacy_hqq.plot_quant_acc_bit_group",
+        "--input-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\prepared\\prepared_accuracy_cells.csv",
+        "--output-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\plots\\overview.png",
+        "--results-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\plots",
+        "--corr-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\corr"
+      ],
+      "started_at": "2026-11-15T12:55:01.555048+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\plots.log"
+    },
+    "dataset_ranking": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "dataset_robustness.analyze",
+        "--input-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy\\quant_summary.csv",
+        "--results-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\dataset_robustness"
+      ],
+      "started_at": "2026-11-15T12:55:30.708286+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\dataset_ranking.log"
+    },
+    "verify_dataset_ranking": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "dataset_robustness.verify",
+        "--results-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\dataset_robustness"
+      ],
+      "started_at": "2026-11-15T12:56:10.119385+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\verify_dataset_ranking.log"
+    },
+    "dataset_loss_pca": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "dataset_robustness.pca_profiles",
+        "--main-results",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\dataset_robustness",
+        "--output-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\dataset_loss_pca"
+      ],
+      "started_at": "2026-11-15T12:56:17.793247+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\dataset_loss_pca.log"
+    },
+    "verify_dataset_loss_pca": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "dataset_robustness.verify_pca",
+        "--output-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\dataset_loss_pca"
+      ],
+      "started_at": "2026-11-15T12:56:22.553214+08:00",
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\verify_dataset_loss_pca.log"
+    },
+    "legacy15_granularity": {
+      "command": [
+        "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe",
+        "-B",
+        "-u",
+        "-m",
+        "granularity_robustness.analyze",
+        "--input-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\prepared\\quant_summary_legacy15.csv",
+        "--mapping-file",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\provenance\\legacy_dataset_granularity_mapping.csv",
+        "--results-dir",
+        "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\legacy15_granularity"
+      ],
+      "started_at": "2026-11-15T12:56:26.760450+08:00",
+      "exit_code": 1,
+      "status": "failed",
+      "log": "C:\\project\\quant_analysis\\legacy_hqq\\result\\20261115_weight_only_s10000_10016_audit\\logs\\legacy15_granularity.log"
+    }
+  },
+  "mapping_source": {
+    "git_object": "3738244:granularity_robustness/dataset_granularity_mapping.csv",
+    "sha256": "882ffcedc34411b0b1efb700ca86738353e5f92e13bb70beb9203b8ba0c8cb16",
+    "scope": "Existing 15-dataset core/expanded/broad mapping; cotton excluded explicitly"
+  },
+  "error": "Stage failed: legacy15_granularity",
+  "finished_at": "2026-11-15T12:56:31.222938+08:00"
+}

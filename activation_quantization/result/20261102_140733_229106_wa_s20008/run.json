@@ -1,0 +1,77 @@
+{
+  "run_id": "20261102_140733_229106_wa_s20008",
+  "input_id": "wandb_s20008_20261102_135933_037365",
+  "serial": 20008,
+  "analysis": "activation_quantization",
+  "status": "complete",
+  "started_at": "2026-11-02T14:07:33.275853+08:00",
+  "timezone": "Asia/Taipei",
+  "command": "C:\\Users\\Public\\miniconda3\\envs\\opencode_env\\python.exe -B -m activation_quantization.run --serial 20008 --input-id wandb_s20008_20261102_135933_037365 --run-id 20261102_140733_229106_wa_s20008",
+  "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:12:50) [MSC v.1942 64 bit (AMD64)]",
+  "pandas": "3.0.3",
+  "input_manifest_sha256": "6277ebef02754fe8cd78edef8e5568966c2025f583a5d887e4809fa395d07bf8",
+  "inputs": {
+    "target.json": {
+      "bytes": 31032891,
+      "sha256": "d2bc72d6bc617e27c3576688f66babddf096ff465f0446ffa8fa662da15f8883",
+      "acquired_at": "2026-11-02T05:56:44.068023+00:00"
+    },
+    "baselines.json": {
+      "bytes": 1324187,
+      "sha256": "2890d65aef3b510caec35150342d76c6ef5fcd4c55f7a90b3d3745b3daaf9428",
+      "acquired_at": "2026-11-02T05:57:38.130203+00:00"
+    },
+    "filters.json": {
+      "bytes": 18721,
+      "sha256": "018c05501690b054071d052abd11bf833828d51a51b4f5cf99f621636e8b66bb",
+      "acquired_at": "2026-11-02T05:57:38.132325+00:00"
+    }
+  },
+  "git_commit": "ae7dbfe0439f64c1cca9439da918a3c7504b22a3",
+  "git_status": " M README.md\n?? activation_quantization/\n?? docs/superpowers/plans/2026-11-02-activation-consolidation.md\n?? docs/superpowers/specs/\n",
+  "code_sha256": {
+    "acquire.py": "9ee9d9d0c03e271fd40ed79237d6929148a3151fb6fa12e2e4c85df330966307",
+    "contracts.py": "ea2eaeb0a97c91545a6de5e6f8251e9e36bde3ae45b1106f08b4376297a59406",
+    "fixed.py": "c1632371f74bd14b02f2cea4a066e86998bf811eca32031097c0d2760ed2d435",
+    "grid.py": "22ed7c3c7fa72569163e9aee41dbf32628454ec2cf289594756dc528c0b08299",
+    "run.py": "2d7ee1083a89e6a89efffcda4613f23939889fa13a0ddd053e9b4e185a9f5e60",
+    "storage.py": "e4a343463df5125529f23443724df8f3622772c696d92b048606a7d1164e5562",
+    "w6a4.py": "f0fad33799b39f99c5455a0ee5fa28893088f27a6086b2d973ef93992f79a487",
+    "__init__.py": "49343e31cd1479c64f7ee63cc49eb3ed523350ce7831c9fb17531b8ae9dc745a"
+  },
+  "finished_at": "2026-11-02T14:07:33.847350+08:00",
+  "validation": {
+    "target_runs": 3024,
+    "grid_contexts": 144,
+    "expected_runs": 3024,
+    "duplicate_cells": 0,
+    "invalid_top1": 0,
+    "consistent_within_checkpoint_eval_settings": true,
+    "baseline_contexts": {
+      "matched": 109,
+      "missing": 25,
+      "ambiguous": 10
+    },
+    "checkpoint_bytes_verified": 0,
+    "input_hashes_verified": true
+  },
+  "report": "reports\\20261102_140733_229106_wa_s20008\\REPORT.md",
+  "report_sha256": "ef770907d1a475c48c92a49aff339dce7189d041b7beb11ed96bf50f45238b09",
+  "outputs": {
+    "validation.json": "8d76ce12184167817ec614748eadadee71f48f3528c24c5009da3db9cacc0358",
+    "tables\\baseline_summary.csv": "000c5c167bc829ece9fed775fc456e36cade2c4591d7783888af797f163c0ba5",
+    "tables\\model_a_mean_top1.csv": "d29657b237d1b6e1292dfe1465e70475e2e176aeea74fa2bbfcb88ce44bd1648",
+    "tables\\mode_a_mean_top1.csv": "a98568a98931eabbae4ce4224cb940f94108ca316aa33cd618f4ea61f5627a29",
+    "tables\\paired_a_transitions.csv": "f5abb1ec2c1b32725d7b5a0d7654f712759f4b9b0edb635defe88369c1c41299",
+    "tables\\runs_and_baseline_audit.csv": "568f5d3f7975bd4893cb3150499e52d958a323e7aca6d8f7a31084f75c8dcd47",
+    "tables\\wa_mean_top1.csv": "e9e206dd49260ed652726fc54c2d787301891f8b22bdbfb3773823a704cfac6c",
+    "provenance\\source\\acquire.py": "9ee9d9d0c03e271fd40ed79237d6929148a3151fb6fa12e2e4c85df330966307",
+    "provenance\\source\\contracts.py": "ea2eaeb0a97c91545a6de5e6f8251e9e36bde3ae45b1106f08b4376297a59406",
+    "provenance\\source\\fixed.py": "c1632371f74bd14b02f2cea4a066e86998bf811eca32031097c0d2760ed2d435",
+    "provenance\\source\\grid.py": "22ed7c3c7fa72569163e9aee41dbf32628454ec2cf289594756dc528c0b08299",
+    "provenance\\source\\run.py": "2d7ee1083a89e6a89efffcda4613f23939889fa13a0ddd053e9b4e185a9f5e60",
+    "provenance\\source\\storage.py": "e4a343463df5125529f23443724df8f3622772c696d92b048606a7d1164e5562",
+    "provenance\\source\\w6a4.py": "f0fad33799b39f99c5455a0ee5fa28893088f27a6086b2d973ef93992f79a487",
+    "provenance\\source\\__init__.py": "49343e31cd1479c64f7ee63cc49eb3ed523350ce7831c9fb17531b8ae9dc745a"
+  }
+}
