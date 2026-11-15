@@ -9,7 +9,7 @@ from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import pandas as pd
 
-from legacy_hqq.recover_baselines import context, differences, DATASETS, MODELS, MODES
+from .contracts import context, differences, DATASETS, MODELS, MODES
 
 SETTINGS = dict(hqq=True, serial=20007, hqq_nbits=6, hqq_act_bits=4,
                 hqq_group_size=32, hqq_act_group_size=32, hqq_scope='extended',

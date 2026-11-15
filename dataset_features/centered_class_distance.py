@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+from . import paired_inputs
 
 DATASETS = ('aircraft', 'cars', 'cub', 'dogs', 'flowers', 'food', 'inat17', 'moe',
             'nabirds', 'pets', 'soyageing', 'soygene', 'soyglobal', 'soylocal', 'vegfru', 'cotton')
@@ -99,6 +100,12 @@ def analyze_features(features, labels, chunk_size=2048):
 
 
 def validate_pair(folder, serial, dataset, model, mode):
+    if paired_inputs.is_schema2(folder):
+        p = paired_inputs.read_pair(folder, serial, dataset, model, mode,
+                                    features=('final',), fp_only=True, predictions=True)
+        accuracies = [sum(int(r['correct']) for r in p['predictions'][c])/len(p['targets'])
+                      for c in ('fp', 'w3_g128')]
+        return np.asarray(p['targets']), p['hashes'], accuracies
     manifest_path = folder/'manifest.json'
     meta = json.loads(manifest_path.read_text(encoding='utf-8'))
     identity = dict(status='complete', serial=serial, dataset=dataset, model=model, checkpoint_mode=mode)
@@ -148,6 +155,7 @@ def main(argv=None):
     parser.add_argument('--input-root', type=Path, required=True, help='Parent of serial directories, or selected serial directory')
     parser.add_argument('--serial', type=int, default=20004)
     parser.add_argument('--output-root', type=Path, help='New directory; default SERIAL/analysis/centered_fp_distance')
+    parser.add_argument('--source-map', type=Path, help='Explicit dataset/model/mode source overrides')
     parser.add_argument('--datasets', nargs='+', choices=DATASETS, default=list(DATASETS))
     parser.add_argument('--models', nargs='+', choices=MODELS, default=list(MODELS))
     parser.add_argument('--modes', nargs='+', choices=('ft', 'fz', 'cal'), default=['ft', 'fz', 'cal'])
@@ -170,7 +178,10 @@ def main(argv=None):
                   accumulation_dtype='float64', chunk_size=args.chunk_size,
                   source_scope='FP final backbone features; raw-image view, before CAL attention pooling',
                   validation='Only consumed source files are checked; other arrays/logits are not reread.',
-                  code_sha256=sha256_file(Path(__file__)))
+                  code_sha256=sha256_file(Path(__file__)),
+                  input_adapter_sha256=sha256_file(Path(paired_inputs.__file__)))
+    if args.source_map is not None:
+        config['source_map'] = paired_inputs.source_map_identity(args.source_map)
     if args.dry_run:
         print(json.dumps(config, indent=2))
         return
@@ -180,14 +191,17 @@ def main(argv=None):
     pairs = []
     for dataset, model, mode in selections:
         folder = source/dataset/model/mode
-        labels, hashes, accuracies = validate_pair(folder, args.serial, dataset, model, mode)
-        pairs.append((folder, dataset, model, mode, labels, hashes, accuracies))
+        folder, source_serial = paired_inputs.select_source(folder, args.serial, dataset, model, mode, args.source_map)
+        if out.is_relative_to(folder.resolve()) or folder.resolve().is_relative_to(out):
+            raise ValueError(f'Output overlaps source pair: {folder}')
+        labels, hashes, accuracies = validate_pair(folder, source_serial, dataset, model, mode)
+        pairs.append((folder, dataset, model, mode, labels, hashes, accuracies, source_serial))
     partial.mkdir(parents=True)
     config.update(status='running', inputs={})
     try:
         rows = []
-        for index, (folder, dataset, model, mode, labels, hashes, accuracies) in enumerate(pairs, 1):
-            x = np.load(folder/'fp/final.npy', mmap_mode='r', allow_pickle=False)
+        for index, (folder, dataset, model, mode, labels, hashes, accuracies, source_serial) in enumerate(pairs, 1):
+            x = np.load(paired_inputs.pair_file(folder, 'fp', 'final.npy'), mmap_mode='r', allow_pickle=False)
             metrics, mean = analyze_features(x, labels, args.chunk_size)
             del x
             if any(sha256_file(folder/name) != digest for name, digest in hashes.items()):
@@ -199,7 +213,7 @@ def main(argv=None):
             mean_path = partial/'means'/dataset/model/mode/'fp_mean.npy'
             mean_path.parent.mkdir(parents=True)
             np.save(mean_path, mean)
-            config['inputs'][f'{dataset}/{model}/{mode}'] = dict(source_folder=str(folder), sha256=hashes)
+            config['inputs'][f'{dataset}/{model}/{mode}'] = dict(source_folder=str(folder), source_serial=source_serial, sha256=hashes)
             print(f'[{index}/{len(pairs)}] {dataset}/{model}/{mode}: N={len(labels)} '
                   f'inter={metrics["raw_d_inter"]} -> {metrics["centered_d_inter"]}', flush=True)
         with (partial/'centered_class_distances.csv').open('w', newline='', encoding='utf-8') as stream:

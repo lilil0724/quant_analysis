@@ -14,8 +14,8 @@ import traceback
 
 import pandas as pd
 
-from .acquire import sha256, validate_id
-from .analyze import prepare_pairs, verify_pairs, plot_heatmap, KEYS, SETTINGS
+from .storage import sha256, validate_id, load_manifest
+from .w6a4 import prepare_pairs, verify_pairs, plot_heatmap, KEYS, SETTINGS
 
 BASE = Path(__file__).resolve().parent
 REPO = BASE.parent
@@ -24,8 +24,8 @@ TZ = timezone(timedelta(hours=8))
 
 def load_inputs(directory):
     directory = Path(directory)
-    manifest = json.loads((directory / 'source_manifest.json').read_text(encoding='utf-8-sig'))
-    if manifest['status'] != 'complete':
+    manifest = load_manifest(directory)
+    if manifest.get('serial') != 20007 or manifest['status'] != 'complete':
         raise ValueError('Input snapshot is not complete')
     for name, entry in manifest['files'].items():
         path = (directory / name).resolve()
@@ -70,7 +70,7 @@ def write_receipt(path, receipt):
 
 
 def source_identity(output):
-    sources = sorted(Path(__file__).parent.glob('*.py')) + [REPO / 'legacy_hqq/recover_baselines.py', REPO / 'requirements.txt']
+    sources = sorted(Path(__file__).parent.glob('*.py')) + [REPO / 'requirements.txt']
     files = {}
     for source in sources:
         relative = source.relative_to(REPO).as_posix()
@@ -125,8 +125,8 @@ def write_report(receipt, report, frame=None):
               '本分析未獨立驗證伺服器硬體、環境或新推論正確性；重算一致僅證明此快照的分析遷移。',
               f"Git commit：`{code.get('commit', 'unavailable')}`；dirty：`{code.get('dirty', 'unknown')}`。",
               '本次相關程式快照與 SHA-256 位於完整輸出的 provenance/source/ 與 run.json。', '',
-              '```powershell', f'conda run -n opencode_env python -m w6a4_analysis.run --input-id {receipt["input_id"]} --run-id NEW_RUN_ID',
-              f'conda run -n opencode_env python -m w6a4_analysis.run --verify-run {run_id}', '```', '',
+              '```powershell', f'& "{sys.executable}" -B -m activation_quantization.run --serial 20007 --input-id {receipt["input_id"]} --run-id NEW_RUN_ID',
+              f'& "{sys.executable}" -B -m activation_quantization.run --verify-run {run_id}', '```', '',
               '重跑使用新的 run ID；原 run 固定保存。報告用圖與完整輸出圖片逐檔核對 SHA-256。', '']
     (report / 'REPORT.md').write_text('\n'.join(lines), encoding='utf-8')
 
@@ -136,9 +136,10 @@ def execute(input_id, run_id=None):
     run_id = run_id or datetime.now(TZ).strftime('%Y%m%d_%H%M%S_%f_w6a4_s20007')
     output, report = reserve_run(run_id)
     started = time.perf_counter()
-    receipt = dict(run_id=run_id, analysis='w6a4_analysis', status='running', input_id=input_id,
+    receipt = dict(run_id=run_id, analysis='activation_quantization', serial=20007, status='running', input_id=input_id,
                    started_at=datetime.now(TZ).isoformat(), timezone='Asia/Taipei',
-                   command=[sys.executable, '-m', 'w6a4_analysis.run', *sys.argv[1:]],
+                   command=[sys.executable, '-B', '-m', 'activation_quantization.run', '--serial', '20007',
+                            '--input-id', input_id, '--run-id', run_id],
                    environment=dict(python=platform.python_version(), conda_environment='opencode_env',
                                     packages={name: version(name) for name in ('numpy','pandas','matplotlib')}),
                    settings=SETTINGS, report=f'reports/{run_id}/REPORT.md')

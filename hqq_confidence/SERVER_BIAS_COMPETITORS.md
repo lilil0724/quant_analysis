@@ -18,6 +18,12 @@ Expected input:
 ```
 
 Use the source directory written by `tools/features_analysis/w3_g128_analysis.py`.
+The same entrypoint also reads the current `tools.feature_analysis` schema-2
+per-condition layout through the read-only `dataset_features.paired_inputs`
+adapter. Full logits, predictions, samples, metrics and original manifests are
+required; feature arrays are not read. See the module README for `--source-map`
+selection and explicitly unrecorded historical settings. Statistical methods,
+cross-fitting, tie rules, grouping and plots are unchanged.
 A compact `all_pairs.csv`/feature-summary download alone lacks the full class
 logits required here. Serials remain separate. Dataset/model/mode selections
 must form a complete matrix; missing pairs are errors, never silently dropped.

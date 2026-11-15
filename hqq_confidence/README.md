@@ -274,6 +274,34 @@ modify any of the four legacy stages.
 
 ## Margin matching: Soy + cotton versus Other, server serial 20004
 
+### 兩種輸入格式（2026-11-15）
+
+`server_bias_competitors`、`analyze_margin_matching preflight-server/import-server` 現在
+同時接受舊 paired exports 與新版 `tools.feature_analysis` schema 2；兩者共用原本的
+bias/competitor、margin matching 統計及圖形。僅改讀取／來源驗證，不新增研究方法。
+Schema 2 仍限定 Linear W3/G128 weight-only，需兩條件原始 manifests、samples、metrics、
+logits.npy、predictions.csv；不要求 features。新版 CSV 的 margin 欄位依舊公式從 logits
+補算，並保留原本 tie、zero-spread、cross-fit、sample weighting 與分組規則。
+
+來源選擇與限制見 [共用 reader 說明](../dataset_features/README.md#舊-paired-與新版-schema-2-共用原分析)。
+原始 manifests 保留原樣，snapshot 只複製這個階段實際使用且驗證過的檔案；不因 manifest
+列出未使用的 layer arrays 就要求一併複製。舊 metadata 缺失不從新版設定反向補造。
+
+```bash
+cd /work/kyle0724/project/quant_analysis
+sbatch hqq_confidence/run_bias_competitors_nano4.sh --serial 20010 \
+  --input-root /work/kyle0724/data/feature_analysis \
+  --output-dir hqq_confidence/results/schema2_bias_NEW_RUN_ID
+sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20010 \
+  --source-root /work/kyle0724/data/feature_analysis \
+  --input-id schema2_NEW_INPUT_ID --run-id schema2_NEW_RUN_ID
+```
+
+兩個 launcher 的 preflight/import 可使用 `--source-map PATH` 明確指定跨 serial 來源。
+Margin `--stage run` 使用匯入 snapshot 的固定選取，不再接受 source map 或其他 selection
+參數；snapshot 每個 context 另存實際 source serial，保留 source-to-snapshot relocation
+receipt。`--serial` 的 cohort 標籤不能當成所有來源共用一個實驗 serial 的證明。
+
 這個入口回答：將兩組 baseline normalized-margin 分布標準化後，FP→Q accuracy
 retention 的組間差距如何改變？它不執行 bias correction、competitor fitting、
 推論或 W&B 下載。只有 `analyze_margin_matching` 使用下列新目錄契約。
@@ -309,8 +337,8 @@ Server source 預期為既有 paired W3/G128 exporter 的格式：
 分開產生 9 組比較。Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
 `beitv2_base_patch16_224`。任何指定 cell 缺少都失敗，不靜默縮減矩陣。
 只具備 aggregate summary／feature arrays 不足以執行本分析。
-新的 unified exporter schema 2（每個 condition 獨立 identity/manifest）不會被當成
-舊 paired schema；需提供上述 serial 20004 原始配對 exports。
+新版 schema 2 使用各 condition 的獨立 identity/manifest，由唯讀 adapter 讀取；
+不轉寫成上述舊 paired manifest。兩種格式都需要完整的 FP/W3 配對來源。
 
 沿用 `server_bias_competitors.check_pair/preflight`，檢查 source status、serial、
 dataset/model/mode、checkpoint/test-CSV/config/code/HQQ hashes、seed、quantization、

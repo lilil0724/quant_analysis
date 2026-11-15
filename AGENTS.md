@@ -39,7 +39,7 @@ WANDB_API_KEY 或 wandb login。產物由 owning stage 重算，修改公式或�
 
 | 分析 | 先讀 | 狀態與 baseline |
 |---|---|---|
-| W6A4 serial 20007 | [w6a4_analysis/README.md](w6a4_analysis/README.md) | 已遷移；matched unquantized AMP。 |
+| Activation quantization（20007 W6A4／20008 W/A grid） | [activation_quantization/README.md](activation_quantization/README.md) | 單一模組；依 serial 保留各自契約，matched unquantized AMP；20007 本機僅有歷史報告。 |
 | Legacy ratios | [legacy_hqq/README.md](legacy_hqq/README.md) | 待遷移；修正版 baseline 為 unquantized AMP。 |
 | Dataset ranking／PCA | [dataset_robustness/README.md](dataset_robustness/README.md) | 待遷移；使用固定 upstream legacy snapshot。 |
 | FGIR／UFGIR | [granularity_robustness/README.md](granularity_robustness/README.md) | 待遷移；保留原分組 mapping 與 matched summary。 |

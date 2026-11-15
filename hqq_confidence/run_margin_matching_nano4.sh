@@ -17,6 +17,7 @@ usage() {
 Usage: sbatch hqq_confidence/run_margin_matching_nano4.sh --serial 20004 --input-id ID [options]
   --stage all|preflight|import|run  Default all: import a NEW snapshot, then analyze.
   --source-root PATH               Parent of SERIAL, or SERIAL directory.
+  --source-map PATH                Optional explicit legacy/schema-2 sources for preflight/import.
   --workspace PATH                 Owns data/ID, result/RUN, reports/RUN.
   --input-id ID                    Required except for read-only preflight.
   --run-id ID                      New ID; default Taiwan timestamp + serial.
@@ -50,7 +51,7 @@ DRY_RUN=0
 SELECT=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --stage|--serial|--source-root|--input-root|--workspace|--input-id|--run-id|--chunk-size|--datasets|--models|--modes)
+        --stage|--serial|--source-root|--input-root|--workspace|--input-id|--run-id|--chunk-size|--datasets|--models|--modes|--source-map)
             value "$@"
             case "$1" in
                 --stage) STAGE="$2" ;;

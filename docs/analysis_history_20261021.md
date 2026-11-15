@@ -8,8 +8,8 @@
 - 使用者於 2026-10-21 採用 [分析目錄規範](analysis_conventions_proposal.md)。
 - [第一批實作紀錄](analysis_layout_implementation_20261021.md)：W6A4 已遷移；
   legacy、dataset、granularity、confidence、feature 的完整結果目錄遷移仍待執行。
-- W6A4 正式入口：[模組說明](../w6a4_analysis/README.md)。本批完成的 run 為
-  [20261021_163522_084281_w6a4_s20007](../w6a4_analysis/reports/20261021_163522_084281_w6a4_s20007/REPORT.md)。
+- W6A4 正式入口：[模組說明](../activation_quantization/README.md)（2026-11-02 整合）。本批完成的 run 為
+  [20261021_163522_084281_w6a4_s20007](../activation_quantization/reports/20261021_163522_084281_w6a4_s20007/REPORT.md)。
 - 第一批驗證紀錄：[verification.json](../outputs/layout_adoption_20261021/verification.json)。
   10 項外部暫存功能檢查通過；144 配對、6 個輸入及 15 個產物雜湊核對通過。
 - 功能測試原始碼已在核對後移出正式 codebase，封存在

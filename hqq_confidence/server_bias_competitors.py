@@ -16,6 +16,7 @@ import re
 import sys
 
 import numpy as np
+from dataset_features import paired_inputs
 import pandas as pd
 import scipy
 import sklearn
@@ -91,6 +92,7 @@ def build_parser():
     parser.add_argument('--input-root', type=Path, default=repo/'../../data/w3_g128_analysis')
     parser.add_argument('--serial', required=True, type=int)
     parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--source-map', type=Path, help='Explicit context-to-source overrides; serial labels the analysis cohort')
     parser.add_argument('--datasets', type=csv_selection, default=list(DATASETS))
     parser.add_argument('--models', type=csv_selection, default=list(MODELS))
     parser.add_argument('--modes', type=csv_selection, default=list(MODES))
@@ -173,6 +175,25 @@ def validate_predictions(folder, condition, ids, target, n, c, chunk):
 
 
 def check_pair(folder, serial, dataset, model, mode, chunk=256, keep_predictions=False):
+    if paired_inputs.is_schema2(folder):
+        p = paired_inputs.read_pair(folder, serial, dataset, model, mode, predictions=True, margins=True)
+        # Preserve this stage's original zero-spread rejection and tie policy.
+        for c in ('fp', 'w3_g128'):
+            z = np.load(paired_inputs.pair_file(folder, c, 'logits.npy'), mmap_mode='r', allow_pickle=False)
+            try:
+                if any(np.any(z[i:i+chunk].astype(np.float64).std(axis=1) <= 0) for i in range(0, len(z), chunk)):
+                    raise ValueError(f'{folder}: nonfinite or zero-spread logits')
+            finally:
+                close_maps(z)
+        item = dict(folder=folder, dataset=dataset, model=model, mode=mode, meta=p['meta'],
+                    num_classes=p['num_classes'], hashes=p['hashes'],
+                    stamps={name: ((folder/name).stat().st_size, (folder/name).stat().st_mtime_ns) for name in p['hashes']},
+                    fp_ties=p['ties']['fp'], quant_ties=p['ties']['w3_g128'])
+        if keep_predictions:
+            item.update(ids=np.asarray(p['ids']), target=np.asarray(p['targets'], dtype=np.int64),
+                        fp_pred=np.asarray([int(r['prediction']) for r in p['predictions']['fp']]),
+                        quant_pred=np.asarray([int(r['prediction']) for r in p['predictions']['w3_g128']]))
+        return item
     path = safe_file(folder, 'manifest.json')
     meta = json.loads(path.read_text(encoding='utf-8'))
     expected = dict(status='complete', serial=serial, dataset=dataset, model=model, checkpoint_mode=mode)
@@ -236,15 +257,20 @@ def preflight(args):
         raise ValueError('modes must be ft, fz or cal')
     root, serial_root, output = roots(args)
     selections = list(itertools.product(args.datasets, args.models, args.modes))
-    missing = [f'{d}/{m}/{k}' for d, m, k in selections if not (serial_root/d/m/k/'manifest.json').is_file()]
+    source_map = getattr(args, 'source_map', None)
+    paired_inputs.source_map_identity(source_map)
+    sources = [paired_inputs.select_source(serial_root/d/m/k, args.serial, d, m, k, source_map)
+               for d, m, k in selections]
+    missing = [f'{d}/{m}/{k}' for (d, m, k), (folder, _) in zip(selections, sources)
+               if not (folder/'manifest.json').is_file() and not paired_inputs.is_schema2(folder)]
     if missing:
         raise ValueError(f'Missing selected source pairs ({len(missing)}): {", ".join(missing[:12])}')
     pairs = []
-    for dataset, model, mode in selections:
-        folder = serial_root/dataset/model/mode
-        if serial_root not in folder.resolve().parents or folder.resolve() in (output, *output.parents):
+    for (dataset, model, mode), (folder, source_serial) in zip(selections, sources):
+        if ((source_map is None and serial_root not in folder.resolve().parents)
+                or folder.resolve() in (output, *output.parents) or output in folder.resolve().parents):
             raise ValueError(f'Unsafe source/output link or overlap: {folder}')
-        pair = check_pair(folder, args.serial, dataset, model, mode, args.chunk_size)
+        pair = check_pair(folder, source_serial, dataset, model, mode, args.chunk_size)
         pairs.append(pair)
         print(f'CHECKED {dataset}/{model}/{mode}: N={pair["meta"]["n_samples"]} C={pair["num_classes"]}', flush=True)
     for model, mode in itertools.product(args.models, args.modes):
@@ -268,6 +294,8 @@ def coverage_rows(pairs, serial):
                          pooling=m.get('pooling'), preprocessing=json.dumps(m['preprocessing'], sort_keys=True),
                          code_sha256=m['code_sha256'], fp_tied_maxima=p['fp_ties']['tied_maxima'],
                          quant_tied_maxima=p['quant_ties']['tied_maxima']))
+        if m['serial'] != serial:
+            rows[-1]['source_serial'] = m['serial']
     return rows
 
 
@@ -277,12 +305,12 @@ def analyze_pair(pair, output, args):
         stat = safe_file(folder, name).stat()
         if (stat.st_size, stat.st_mtime_ns) != expected:
             raise ValueError(f'Source changed after preflight: {folder}/{name}')
-    samples = json.loads((folder/'samples.json').read_text(encoding='utf-8'))
+    samples = paired_inputs.read_samples(folder)
     target = np.asarray(samples['targets'], dtype=np.int64)
-    fp_pred = pd.read_csv(folder/'fp/predictions.csv', usecols=['prediction']).prediction.to_numpy(dtype=np.int64)
-    q_pred = pd.read_csv(folder/'w3_g128/predictions.csv', usecols=['prediction']).prediction.to_numpy(dtype=np.int64)
-    fp = np.load(folder/'fp/logits.npy', mmap_mode='r', allow_pickle=False)
-    quant = np.load(folder/'w3_g128/logits.npy', mmap_mode='r', allow_pickle=False)
+    fp_pred = pd.read_csv(paired_inputs.pair_file(folder, 'fp', 'predictions.csv'), usecols=['prediction']).prediction.to_numpy(dtype=np.int64)
+    q_pred = pd.read_csv(paired_inputs.pair_file(folder, 'w3_g128', 'predictions.csv'), usecols=['prediction']).prediction.to_numpy(dtype=np.int64)
+    fp = np.load(paired_inputs.pair_file(folder, 'fp', 'logits.npy'), mmap_mode='r', allow_pickle=False)
+    quant = np.load(paired_inputs.pair_file(folder, 'w3_g128', 'logits.npy'), mmap_mode='r', allow_pickle=False)
     try:
         n, c = fp.shape
         folds = core.assign_folds(target, seed=args.seed)
@@ -478,8 +506,10 @@ def run(args):
         primary='damage Brier among FP-correct samples; bias accuracy gain in pp',
         tie_rule='prefer original quant winner if maximal, else lowest index',
         retrospective_test_crossfit=True, chunk_size=args.chunk_size, threads=args.threads,
-        source_hash_scope=['manifest.json', *USED_FILES],
-        script_hashes={p.name: sha256_file(p) for p in [Path(__file__), Path(core.__file__)]},
+        source_hash_scope='Actual stage-consumed paths in source_audit.csv; includes original manifests',
+        source_map=paired_inputs.source_map_identity(getattr(args, 'source_map', None)),
+        script_hashes={p.name: sha256_file(p) for p in [Path(__file__), Path(core.__file__), Path(paired_inputs.__file__),
+                      Path(paired_inputs.__file__).with_name('common.py')]},
         runtime=dict(python=sys.version, platform=platform.platform(), numpy=np.__version__,
                      pandas=pd.__version__, scipy=scipy.__version__, sklearn=sklearn.__version__)))
     pd.DataFrame(coverage_rows(pairs, args.serial)).to_csv(output/'coverage.csv', index=False)

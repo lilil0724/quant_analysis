@@ -21,7 +21,7 @@ if command -v ml >/dev/null 2>&1; then
     ml purge
     ml load miniconda3
 fi
-[[ -f "$ANALYSIS_PROJECT_ROOT/five_dataset_features/centered_class_distance.py" ]] || {
+[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/centered_class_distance.py" ]] || {
     echo "Submit from quant_analysis or set ANALYSIS_PROJECT_ROOT." >&2
     exit 1
 }
@@ -33,4 +33,4 @@ export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-4}"
 export OPENBLAS_NUM_THREADS="$OMP_NUM_THREADS" MKL_NUM_THREADS="$OMP_NUM_THREADS"
 cd "$ANALYSIS_PROJECT_ROOT"
 "$ANALYSIS_PYTHON" -B -c 'import sys, numpy; print(sys.executable); print("NumPy", numpy.__version__)'
-exec "$ANALYSIS_PYTHON" -B -u -m five_dataset_features.centered_class_distance "$@"
+exec "$ANALYSIS_PYTHON" -B -u -m dataset_features.centered_class_distance "$@"

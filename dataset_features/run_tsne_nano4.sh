@@ -16,8 +16,9 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 [options]
-       bash five_dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run [options]
+Both legacy paired and schema-2 sources are supported; --source-map PATH overrides selected contexts.
+Usage: sbatch dataset_features/run_tsne_nano4.sh --serial 20004 [options]
+       bash dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run [options]
 
   --serial N          Required W3/g128 source serial.
   --input-root PATH   Parent w3_g128_analysis directory; default <repo>/../../data/w3_g128_analysis.
@@ -72,6 +73,7 @@ ITERATIONS=750
 SEED=100
 OVERWRITE=0
 DRY_RUN=0
+SOURCE_ARGS=()
 DATASETS=(aircraft cars cub dogs flowers food inat17 moe nabirds pets soyageing soygene soyglobal soylocal vegfru cotton)
 MODELS=(vit_b16 swin_base_patch4_window7_224_in22k beitv2_base_patch16_224)
 MODES=(ft fz cal)
@@ -81,6 +83,7 @@ ALLOWED_MODES=" ${MODES[*]} "
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --source-map) require_value "$@"; SOURCE_ARGS=(--source-map "$2"); shift 2 ;;
         --serial|--input-root|--output-root|--stage|--datasets|--models|--modes|--sampling|--class-fraction|--max-samples|--perplexity|--iterations|--seed)
             require_value "$@"
             case "$1" in
@@ -117,7 +120,7 @@ validate_names model "$ALLOWED_MODELS" "${MODELS[@]}"
 validate_names mode "$ALLOWED_MODES" "${MODES[@]}"
 
 ANALYSIS_PROJECT_ROOT="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$ANALYSIS_PROJECT_ROOT/five_dataset_features/tsne_paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/tsne_paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$ANALYSIS_PROJECT_ROOT" && pwd)"
 INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
@@ -134,12 +137,12 @@ THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS="$THREADS" OPENBLAS_NUM_THREADS="$THREADS" MKL_NUM_THREADS="$THREADS" NUMEXPR_NUM_THREADS="$THREADS" LOKY_MAX_CPU_COUNT="$THREADS"
 cd "$REPO"
-COMMAND=("$ANALYSIS_PYTHON" -B -u -m five_dataset_features.tsne_paired "$STAGE"
+COMMAND=("$ANALYSIS_PYTHON" -B -u -m dataset_features.tsne_paired "$STAGE"
     --input-root "$INPUT_ROOT" --serial "$SERIAL" --output-root "$OUTPUT_ROOT"
     --datasets "${DATASETS[@]}" --models "${MODELS[@]}" --modes "${MODES[@]}"
     --sampling "$SAMPLING" --class-fraction "$CLASS_FRACTION"
     --max-samples "$MAX_SAMPLES" --perplexity "$PERPLEXITY"
-    --iterations "$ITERATIONS" --seed "$SEED")
+    --iterations "$ITERATIONS" --seed "$SEED" "${SOURCE_ARGS[@]}")
 if (( OVERWRITE )); then COMMAND+=(--overwrite); fi
 
 echo "Job: ${SLURM_JOB_ID:-preview}; stage: $STAGE"

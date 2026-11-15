@@ -1,0 +1,71 @@
+{
+  "completed_at": "2026-11-02T14:16:53.465531+08:00",
+  "status": "passed",
+  "real_data_verification": [
+    {
+      "status": "passed",
+      "serial": 20008,
+      "run_id": "20261102_135946_317954_s20008_brief",
+      "target_runs": 3024,
+      "input_files": 3,
+      "output_hashes": 10
+    },
+    {
+      "status": "passed",
+      "serial": 20008,
+      "run_id": "20261102_140733_229106_wa_s20008",
+      "target_runs": 3024,
+      "input_files": 3,
+      "output_hashes": 16
+    }
+  ],
+  "real_data_table_comparisons": [
+    {
+      "table": "baseline_summary.csv",
+      "sha256": "000c5c167bc829ece9fed775fc456e36cade2c4591d7783888af797f163c0ba5",
+      "byte_identical": true
+    },
+    {
+      "table": "mode_a_mean_top1.csv",
+      "sha256": "a98568a98931eabbae4ce4224cb940f94108ca316aa33cd618f4ea61f5627a29",
+      "byte_identical": true
+    },
+    {
+      "table": "model_a_mean_top1.csv",
+      "sha256": "d29657b237d1b6e1292dfe1465e70475e2e176aeea74fa2bbfcb88ce44bd1648",
+      "byte_identical": true
+    },
+    {
+      "table": "paired_a_transitions.csv",
+      "sha256": "f5abb1ec2c1b32725d7b5a0d7654f712759f4b9b0edb635defe88369c1c41299",
+      "byte_identical": true
+    },
+    {
+      "table": "runs_and_baseline_audit.csv",
+      "sha256": "568f5d3f7975bd4893cb3150499e52d958a323e7aca6d8f7a31084f75c8dcd47",
+      "byte_identical": true
+    },
+    {
+      "table": "wa_mean_top1.csv",
+      "sha256": "e9e206dd49260ed652726fc54c2d787301891f8b22bdbfb3773823a704cfac6c",
+      "byte_identical": true
+    }
+  ],
+  "preexisting_files_preserved": 32,
+  "historical_files_relocated": 6,
+  "temporary_functional_checks_passed": 13,
+  "w6a4_validation": "Temporary144-cell schema/contract fixture import-execute-verify roundtrip only; original20007 data/result are unavailable",
+  "overwrite_refused_without_changes": true,
+  "gitignore_verified": true,
+  "independent_review": "No remaining material findings; receipt-chain preservation and destination containment fixes verified by failing-then-passing regression checks",
+  "current_code": {
+    "acquire.py": "0fbac241ec6bef0246ee58b4437e5ec644798db3ea3d5e1a7a3d0eae420194cc",
+    "contracts.py": "ea2eaeb0a97c91545a6de5e6f8251e9e36bde3ae45b1106f08b4376297a59406",
+    "fixed.py": "addd0995149131b35ff1b8d13fe30a201e876366b9cacccd40dca34bb267d956",
+    "grid.py": "22ed7c3c7fa72569163e9aee41dbf32628454ec2cf289594756dc528c0b08299",
+    "run.py": "2d7ee1083a89e6a89efffcda4613f23939889fa13a0ddd053e9b4e185a9f5e60",
+    "storage.py": "e4a343463df5125529f23443724df8f3622772c696d92b048606a7d1164e5562",
+    "w6a4.py": "f0fad33799b39f99c5455a0ee5fa28893088f27a6086b2d973ef93992f79a487",
+    "__init__.py": "49343e31cd1479c64f7ee63cc49eb3ed523350ce7831c9fb17531b8ae9dc745a"
+  }
+}

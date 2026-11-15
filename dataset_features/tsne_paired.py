@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 
 from .common import DATASETS, sha256
+from . import paired_inputs
 from .paired import MODELS, MODES, digest
 
 CONDITIONS = ('fp', 'w3_g128')
@@ -78,6 +79,12 @@ def _inside(path, parent):
 
 
 def _source_pair(folder, serial, dataset, model, mode):
+    if paired_inputs.is_schema2(folder):
+        p = paired_inputs.read_pair(folder, serial, dataset, model, mode, features=('final',))
+        shape = p['meta']['layers']['final']
+        return dict(folder=folder, manifest_sha256=paired_inputs.digest(p['meta']['source_manifests']),
+                    source_sha256=p['hashes'], targets=np.asarray(p['targets'], dtype=np.int64),
+                    n=shape[0], width=shape[1], dataset=dataset, model=model, mode=mode, source_serial=serial)
     if not folder.is_dir():
         raise ValueError(f'Missing pair: {folder}')
     manifest_path = folder / 'manifest.json'
@@ -133,7 +140,7 @@ def _source_pair(folder, serial, dataset, model, mode):
         del arr
     return dict(folder=folder, manifest_sha256=sha256(manifest_path),
                 source_sha256=hashes, targets=np.asarray(targets, dtype=np.int64),
-                n=n, width=shape[1], dataset=dataset, model=model, mode=mode)
+                n=n, width=shape[1], dataset=dataset, model=model, mode=mode, source_serial=serial)
 
 
 def _embed(fp, quant, perplexity, iterations, seed):
@@ -212,7 +219,8 @@ def _render_pair(pair, destination, chosen, max_samples, perplexity, iterations,
                   perplexity=perplexity,
                   iterations=iterations, seed=seed, normalization='per-sample L2',
                   fit='joint FP and W3, with shared PCA-50 when width > 50')
-    code_sha256 = sha256(Path(__file__))
+    code_sha256 = paired_inputs.digest({p.name: sha256(p) for p in
+                      (Path(__file__), Path(paired_inputs.__file__), Path(__file__).with_name('common.py'))})
     method_path = destination / 'method.json'
     plot_path = destination / 'tsne.png'
     csv_path = destination / 'coordinates.csv'
@@ -222,6 +230,9 @@ def _render_pair(pair, destination, chosen, max_samples, perplexity, iterations,
                 and meta.get('code_sha256') == code_sha256
                 and meta.get('manifest_sha256') == pair['manifest_sha256']
                 and meta.get('source_sha256') == pair['source_sha256']
+                and meta.get('source_folder') == str(pair['folder'].resolve())
+                and meta.get('serial') == pair['source_serial']
+                and meta.get('source_map') == pair.get('source_map')
                 and plot_path.is_file() and csv_path.is_file()
                 and meta.get('output_sha256') ==
                     {'tsne.png': sha256(plot_path), 'coordinates.csv': sha256(csv_path)}):
@@ -232,7 +243,7 @@ def _render_pair(pair, destination, chosen, max_samples, perplexity, iterations,
         raise ValueError(f'Incomplete t-SNE output; use --overwrite: {destination}')
     data = []
     for condition in CONDITIONS:
-        arr = np.load(pair['folder'] / condition / 'final.npy', mmap_mode='r',
+        arr = np.load(paired_inputs.pair_file(pair['folder'], condition, 'final.npy'), mmap_mode='r',
                       allow_pickle=False)
         data.append(np.asarray(arr[chosen], dtype=np.float32))
         del arr
@@ -254,7 +265,8 @@ def _render_pair(pair, destination, chosen, max_samples, perplexity, iterations,
         for j, original in enumerate(chosen):
             writer.writerow((int(original), int(labels[j]),
                              *map(float, coords[j]), *map(float, coords[j + len(chosen)])))
-    meta = dict(status='complete', serial=int(pair['folder'].parents[2].name),
+    meta = dict(status='complete', serial=pair['source_serial'], source_folder=str(pair['folder'].resolve()),
+                source_map=pair.get('source_map'),
                 dataset=pair['dataset'], model=pair['model'], mode=pair['mode'],
                 total_samples=pair['n'], selected_samples=len(chosen),
                 total_classes=int(len(np.unique(pair['targets']))),
@@ -279,7 +291,7 @@ def _render_pair(pair, destination, chosen, max_samples, perplexity, iterations,
 
 def run(input_root, serial, datasets, models, modes, *, output_root=None,
         max_samples=2000, perplexity=30.0, iterations=750, seed=100,
-        overwrite=False, stage='run', sampling='classes', class_fraction=.1):
+        overwrite=False, stage='run', sampling='classes', class_fraction=.1, source_map=None):
     """Preflight the selected matrix, then generate or resume isolated outputs."""
     if type(serial) is not int or serial <= 0:
         raise ValueError('serial must be a positive integer')
@@ -306,11 +318,15 @@ def run(input_root, serial, datasets, models, modes, *, output_root=None,
                 and not _inside(output, serial_root / 'analysis'))):
         raise ValueError(f'Output cannot replace or overlap source pairs: {output}')
     pairs = []
+    map_identity = paired_inputs.source_map_identity(source_map)
     for dataset, model, mode in itertools.product(datasets, models, modes):
         folder = serial_root / dataset / model / mode
+        folder, source_serial = paired_inputs.select_source(folder, serial, dataset, model, mode, source_map)
         if _inside(output, folder.resolve()) or _inside(folder.resolve(), output):
             raise ValueError(f'Output overlaps input pair: {folder}')
-        pairs.append(_source_pair(folder, serial, dataset, model, mode))
+        pairs.append(_source_pair(folder, source_serial, dataset, model, mode))
+        if map_identity is not None:
+            pairs[-1]['source_map'] = map_identity
     # Select before any output is written, so a bad subset cannot leave a
     # partially rendered matrix. Class IDs must agree across models/modes.
     selected_by_dataset = {}
@@ -345,6 +361,7 @@ def main():
     parser.add_argument('--input-root', required=True, type=Path)
     parser.add_argument('--serial', required=True, type=int)
     parser.add_argument('--output-root', type=Path)
+    parser.add_argument('--source-map', type=Path, help='Explicit dataset/model/mode source overrides')
     parser.add_argument('--datasets', nargs='+', choices=DATASETS, default=list(DATASETS))
     parser.add_argument('--models', nargs='+', choices=MODELS, default=list(MODELS))
     parser.add_argument('--modes', nargs='+', choices=MODES, default=list(MODES))
@@ -364,7 +381,7 @@ def main():
             output_root=args.output_root, max_samples=args.max_samples,
             perplexity=args.perplexity, iterations=args.iterations,
             seed=args.seed, overwrite=args.overwrite, stage=args.stage,
-            sampling=args.sampling, class_fraction=args.class_fraction)
+            sampling=args.sampling, class_fraction=args.class_fraction, source_map=args.source_map)
     except (ValueError, OSError, KeyError, TypeError) as error:
         parser.exit(1, f'ERROR: {error}\n')
 

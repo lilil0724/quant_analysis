@@ -14,6 +14,7 @@ from pathlib import Path, PurePosixPath
 import numpy as np
 
 from .common import DATASETS, read_csv, sha256, write_csv
+from . import paired_inputs
 from .metrics import (centered_linear_cka, class_equal_cosine_distances,
                       norm_quantiles, pca_fit, pca_project, prediction_metrics,
                       regularized_h_score, spearman_description)
@@ -63,6 +64,14 @@ def finite_array(array):
 
 
 def check_pair(folder, serial, dataset, model, mode):
+    if paired_inputs.is_schema2(folder):
+        pair = paired_inputs.read_pair(folder, serial, dataset, model, mode,
+                                       features='all', predictions=True, margins=True)
+        if 'final' not in pair['meta']['layers']:
+            raise ValueError(f'{folder}: final features are required')
+        if any(t['stored_vs_numpy_argmax_disagreements'] for t in pair['ties'].values()):
+            raise ValueError(f'{folder}: paired features require NumPy argmax prediction rows')
+        return pair['meta'], pair['targets'], pair['predictions']
     meta = json.loads(safe_file(folder, 'manifest.json').read_text(encoding='utf-8'))
     expected = dict(status='complete', serial=serial, dataset=dataset, model=model, checkpoint_mode=mode)
     if any(meta.get(key) != value for key, value in expected.items()):
@@ -130,7 +139,7 @@ def check_pair(folder, serial, dataset, model, mode):
     return meta, targets, predictions
 
 
-def preflight(input_root, serial, datasets, models, modes, output_root=None):
+def preflight(input_root, serial, datasets, models, modes, output_root=None, source_map=None):
     if type(serial) is not int or serial <= 0:
         raise ValueError('serial must be a positive integer')
     for values, allowed in [(datasets, DATASETS), (models, MODELS), (modes, MODES)]:
@@ -143,14 +152,18 @@ def preflight(input_root, serial, datasets, models, modes, output_root=None):
         raise ValueError('Output inside input root must use the selected serial/analysis subtree')
     scope = dict(serial=serial, datasets=list(datasets), models=list(models), modes=list(modes),
                  input_root=str(root))
+    if source_map is not None:
+        scope['source_map'] = paired_inputs.source_map_identity(source_map)
     pairs = []
     for dataset, model, mode in itertools.product(datasets, models, modes):
         folder = serial_root / dataset / model / mode
-        if not inside(folder.resolve(), serial_root) or inside(out, folder.resolve()) or inside(folder.resolve(), out):
+        folder, source_serial = paired_inputs.select_source(folder, serial, dataset, model, mode, source_map)
+        if ((source_map is None and not inside(folder.resolve(), serial_root))
+                or inside(out, folder.resolve()) or inside(folder.resolve(), out)):
             raise ValueError(f'Unsafe source/output overlap: {folder} / {out}')
         if inside(out, serial_root) and out.relative_to(serial_root).parts[0] in DATASETS:
             raise ValueError(f'Output is inside a source dataset folder: {out}')
-        meta, targets, predictions = check_pair(folder, serial, dataset, model, mode)
+        meta, targets, predictions = check_pair(folder, source_serial, dataset, model, mode)
         pairs.append(dict(folder=folder, dataset=dataset, model=model, mode=mode,
                           meta=meta, targets=targets, predictions=predictions))
     if out in (root, serial_root) or inside(root, out):
@@ -159,14 +172,21 @@ def preflight(input_root, serial, datasets, models, modes, output_root=None):
 
 
 def source_provenance(pairs):
-    return {f'{p["dataset"]}/{p["model"]}/{p["mode"]}':
-            dict(manifest_sha256=sha256(p['folder'] / 'manifest.json'), files=p['meta']['files'])
-            for p in pairs}
+    result = {}
+    for p in pairs:
+        if p['meta'].get('source_schema') == 2:
+            manifests = {name: sha256(p['folder'] / name) for name in p['meta']['source_manifests']}
+            source = dict(source_schema=2, manifests=manifests, files=p['meta']['files'])
+        else:
+            source = dict(manifest_sha256=sha256(p['folder'] / 'manifest.json'), files=p['meta']['files'])
+        source.update(source_folder=str(p['folder'].resolve()), source_serial=p['meta']['serial'])
+        result[f'{p["dataset"]}/{p["model"]}/{p["mode"]}'] = source
+    return result
 
 
 def code_digest():
     folder = Path(__file__).parent
-    return digest({name: sha256(folder / name) for name in ('paired.py', 'metrics.py', 'common.py')})
+    return digest({name: sha256(folder / name) for name in ('paired.py', 'metrics.py', 'common.py', 'paired_inputs.py')})
 
 
 def h_score_bounded(features, targets, temporary_root):
@@ -189,8 +209,8 @@ def analyze_pair(pair, out, serial):
     rows, final_metrics = [], {}
     targets = np.asarray(pair['targets'])
     for layer in pair['meta']['layers']:
-        fp = np.load(pair['folder'] / 'fp' / f'{layer}.npy', mmap_mode='r', allow_pickle=False)
-        quant = np.load(pair['folder'] / 'w3_g128' / f'{layer}.npy', mmap_mode='r', allow_pickle=False)
+        fp = np.load(paired_inputs.pair_file(pair['folder'], 'fp', f'{layer}.npy'), mmap_mode='r', allow_pickle=False)
+        quant = np.load(paired_inputs.pair_file(pair['folder'], 'w3_g128', f'{layer}.npy'), mmap_mode='r', allow_pickle=False)
         for condition, features in [('fp', fp), ('w3_g128', quant)]:
             row = clean(dict(**identity, condition=condition, layer=layer,
                              cka_vs_fp=centered_linear_cka(fp, features),
@@ -201,12 +221,12 @@ def analyze_pair(pair, out, serial):
         del fp, quant
     write_csv(folder / 'layer_metrics.csv', rows)
     summary = dict(**identity, **prediction_metrics(pair['predictions']['fp'], pair['predictions']['w3_g128']))
-    fp = np.load(pair['folder'] / 'fp/final.npy', mmap_mode='r', allow_pickle=False)
+    fp = np.load(paired_inputs.pair_file(pair['folder'], 'fp', 'final.npy'), mmap_mode='r', allow_pickle=False)
     mean, components, explained = pca_fit(fp)
     np.savez(folder / 'fp_pca.npz', mean=mean, components=components, explained=explained)
     coords = {}
     for condition in CONDITIONS:
-        features = np.load(pair['folder'] / condition / 'final.npy', mmap_mode='r', allow_pickle=False)
+        features = np.load(paired_inputs.pair_file(pair['folder'], condition, 'final.npy'), mmap_mode='r', allow_pickle=False)
         coords[condition] = pca_project(features, mean, components)
         np.save(folder / f'coords_{condition}.npy', coords[condition])
         summary[f'{condition}_h_score_final'] = h_score_bounded(features, targets, folder)
@@ -313,10 +333,10 @@ def package(out, pairs):
         staged.replace(out / 'w3_g128_results.zip')
 
 
-def run(command, input_root, serial, datasets, models, modes, output_root=None):
+def run(command, input_root, serial, datasets, models, modes, output_root=None, source_map=None):
     if command not in ('preflight', 'analyze', 'report', 'package', 'all'):
         raise ValueError(f'Unknown command: {command}')
-    out, scope, pairs = preflight(input_root, serial, datasets, models, modes, output_root)
+    out, scope, pairs = preflight(input_root, serial, datasets, models, modes, output_root, source_map)
     sources = source_provenance(pairs)
     if command == 'preflight':
         print(f'PREFLIGHT complete: {len(pairs)} paired exports', flush=True)
@@ -355,9 +375,10 @@ def main():
     parser.add_argument('--models', nargs='+', choices=MODELS, default=list(MODELS))
     parser.add_argument('--modes', nargs='+', choices=MODES, default=list(MODES))
     parser.add_argument('--output-root', type=Path)
+    parser.add_argument('--source-map', type=Path, help='Explicit context-to-source overrides; serial remains the analysis cohort label')
     args = parser.parse_args()
     try:
-        run(args.command, args.input_root, args.serial, args.datasets, args.models, args.modes, args.output_root)
+        run(args.command, args.input_root, args.serial, args.datasets, args.models, args.modes, args.output_root, args.source_map)
     except (ValueError, OSError, KeyError, TypeError) as error:
         parser.exit(1, f'ERROR: {error}\n')
 

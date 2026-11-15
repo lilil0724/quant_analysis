@@ -15,7 +15,8 @@ soyageing soygene soyglobal soylocal vegfru cotton
 Paired 分析與 t-SNE 的預設矩陣為 **16 datasets × 3 models × 3 modes = 144 pairs**。
 Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
 `beitv2_base_patch16_224`；modes 為 `ft,fz,cal`。Config-driven 流程預設驗證
-16 個 dataset contexts；schema-2 reader 則仍是單一 FP/quant pair 入口。
+16 個 dataset contexts；獨立 schema-2 CLI 仍為單 pair，paired/t-SNE/centered
+入口另透過共用 adapter 支援所選矩陣。
 
 2026-11-01 的整理只抽出共用檔案工具、解除舊入口依賴並封存舊程式，沒有改變
 計算公式、分析階段、抽樣政策、圖形函式或既有輸出位置。舊 21-condition
@@ -43,6 +44,7 @@ Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
 | `tsne_paired.py`、`run_tsne_nano4.sh` | Paired final features 共同取樣與 joint t-SNE |
 | `centered_class_distance.py`、`run_centered_class_distance_nano4.sh` | FP final features 去全域平均前後的 class distances |
 | `unified_inputs.py` | 獨立 schema-2 FP/quant 配對驗證與逐層指標；尚無 16-dataset orchestrator |
+| `paired_inputs.py` | 既有 W3/G128 分析的唯讀 schema-2 adapter、缺少 margin 欄位的舊公式推導、明確來源選取；不計算新的分析指標 |
 | `common.py` | Paired／t-SNE 共用的 16-dataset 清單、CSV 與 SHA-256；不含分析邏輯 |
 | `metrics.py` | 新舊流程共用的 CKA、class distances、norm、H-score、prediction transitions、PCA、Spearman |
 
@@ -55,7 +57,7 @@ Models 為 `vit_b16`、`swin_base_patch4_window7_224_in22k`、
 
 ```powershell
 $python = 'C:\Users\Public\miniconda3\envs\opencode_env\python.exe'
-& $python -B -m five_dataset_features.run --help
+& $python -B -m dataset_features.run --help
 ```
 
 Paired 核心需要 NumPy、Matplotlib；t-SNE 另需 scikit-learn。完整逐層比較使用
@@ -71,6 +73,76 @@ precision、preprocessing 與評估設定；schema-2 還要求 checkpoint/data/c
 
 ## Paired FP/W3：nano4 主分析
 
+### 舊 paired 與新版 schema 2 共用原分析
+
+`paired`、`tsne_paired`、`centered_class_distance` 現在會逐 context 自動辨識
+舊 paired 格式或新版 `tools.feature_analysis` 的 schema 2。分析條件仍固定為
+**weight-only Linear W3/G128**；本次只修改讀取／配對，不變更既有指標、抽樣、
+統計與 plot。額外的 CAL classifier-distance CSV 不在這些 backbone 分析中替代使用。
+
+新版 context 的結構是：
+
+```text
+<input-root>/<serial>/<dataset>/<model>/<mode>/
+  fp/{manifest.json,samples.json,metrics.json,predictions.csv,logits.npy,features/<layer>.npy}
+  w3_g128_linear/{manifest.json,samples.json,metrics.json,predictions.csv,logits.npy,features/<layer>.npy}
+```
+
+量化 condition 依 manifest 的 W3/G128、activation_bits=null、scope=linear 選取，
+不是只依目錄名猜測。多個相容 condition、smoke／failed source、錯誤 checkpoint／
+execution／sample identity、checksum 不符均拒絕。FP/Q 必須有相同的 checkpoint、
+data/config/code/HQQ hashes、preprocessing、execution、sample IDs 與 labels。
+`coverage` 必須是 weight-only 且不含 classifier；calls 會驗證有執行，但不當成
+跨 dataset 的量化 protocol，因其隨 test 大小與 CAL views 改變。
+
+- Paired 指標使用所有已匯出 layers、兩條件 logits 與 predictions，且需有 `final`。
+- t-SNE 只讀兩條件 final features；不要求未使用的 logits、predictions 或其他 layers。
+- Centered distance 只讀 FP final features 與兩條件 predictions；不要求 logits 或 Q features。
+- 新版 CSV 缺少的 normalized/true-class margin 從完整 logits 依原 float64 公式補算；
+  paired 的 NumPy argmax 與 bias/competitor 的 stored-winner tie policy 各自維持原規則。
+- 原始 manifests、arrays 和 CSV 不改寫，也不產生偽裝成原始 legacy export 的 manifest。
+  新版未明文保存的 exclusions、quant_zero/scale 不從名稱或預設值補造；coverage
+  只能證明所記錄的量化 sites。舊 FT/FZ 與新 CAL 仍需自行核對研究 protocol 的可比性。
+
+新版推論若要支援全部既有分析，使用
+`--save_features --save_predictions --save_logits --extract_layers all`。
+只存 final 不足以重算未匯出的逐層結果。
+
+同一 serial/root 下可直接改 input root，使用原有命令：
+
+```bash
+cd /work/kyle0724/project/quant_analysis
+bash dataset_features/run_nano4.sh --serial 20010 \
+  --input-root /work/kyle0724/data/feature_analysis --dry-run
+sbatch dataset_features/run_nano4.sh --serial 20010 \
+  --input-root /work/kyle0724/data/feature_analysis \
+  --output-root dataset_features/results/20010/paired_NEW_RUN_ID
+```
+
+跨 root／serial 混合來源時，明確傳入 `--source-map`，格式見
+[`config/sources.example.json`](config/sources.example.json)。每列指定 dataset/model/mode、
+實際 source serial 與 context folder；相對 folder 以 source-map 所在目錄解析。
+未列出的選取 contexts 仍使用 `--input-root/<serial>/...`，不自動搜尋其他 serial。
+同一 context 重複列出會拒絕。請先把 example 路徑改成實際存在的來源。
+
+```bash
+# Pilot：舊 FT + 明確指定的新 CAL；source map 的來源必須真的包含完整必要檔案。
+sbatch dataset_features/run_nano4.sh --serial 20004 \
+  --input-root /work/kyle0724/data/w3_g128_analysis \
+  --source-map dataset_features/config/sources.example.json \
+  --datasets cub --models vit_b16 --modes ft,cal \
+  --output-root dataset_features/results/dual_input_pilot_NEW_RUN_ID
+```
+
+`--serial` 在混合來源時是分析 cohort/output 的標籤；各原始 serial、folder、manifests
+與 source-map hash 另記在 provenance，不把新 CAL 偽標為 20004。t-SNE 的 method.json
+保存該 pair 的實際 source serial。`--source-map` 同樣可傳給 t-SNE、centered distance、
+bias/competitor 與 margin import。Bias/margin 仍拒絕同一 model/mode 內混用不同已記錄的
+export／precision／quantization protocols；先完成整個 CAL cohort 再做跨 dataset 比較。
+
+本次沒有搬移歷史 data/result，也沒有改變舊分析的輸出配置。若更新輸入或 adapter，
+請選新的 output/run ID；已有分析的 resume identity 會檢查 adapter code。
+
 輸入格式：
 
 ```text
@@ -85,16 +157,17 @@ precision、preprocessing 與評估設定；schema-2 還要求 checkpoint/data/c
 
 `paired.py` 驗證選取範圍中每個 pair 的身分、來源 hashes、W3/G128 weight-only
 設定、dtype／shape、finite values、sample IDs／labels、logits／prediction 對齊。
-不混用不同 serial，不因資料不完整而自動縮小 144-pair 矩陣。
+不自動混用不同 serial；只有明列 `--source-map` 才覆寫指定來源，且不因資料不完整而
+自動縮小 144-pair 矩陣。
 
 ```bash
 cd /work/kyle0724/project/quant_analysis
-bash five_dataset_features/run_nano4.sh --serial 20004 --dry-run
-sbatch five_dataset_features/run_nano4.sh --serial 20004 --stage preflight
+bash dataset_features/run_nano4.sh --serial 20004 --dry-run
+sbatch dataset_features/run_nano4.sh --serial 20004 --stage preflight
 # 完整矩陣
-sbatch five_dataset_features/run_nano4.sh --serial 20004
+sbatch dataset_features/run_nano4.sh --serial 20004
 # Pilot；後續 report/package 必須使用相同 scope
-sbatch five_dataset_features/run_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
+sbatch dataset_features/run_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
 ```
 
 Stages：`all,preflight,analyze,report,package`。`--dry-run` 只列印選取與命令，
@@ -120,10 +193,10 @@ FP final features 擬合一次，FP/W3 共用基底。
 `w3_g128/final.npy`；需要原始 arrays，compact copy 不足以執行。
 
 ```bash
-bash five_dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run
-sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 --stage preflight
-sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
-sbatch five_dataset_features/run_tsne_nano4.sh --serial 20004
+bash dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run
+sbatch dataset_features/run_tsne_nano4.sh --serial 20004 --stage preflight
+sbatch dataset_features/run_tsne_nano4.sh --serial 20004 --datasets cub --models vit_b16 --modes ft
+sbatch dataset_features/run_tsne_nano4.sh --serial 20004
 ```
 
 預設 `--sampling classes --class-fraction 0.1`，選取
@@ -149,7 +222,7 @@ paired schema 的 FP final features 與兩條件 predictions。比較
 `x/||x||` 與 `(x-mean_FP)/||x-mean_FP||`，保留原有逐塊 class-sum 計算。
 來源、公式、CAL pilot／完整矩陣命令與輸出見
 [CENTERED_CLASS_DISTANCE.md](CENTERED_CLASS_DISTANCE.md)。此流程不驗證未使用的
-layers／logits，也不接受 schema-2 作為相同格式。
+layers／logits；schema 2 由 adapter 明確讀取，不視為舊格式 manifest。
 
 ## 16-dataset, all-layer workflow (20004)
 
@@ -166,17 +239,17 @@ hidden／incompatible backup directories 不當成 conditions。
 
 先複製 `config/20004.example.json` 為自己的 config，填入實際 paths、primary
 condition 和 condition grid。預設 input 為 repository 的 `data/20004/`，output
-為 `five_dataset_features/results/20004/`；`expected_dataset_count=16`。
+為 `dataset_features/results/20004/`；`expected_dataset_count=16`。
 若要 group contrasts，提供經驗證的 16-dataset mapping，欄位為
 `dataset_name,core_group,expanded_group`，labels 為 `FGIR`、`UFGIR`／`Ultra-FGIR`
 或 boundary 的空白；不自動沿用舊 15-dataset mapping。
 
 ```powershell
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage inventory
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage validate
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage metrics --dataset cub
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage pca --dataset cub
-& $python -B -m five_dataset_features.run --config five_dataset_features/config/20004.json --stage all
+& $python -B -m dataset_features.run --config dataset_features/config/20004.json --stage inventory
+& $python -B -m dataset_features.run --config dataset_features/config/20004.json --stage validate
+& $python -B -m dataset_features.run --config dataset_features/config/20004.json --stage metrics --dataset cub
+& $python -B -m dataset_features.run --config dataset_features/config/20004.json --stage pca --dataset cub
+& $python -B -m dataset_features.run --config dataset_features/config/20004.json --stage all
 ```
 
 Stages：`inventory,validate,metrics,pca,comparisons,plot,report,verify,all`。
@@ -202,7 +275,7 @@ schema-2 manifest、來源／execution／preprocessing hashes、sample pairing �
 `features/<layer>.npy`，輸出 `layer_metrics.csv` 和 `sources.json`。
 
 ```powershell
-& $python -B -m five_dataset_features.unified_inputs --fp <fp-condition> --quant <quant-condition> --output <new-output-directory>
+& $python -B -m dataset_features.unified_inputs --fp <fp-condition> --quant <quant-condition> --output <new-output-directory>
 ```
 
 Output 必須是來源外的新目錄。此入口不限制 dataset 名稱，但尚未提供完整

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "pairs": [
+    {
+      "dataset": "cub",
+      "model": "vit_b16",
+      "mode": "cal",
+      "serial": 20010,
+      "folder": "/work/kyle0724/data/feature_analysis/20010/cub/vit_b16/cal"
+    }
+  ]
+}

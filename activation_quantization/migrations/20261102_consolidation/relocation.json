@@ -1,0 +1,75 @@
+{
+  "status": "complete",
+  "relocated_at": "2026-11-02T14:08:37.068106+08:00",
+  "timezone": "Asia/Taipei",
+  "reports": [
+    {
+      "source": "w6a4_analysis/reports/20261021_162359_890951_w6a4_s20007/figures/acc_ratio_heatmap.png",
+      "destination": "activation_quantization/reports/20261021_162359_890951_w6a4_s20007/figures/acc_ratio_heatmap.png",
+      "bytes": 317764,
+      "sha256": "8f5d7712821efdfd478bde3ba6efd0477100e198c9b2d76f7e17c830652a6f75"
+    },
+    {
+      "source": "w6a4_analysis/reports/20261021_162359_890951_w6a4_s20007/figures/acc_ratio_heatmap.svg",
+      "destination": "activation_quantization/reports/20261021_162359_890951_w6a4_s20007/figures/acc_ratio_heatmap.svg",
+      "bytes": 177479,
+      "sha256": "443518e00ba83cc4f4c16cf71ac22a9ed7656836ef0defa663f515b35c6a01eb"
+    },
+    {
+      "source": "w6a4_analysis/reports/20261021_162359_890951_w6a4_s20007/REPORT.md",
+      "destination": "activation_quantization/reports/20261021_162359_890951_w6a4_s20007/REPORT.md",
+      "bytes": 2943,
+      "sha256": "0ef9127411cdbc588b2db332957a348f63ce9e401a653d9167797d4e4926eb1f"
+    },
+    {
+      "source": "w6a4_analysis/reports/20261021_163522_084281_w6a4_s20007/figures/acc_ratio_heatmap.png",
+      "destination": "activation_quantization/reports/20261021_163522_084281_w6a4_s20007/figures/acc_ratio_heatmap.png",
+      "bytes": 317764,
+      "sha256": "8f5d7712821efdfd478bde3ba6efd0477100e198c9b2d76f7e17c830652a6f75"
+    },
+    {
+      "source": "w6a4_analysis/reports/20261021_163522_084281_w6a4_s20007/figures/acc_ratio_heatmap.svg",
+      "destination": "activation_quantization/reports/20261021_163522_084281_w6a4_s20007/figures/acc_ratio_heatmap.svg",
+      "bytes": 177479,
+      "sha256": "020cb0b42089a55b9c2bc0382140a209d49f248ef84eaa479191bd8852f40081"
+    },
+    {
+      "source": "w6a4_analysis/reports/20261021_163522_084281_w6a4_s20007/REPORT.md",
+      "destination": "activation_quantization/reports/20261021_163522_084281_w6a4_s20007/REPORT.md",
+      "bytes": 3413,
+      "sha256": "b71cc53ed129d6800f8bef0b6bec24123e769a377588842e1787402058951fc5"
+    }
+  ],
+  "code": [
+    {
+      "source": "w6a4_analysis/__init__.py",
+      "sha256_before": "363b363af52d7d8882c9c927f3f7829bd36763adaef1bc9c3241d8bb76701c76",
+      "owning_file": "activation_quantization/__init__.py"
+    },
+    {
+      "source": "w6a4_analysis/acquire.py",
+      "sha256_before": "e19169227c13b3cf30aacb8737fc5bb45bfb2b3d2cb450fbf76467859d1f1852",
+      "owning_file": "activation_quantization/acquire.py"
+    },
+    {
+      "source": "w6a4_analysis/analyze.py",
+      "sha256_before": "b0c12e589d9ceabdd97f174119a8530bf4921ee0b26dfc8e6e2ad778ee1661d8",
+      "owning_file": "activation_quantization/w6a4.py"
+    },
+    {
+      "source": "w6a4_analysis/run.py",
+      "sha256_before": "a38a815a0b91891f1d674d002ae6fd95804c0640e8b2be714e9e5773b977cf59",
+      "owning_file": "activation_quantization/fixed.py"
+    },
+    {
+      "source": "w6a4_analysis/README.md",
+      "sha256_before": "b57a0d4e4b69e191edda610675f7f59ed3bc7a6e918c23ca7a039a903f318ebe",
+      "owning_file": "activation_quantization/README.md"
+    }
+  ],
+  "missing_at_migration": [
+    "w6a4_analysis/data/",
+    "w6a4_analysis/result/"
+  ],
+  "historical_paths": "Report bytes and historical manifests/commands are unchanged; old commands are historical and current commands are documented in activation_quantization/README.md"
+}

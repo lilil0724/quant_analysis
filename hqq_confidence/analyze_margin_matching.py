@@ -80,6 +80,7 @@ def parser():
             sub.add_argument('--source-root', type=Path, required=True)
             sub.add_argument('--serial', type=int, required=True)
         if name in ('preflight-server', 'import-server'):
+            sub.add_argument('--source-map', type=Path, help='Explicit context-to-source overrides')
             sub.add_argument('--datasets', type=server.csv_selection, default=list(server.DATASETS))
             sub.add_argument('--models', type=server.csv_selection, default=list(server.MODELS))
             sub.add_argument('--modes', type=server.csv_selection, default=list(server.MODES))
@@ -104,7 +105,7 @@ def validate_server(args):
     # the unrelated bias/competitor statistical models or writing their outputs.
     options = argparse.Namespace(input_root=root, serial=args.serial, output_dir=None,
         datasets=args.datasets, models=args.models, modes=args.modes,
-        chunk_size=args.chunk_size, threads=1, seed=100004)
+        chunk_size=args.chunk_size, threads=1, seed=100004, source_map=getattr(args, 'source_map', None))
     pairs, _ = server.preflight(options)
     return root, pairs
 
@@ -123,11 +124,16 @@ def publish_input(args, kind, records, identities, selection):
     upstream = args.source_root.expanduser().resolve()
     if target == upstream or target in upstream.parents or upstream in target.parents:
         raise ValueError('Input snapshot must be separate from upstream source root')
+    if any(target in Path(r['source']).resolve().parents or Path(r['source']).resolve() in target.parents
+           or target == Path(r['source']).resolve() for r in records):
+        raise ValueError('Input snapshot overlaps an explicitly selected source')
     target.mkdir(parents=True, exist_ok=False)
     receipt = dict(schema=1, status='running', input_id=args.input_id, source_format=kind,
         serial=args.serial, acquired_at=now(), timezone='Asia/Taipei', source_root=str(upstream),
         selection=selection, identities=identities, files=records,
         relocation='Original manifests are preserved verbatim; explicit source-to-snapshot paths are recorded here.')
+    if getattr(args, 'source_map', None) is not None:
+        receipt['source_map'] = server.paired_inputs.source_map_identity(args.source_map)
     try:
         write_json(target/'source_manifest.json', receipt)
         for record in records:
@@ -157,8 +163,9 @@ def import_server(args):
     root, pairs = validate_server(args)
     records, identities = [], []
     for pair in pairs:
-        relative = pair['folder'].relative_to(root).as_posix()
-        identities.append(dict(dataset=pair['dataset'], model=pair['model'], mode=pair['mode'], folder=relative))
+        relative = f"{pair['meta']['serial']}/{pair['dataset']}/{pair['model']}/{pair['mode']}"
+        identities.append(dict(dataset=pair['dataset'], model=pair['model'], mode=pair['mode'],
+                               folder=relative, serial=pair['meta']['serial']))
         for name, digest in pair['hashes'].items():
             records.append(source_record(pair['folder']/name, relative+'/'+name, digest))
     publish_input(args, 'server-w3-g128', records, identities,
@@ -248,10 +255,11 @@ def load_server(root, meta, args):
         signatures = set()
         for identity in identities:
             folder = server.safe_file(root, identity['folder'])
-            p = server.check_pair(folder, meta['serial'], identity['dataset'], model, mode, args.chunk_size, keep_predictions=True)
+            p = server.check_pair(folder, identity.get('serial', meta['serial']), identity['dataset'], model, mode,
+                                  args.chunk_size, keep_predictions=True)
             signatures.add(server.digest_json(dict(amp_fp16=p['meta']['amp_fp16'],
                 quantization=p['meta']['quantization'],code=p['meta']['code_sha256'],hqq=p['meta']['hqq_source_sha256'])))
-            z = np.load(folder/'fp/logits.npy', mmap_mode='r', allow_pickle=False)
+            z = np.load(server.paired_inputs.pair_file(folder, 'fp', 'logits.npy'), mmap_mode='r', allow_pickle=False)
             try:
                 margins = np.concatenate([core.normalized_margin(z[i:i+args.chunk_size]) for i in range(0,len(z),args.chunk_size)])
             finally:
@@ -327,6 +335,14 @@ def source_identity(output):
         hashes[f'hqq_confidence/{name}'] = server.sha256_file(path)
         if server.sha256_file(copy)!=hashes[f'hqq_confidence/{name}']:
             raise ValueError('Code snapshot hash mismatch')
+    for name in ('paired_inputs.py', 'common.py', '__init__.py'):
+        path = REPO/'dataset_features'/name
+        copy = output/'provenance/source/dataset_features'/name
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, copy)
+        hashes[f'dataset_features/{name}'] = server.sha256_file(path)
+        if server.sha256_file(copy) != hashes[f'dataset_features/{name}']:
+            raise ValueError('Input adapter snapshot hash mismatch')
     try:
         commit = subprocess.check_output(['git','-C',str(REPO),'rev-parse','HEAD'],text=True,stderr=subprocess.DEVNULL).strip()
         status = subprocess.check_output(['git','-C',str(REPO),'status','--short'],text=True,stderr=subprocess.DEVNULL).splitlines()

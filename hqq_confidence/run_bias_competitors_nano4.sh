@@ -22,6 +22,7 @@ Usage: sbatch hqq_confidence/run_bias_competitors_nano4.sh --serial N [options]
   --serial N              Required source serial; no serials are merged.
   --input-root PATH       Parent w3_g128_analysis or selected serial directory.
   --output-dir PATH       New output directory; existing outputs are preserved.
+  --source-map PATH       Optional explicit context source overrides (legacy or schema 2).
   --datasets CSV          Default: all 16 datasets, including inat17/cotton.
   --models CSV            Default: vit_b16,swin_base_patch4_window7_224_in22k,beitv2_base_patch16_224.
   --modes CSV             Default: ft,fz,cal.
@@ -50,7 +51,7 @@ EXTRA=()
 THREADS="${SLURM_CPUS_PER_TASK:-8}"
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --serial|--input-root|--output-dir|--datasets|--models|--modes|--chunk-size|--threads|--seed)
+        --serial|--input-root|--output-dir|--datasets|--models|--modes|--chunk-size|--threads|--seed|--source-map)
             require_value "$@"
             case "$1" in
                 --serial) SERIAL="$2" ;;

@@ -17,13 +17,14 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: sbatch five_dataset_features/run_nano4.sh --serial N [options]
-       bash five_dataset_features/run_nano4.sh --serial N --dry-run [options]
+Usage: sbatch dataset_features/run_nano4.sh --serial N [options]
+       bash dataset_features/run_nano4.sh --serial N --dry-run [options]
 
   --serial N          Required source experiment serial (for example 20005).
   --input-root PATH   Parent w3_g128_analysis directory (default: <repo>/../../data/w3_g128_analysis).
                       A selected serial directory is also accepted with the same --serial.
   --output-root PATH  Default: <input-root>/<serial>/analysis.
+  --source-map PATH   Optional explicit dataset/model/mode source overrides (legacy or schema 2).
   --stage STAGE       all (default), preflight, analyze, report, or package.
   --datasets CSV      Default: all 16 datasets.
   --models CSV        Default: vit_b16,swin_base_patch4_window7_224_in22k,beitv2_base_patch16_224.
@@ -34,7 +35,7 @@ Usage: sbatch five_dataset_features/run_nano4.sh --serial N [options]
 Environment: ANALYSIS_PROJECT_ROOT, ANALYSIS_INPUT_ROOT, ANALYSIS_OUTPUT_ROOT,
              ANALYSIS_CONDA_ENV (tgda), ANALYSIS_PYTHON.
 SBATCH defaults: partition=8gpus, GPUs/node=1, CPUs=8, memory=64G, time=24h.
-Override resources before the script: sbatch --partition=dev --gpus-per-node=1 ...
+Override memory/time before the script; keep partition=8gpus and account=MST114495.
 Input: <serial>/<dataset>/<model>/<mode>/{manifest.json,samples.json,fp/,w3_g128/}.
 Output: CKA, statistics, shared-FP PCA, aggregate report and w3_g128_results.zip.
 EOF
@@ -60,6 +61,7 @@ STAGE=all
 INPUT_ROOT="${ANALYSIS_INPUT_ROOT:-}"
 OUTPUT_ROOT="${ANALYSIS_OUTPUT_ROOT:-}"
 DRY_RUN=0
+SOURCE_ARGS=()
 DATASETS=(aircraft cars cub dogs flowers food inat17 moe nabirds pets soyageing soygene soyglobal soylocal vegfru cotton)
 MODELS=(vit_b16 swin_base_patch4_window7_224_in22k beitv2_base_patch16_224)
 MODES=(ft fz cal)
@@ -68,6 +70,7 @@ ALLOWED_MODELS=" ${MODELS[*]} "
 ALLOWED_MODES=" ${MODES[*]} "
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --source-map) require_value "$@"; SOURCE_ARGS=(--source-map "$2"); shift 2 ;;
         --serial|--input-root|--output-root|--stage|--datasets|--models|--modes)
             require_value "$@"
             case "$1" in
@@ -93,7 +96,7 @@ validate_names mode "$ALLOWED_MODES" "${MODES[@]}"
 
 # Slurm runs a spool copy; use its submission directory, like TGDA inference.
 ANALYSIS_PROJECT_ROOT="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$ANALYSIS_PROJECT_ROOT/five_dataset_features/paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$ANALYSIS_PROJECT_ROOT" && pwd)"
 INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
@@ -108,9 +111,9 @@ THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS="$THREADS" OPENBLAS_NUM_THREADS="$THREADS" MKL_NUM_THREADS="$THREADS" NUMEXPR_NUM_THREADS="$THREADS"
 cd "$REPO"
-COMMAND=("$ANALYSIS_PYTHON" -B -u -m five_dataset_features.paired "$STAGE"
+COMMAND=("$ANALYSIS_PYTHON" -B -u -m dataset_features.paired "$STAGE"
     --input-root "$INPUT_ROOT" --serial "$SERIAL" --output-root "$OUTPUT_ROOT"
-    --datasets "${DATASETS[@]}" --models "${MODELS[@]}" --modes "${MODES[@]}")
+    --datasets "${DATASETS[@]}" --models "${MODELS[@]}" --modes "${MODES[@]}" "${SOURCE_ARGS[@]}")
 
 echo "Job: ${SLURM_JOB_ID:-preview}; node: $(hostname); stage: $STAGE"
 echo "Python: $ANALYSIS_PYTHON"
