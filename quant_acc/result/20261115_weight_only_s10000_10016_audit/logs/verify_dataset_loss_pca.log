@@ -1,8 +1,0 @@
-Could not save font_manager cache [Errno 13] Permission denied: 'C:\\Users\\kyle\\.matplotlib\\fontlist-v3.11.0.json.matplotlib-lock'
-{
-  "status": "passed",
-  "fits_checked": 36,
-  "figures_checked": 5,
-  "source_and_output_hashes_verified": true,
-  "note": "Figure integrity is automated; visual layout was inspected separately."
-}

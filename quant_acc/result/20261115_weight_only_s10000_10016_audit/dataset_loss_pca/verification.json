@@ -1,7 +1,0 @@
-{
-  "status": "passed",
-  "fits_checked": 36,
-  "figures_checked": 5,
-  "source_and_output_hashes_verified": true,
-  "note": "Figure integrity is automated; visual layout was inspected separately."
-}

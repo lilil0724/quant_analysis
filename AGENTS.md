@@ -29,8 +29,8 @@ README.md；新增或遷移分析時，再讀 [完整目錄規範](docs/analysis
    既有獨有程式先核對封存，再移出正式目錄。
 6. **每次獨立**：重跑使用新的 run ID；已有 input/run/report 目錄時拒絕覆寫。
    完成的 run 與歷史 manifest 固定保存，路徑遷移使用 relocation receipt 記錄。
-7. **Git 與備份**：`data/` 內容 gitignore（含 `result/` 內的原始輸入快照）；
-   `result/` 分析產物、分析程式、README、唯一報告及其引用圖片保持可追蹤。
+7. **Git 與備份**：`data/` 與 `result/` 內容 gitignore；
+   分析程式、README、唯一報告及其引用圖片保持可追蹤。
    忽略資料另行備份，branch 不是這些檔案的備份。
 
 重用已驗證輸入；僅在缺少輸入或使用者明確要求 refresh 時下載。W&B 下載需要

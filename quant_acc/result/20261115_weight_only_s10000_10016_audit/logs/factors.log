@@ -1,3 +1,0 @@
-C:\Users\Public\miniconda3\envs\opencode_env\Lib\site-packages\pandas\core\nanops.py:1673: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
-  return spearmanr(a, b)[0]
-Modelled 4490 baseline-matched cells in C:\project\quant_analysis\legacy_hqq\result\20261115_weight_only_s10000_10016_audit\legacy\corr

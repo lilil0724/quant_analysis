@@ -3,7 +3,7 @@
 2026-10-21 起採用 [分析目錄與資料規範](docs/analysis_conventions_proposal.md)，
 操作規則見 [AGENTS.md](AGENTS.md)，實作進度見
 [第一批遷移計畫](docs/analysis_layout_implementation_20261021.md)。
-2026-11-15 起，`result/` 分析產物可納入 Git；`data/`（含結果目錄內的原始輸入快照）仍忽略。
+依 2026-11-15 最新設定，`data/` 與 `result/` 均由 Git 忽略；`reports/` 的唯一報告與引用圖片保持可追蹤。
 
 目前主要分析目錄如下；2026-11-15 的更名只調整模組與引用路徑，保留既有分析方法、資料與結果：
 

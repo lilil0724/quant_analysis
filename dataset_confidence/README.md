@@ -449,7 +449,7 @@ TGDA_PYTHON="${TGDA_PYTHON:-$HOME/.conda/envs/${TGDA_CONDA_ENV:-tgda}/bin/python
 | `run.json` | Atomic status, commands/timezone/environment, input/output/report hashes, validation and error |
 
 唯一報告在 `reports/<run_id>/REPORT.md`，引用圖片與 result/figures 副本 hash 相同。
-`data/` ignored（含結果目錄內的原始輸入快照）；`result/` 與 reports 可追蹤。
+`data/` 與 `result/` ignored；reports 可追蹤。
 同 run/report ID 拒絕覆寫；修正後建立新 run。
 所有 accuracy/drop/damage/rescue/ratio 欄位是 fraction；乘以 100 才是百分比或 pp。
 此入口的 `damage_rate/rescue_rate` 沿用歷史 matching 欄名，表示**無條件加權 mass**，

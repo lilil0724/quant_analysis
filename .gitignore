@@ -1,7 +1,8 @@
 __pycache__/
 *.py[cod]
-# Adopted analysis layout: immutable input snapshots stay local.
+# Analysis inputs and complete per-run outputs stay local/server-side.
 **/data/
+**/result/
 # Keep input data local at the repository root and inside analysis modules.
 data/
 results_all/
@@ -58,12 +59,3 @@ dataset_confidence/data/run_config.json
 *.pth
 *.ckpt
 *.safetensors
-
-# Track per-run results, including logs, arrays and other generated artifacts.
-!**/result/
-!**/result/**
-# Raw input snapshots and Python caches remain ignored inside result trees.
-**/data/
-__pycache__/
-*.py[cod]
-

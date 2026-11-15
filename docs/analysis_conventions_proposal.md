@@ -15,9 +15,9 @@
 | 每次一份報告 | 每個 run 只產生一份 Markdown：`reports/<run_id>/REPORT.md`。 |
 | 保留分析流程 code | 正式 codebase 保留分析所需的 Python／launcher；功能測試、synthetic fixtures、probe 與臨時 debug code 使用 repo 外的暫存目錄，驗證後清理。 |
 | 每次獨立目錄 | 每次重跑取得新 `run_id`；完整輸出和精簡報告使用相同 ID 對應。 |
-| Git 追蹤 | `data/` 全部忽略，含 `result/` 內的原始輸入快照；`result/` 分析產物與 `reports/` 唯一報告及引用圖片可追蹤。 |
+| Git 追蹤 | `data/` 與 `result/` 全部忽略；`reports/` 唯一報告及引用圖片可追蹤。 |
 
-2026-11-15 依使用者要求調整第七點：允許 Git 保留 `result/` 的分析產物，包含表格、完整圖集、log 與 NumPy 陣列；`data/` 原始輸入快照仍忽略。唯一報告維持在 `reports/<run_id>/REPORT.md`，不重複維護兩份報告。
+2026-11-15 依使用者最新要求恢復忽略 `result/`：完整分析產物與 `data/` 輸入另行保存及備份。唯一報告維持在可追蹤的 `reports/<run_id>/REPORT.md`，不重複維護兩份報告。
 
 ## 2. 標準目錄
 
@@ -39,7 +39,7 @@ quant_analysis/
     │   └── <input_id>/
     │       ├── source_manifest.json
     │       └── ...                   # 原始資料或固定的上游輸入
-    ├── result/                       # 分析產物可追蹤；內含 data/ 仍忽略
+    ├── result/                       # 全部 gitignore
     │   └── <run_id>/
     │       ├── run.json
     │       ├── prepared/             # 本次產生的整理後資料
@@ -102,7 +102,7 @@ Run ID 使用 Asia/Taipei 時間及簡短分析名稱，例如 `20261021_161530_
 6. 缺值、排除條件、驗證結果與結論限制。
 7. 重現命令、Git commit／dirty 狀態、完整輸出位置。
 
-完整圖表先寫入 `result/<run_id>/figures/`；報告流程只將實際引用的 PNG／SVG 複製至 `reports/<run_id>/figures/`，核對兩份 hash 相同。報告使用 `figures/name.png` 相對連結，讓 Git clone 後仍可閱讀。CSV、NPZ、log、完整圖集與未引用圖片留在可追蹤的 `result/`。
+完整圖表先寫入 `result/<run_id>/figures/`；報告流程只將實際引用的 PNG／SVG 複製至 `reports/<run_id>/figures/`，核對兩份 hash 相同。報告使用 `figures/name.png` 相對連結，讓 Git clone 後仍可閱讀。CSV、NPZ、log、完整圖集與未引用圖片留在 ignored 的 `result/`。
 
 報告可列精簡數值表；原始樣本與完整統計表保留於 `result/`。所有新生成 Markdown 報告集中到這一份，不再由各階段另寫 report.md／data_quality.md／summary.md。
 
@@ -125,7 +125,7 @@ Run ID 使用 Asia/Taipei 時間及簡短分析名稱，例如 `20261021_161530_
 
 ## 6. Git 與備份
 
-共同規則如下；遷移期間保留舊路徑的忽略規則，並將 `result/` 例外置於全域副檔名規則之後：
+共同規則如下；遷移期間保留舊路徑的忽略規則：
 
 ```gitignore
 # Legacy output locations, retained during migration
@@ -133,23 +133,20 @@ Run ID 使用 Asia/Taipei 時間及簡短分析名稱，例如 `20261021_161530_
 /outputs/
 /.codex_tmp/
 
-# Track generated results even when global extension rules ignore them
-!**/result/
-!**/result/**
-
-# Raw input snapshots remain local, including those nested in results
+# Runtime inputs and complete generated results remain local
 **/data/
+**/result/
 
 # Python runtime cache
 __pycache__/
 *.py[cod]
 ```
 
-`result/` 分析產物、`reports/<run_id>/REPORT.md` 與引用圖片可正常納入 Git，不需 `git add -f`。舊版 `results/`、`outputs/` 等目錄維持既有忽略規則。模組程式與 README 保持可追蹤，避免再次把正式分析程式放進 `outputs/` 等忽略目錄。
+`reports/<run_id>/REPORT.md` 與引用圖片可正常納入 Git。`data/`、`result/` 及舊版 `results/`、`outputs/` 等目錄維持忽略，不使用 `git add -f` 提交。模組程式與 README 保持可追蹤，避免再次把正式分析程式放進 `outputs/` 等忽略目錄。
 
 已受追蹤的輸入／輸出不會因新增 `.gitignore` 自動消失；遷移時先備份與核對，再使用僅取消追蹤的方式處理，保留本機檔案。這不會清除 Git 歷史內原有的資料。
 
-Git 不負責被忽略的 `data/` 保存；`result/` 產物需實際提交才會保存於 Git。資料備份仍需包含輸入 manifest、完整 run 目錄與必要程式快照。刪除任何舊目錄前，先確認新副本存在且 SHA-256 一致。
+Git 不負責被忽略的 `data/` 與 `result/` 保存；資料備份需包含輸入 manifest、完整 run 目錄與必要程式快照。刪除任何舊目錄前，先確認新副本存在且 SHA-256 一致。
 
 ## 7. 目前 repo 的採用順序
 
@@ -170,6 +167,6 @@ Git 不負責被忽略的 `data/` 保存；`result/` 產物需實際提交才會
 - 每個 run 的 reports 子樹恰有一個 `.md`；每個被引用的圖片都存在，與完整輸出圖片 hash 相同。
 - 重跑會建立新 ID 或拒絕同名；不會覆寫舊 input/run，也不會悄悄重下載。
 - 暫存的功能測試碼不留在正式 codebase；分析保有必要的輸入與輸出驗證。
-- `git check-ignore` 確認 `data/` 檔案被忽略，包含 `result/` 內的輸入快照；`result/` 表格、圖片、log 與陣列，以及程式、README 與報告可追蹤。
+- `git check-ignore` 確認 `data/` 與 `result/` 檔案被忽略，`git ls-files` 確認不再追蹤；程式、README 與報告及其引用圖片可追蹤。
 - 使用同一份輸入，純目錄遷移後的核心數值與原結果一致；浮點容差明列於遷移核對紀錄。W6A4 pilot 保持 144 個 context、目前全可配對的範圍及相同 ratio。
 - Git commit 與資料備份分別可用；現有 worktree archive 在正式分析與資料恢復驗證完成前保留。

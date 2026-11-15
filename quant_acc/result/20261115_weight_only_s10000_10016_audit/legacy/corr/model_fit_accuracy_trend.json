@@ -1,8 +1,0 @@
-{
-  "model": "trend",
-  "n_cells": 4490,
-  "n_columns": 42,
-  "rank": 42,
-  "r2": 0.6617161814726644,
-  "condition_number": 960.7111621157168
-}
