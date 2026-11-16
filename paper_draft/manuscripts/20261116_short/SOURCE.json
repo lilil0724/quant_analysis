@@ -1,0 +1,15 @@
+{
+  "title": "Dataset-Dependent Accuracy Retention under Weight-Only Post-Training Quantization",
+  "version": "User-provided 7-page short.pdf reviewed and translated on 2026-11-16",
+  "status": "draft; contains known protocol issues, TBD fields and synthetic placeholder figure",
+  "file": "short.pdf",
+  "pages": 7,
+  "bytes": 369787,
+  "sha256": "4c405d79e1da6c6c99c0967424fbcbc984302a5031023c07d3125e0f8107a9e0",
+  "source_snapshot": "paper_draft/data/20261116_201210_623333_short_paper_review/short.pdf",
+  "original_user_path": "C:/Users/kyle/Downloads/short.pdf",
+  "original_path_available_at_publication": false,
+  "publication_scope": "User explicitly requested adding this manuscript and pushing it to GitHub. Reference PDFs and analysis data/result remain ignored.",
+  "discussion_notes": "../../PAPER_DISCUSSION_NOTES_20261116.md",
+  "translation": "../../reports/20261116_225424_630984_short_zh_tw_translation/REPORT.md"
+}

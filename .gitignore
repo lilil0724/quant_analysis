@@ -63,3 +63,5 @@ dataset_confidence/data/run_config.json
 # Paper reference PDFs are local-only; draft text and bibliography remain trackable.
 /paper_draft/pdfs/
 /paper_draft/**/*.[pP][dD][fF]
+# User-requested versioned manuscript; reference PDFs and data/result stay ignored.
+!/paper_draft/manuscripts/20261116_short/short.pdf
