@@ -59,3 +59,7 @@ dataset_confidence/data/run_config.json
 *.pth
 *.ckpt
 *.safetensors
+
+# Paper reference PDFs are local-only; draft text and bibliography remain trackable.
+/paper_draft/pdfs/
+/paper_draft/**/*.[pP][dD][fF]

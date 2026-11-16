@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-11-16T13:21:18.712574+08:00",
+  "pdf_count": 16,
+  "original_intro_core_citations": 8,
+  "detailed_intro_citations": 14,
+  "pdfs_not_cited_in_detailed_intro": 2,
+  "zotero_copies_matching_source_sha256": 10,
+  "official_downloads": 6,
+  "all_pdfs_open_and_hash_match": true,
+  "all_pdfs_gitignored": true,
+  "tracked_pdf_count": 0,
+  "excluded_reference_absent": true,
+  "relative_document_links_valid": true,
+  "detailed_intro_citation_numbers_complete": true,
+  "detailed_intro_sha256": "9da94e8a5351ddf69a88bda4b54541b380593644b03ba02bd62065565cad9cf5",
+  "english_intro_word_count": 891
+}

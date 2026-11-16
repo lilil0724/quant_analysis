@@ -1,0 +1,21 @@
+{
+  "relocated_at": "2026-11-16T13:06:14.783122+08:00",
+  "files": [
+    {
+      "from": "docs\\ptq_fgir_intro_draft_20261116.md",
+      "to": "paper_draft\\ptq_fgir_intro_draft_20261116.md",
+      "sha256": "a53b1d4ecc9e58ed0ad8c4f90d9f5ffa68cf61e594dbb6dee4bbf589e9dd58ff",
+      "current_sha256_after_requested_citation_removal": "25e24ded5a4355a536705ba3610431ab5501f08f43f8835aa5041e0189905af2",
+      "current_sha256": "2953931b6ff0dde52ad5a692c4944a507bf7d1fd0f6d8b99dc511c6e35ac1e89"
+    },
+    {
+      "from": "docs\\ptq_fgir_intro_gap_check_20261116.md",
+      "to": "paper_draft\\ptq_fgir_intro_gap_check_20261116.md",
+      "sha256": "c1bfed51340a8954ee6cb1c048333980d16043b3a23367c2dbc62b1e49e1cea0",
+      "current_sha256_after_requested_citation_removal": "f38a742e048347f3c6e06235ce6364ccfaa5a730181aeae4a369362055596ce9",
+      "current_sha256": "f38a742e048347f3c6e06235ce6364ccfaa5a730181aeae4a369362055596ce9"
+    }
+  ],
+  "post_relocation_edit": "Removed the user-excluded reference and its introduction sentence; original sha256 fields describe the files at relocation.",
+  "latest_edit": "Original concise draft now links to the detailed INTRODUCTION.md; previous source hashes remain relocation-time evidence."
+}

@@ -1,5 +1,8 @@
 # Quantization analysis workspace
 
+論文 intro 草稿、文獻定位與引用清單見 [paper_draft/README.md](paper_draft/README.md)。
+引用 PDF 保存在 `paper_draft/pdfs/`，由 Git 忽略，僅留在本機。
+
 2026-10-21 起採用 [分析目錄與資料規範](docs/analysis_conventions_proposal.md)，
 操作規則見 [AGENTS.md](AGENTS.md)，實作進度見
 [第一批遷移計畫](docs/analysis_layout_implementation_20261021.md)。
@@ -58,6 +61,9 @@ Margin matching 的 server launcher 依 TGDA 設定使用 `tgda` 環境的 Pytho
 | Legacy 21-condition / five-dataset feature code（封存） | [清單、SHA-256 與還原說明](archive/five_dataset_features_legacy_20261101/README.md) | historical inputs remain in place | historical outputs remain in place; archived code is not a relocated executable package |
 
 ## Common flow
+
+論文重跑前的資料缺口、分析待辦與本機／Nano4 分工見
+[Dataset 與 quantization accuracy checklist](docs/paper_analysis_checklist_20261115.md)。
 
 Nano4 單一提交入口：[`dataset_features/run_all_nano4.sh`](dataset_features/run_all_nano4.sh)，
 可選擇或一次執行既有 W3/G128 paired、centered、bias、margin、t-SNE；原分析與 plot
