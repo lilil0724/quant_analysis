@@ -1,0 +1,22 @@
+\begin{table}[h]
+\centering
+\caption{W3/G128 diagnostics over the {\V{nDatasets}} datasets. CKA: median final-layer CKA. Offset: mean top-1 change in points after the cross-fitted class-offset correction, beside the mean of five shuffled-class controls. $\Delta$Brier ($\times 10^{3}$): change in damage Brier score from adding competitor counts.}
+\label{tab:diagnostics}
+\setlength{\tabcolsep}{3pt}
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Backbone & Strategy & CKA $\uparrow$ & Offset & Shuffled & $\Delta$Brier $\downarrow$ \\
+\midrule
+ViT-B/16 & FT & 0.88 & 0.64 & $-$0.94 & 3.71 \\
+ViT-B/16 & LP & 0.91 & 1.52 & $-$1.55 & $-$4.58 \\
+ViT-B/16 & CAL & 0.95 & 1.29 & $-$1.13 & $-$6.07 \\
+Swin-B & FT & 0.87 & 1.91 & $-$1.47 & $-$2.34 \\
+Swin-B & LP & 0.91 & 4.15 & $-$2.34 & $-$9.32 \\
+Swin-B & CAL & 0.90 & 2.47 & $-$1.60 & $-$2.22 \\
+BEiTv2-B & FT & 0.78 & 2.78 & $-$0.93 & 0.01 \\
+BEiTv2-B & LP & 0.16 & 2.06 & $-$1.19 & $-$0.19 \\
+BEiTv2-B & CAL & 0.86 & 11.31 & $-$7.72 & $-$2.39 \\
+\bottomrule
+\end{tabular}
+\end{table}

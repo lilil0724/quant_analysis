@@ -1,0 +1,29 @@
+\begin{table}[t]
+\centering
+\caption{Datasets, their group, split sizes and number of classes $C$. FP is the baseline top-1, the mean over the nine model and regime settings at the AMP FP16 baseline.}
+\label{tab:datasets}
+\setlength{\tabcolsep}{2.5pt}
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Dataset & Group & Train $N$ & Test $N$ & $C$ & FP (\%) \\
+\midrule
+Aircraft & Other & \dummy{1{,}000} & 3{,}333 & 100 & 78.4 \\
+Cars & Other & \dummy{1{,}037} & 8{,}041 & 196 & 82.7 \\
+CUB & Other & \dummy{1{,}074} & 5{,}794 & 200 & 89.1 \\
+Dogs & Other & \dummy{1{,}111} & 8{,}580 & 120 & 88.5 \\
+Flowers & Other & \dummy{1{,}148} & 6{,}149 & 102 & 98.8 \\
+Food & Other & \dummy{1{,}185} & 25{,}250 & 101 & 90.4 \\
+iNat17 & Other & \dummy{1{,}222} & 95{,}986 & 5{,}089 & 68.7 \\
+Moe & Other & \dummy{1{,}259} & 2{,}943 & 173 & 91.4 \\
+NABirds & Other & \dummy{1{,}296} & 24{,}633 & 555 & 86.7 \\
+Pets & Other & \dummy{1{,}333} & 3{,}669 & 37 & 92.3 \\
+VegFru & Other & \dummy{1{,}370} & 116{,}931 & 292 & 93.2 \\
+SoyAgeing & Soy+cotton & \dummy{1{,}407} & 4{,}950 & 198 & 44.2 \\
+SoyGene & Soy+cotton & \dummy{1{,}444} & 11{,}143 & 1{,}110 & 37.8 \\
+SoyGlobal & Soy+cotton & \dummy{1{,}481} & 5{,}814 & 1{,}938 & 20.4 \\
+SoyLocal & Soy+cotton & \dummy{1{,}518} & 600 & 200 & 27.1 \\
+Cotton & Soy+cotton & \dummy{1{,}555} & 240 & 80 & 32.8 \\
+\bottomrule
+\end{tabular}
+\end{table}

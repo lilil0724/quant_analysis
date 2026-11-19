@@ -1,0 +1,54 @@
+{
+ "grid.csv": {
+  "source": "quant_acc/20261117_legacy_hqq_s10000_10016_cal10016_v2/prepared/quant_summary.csv",
+  "sha256": "2e10db27a7f3600b95adaa36caa006d441020b741c431752e7cf4261e7d27e79"
+ },
+ "dataset_master.csv": {
+  "source": "paper_draft/data/derived/20261116_140853_554056_runall_s20004_audit/dataset_master.csv",
+  "sha256": "efea423202a1b20d4d06f45d273e111a53632e51d9c559ae2f226de667248807"
+ },
+ "margin_gaps.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/margin/result/analysis/tables/gaps.csv",
+  "sha256": "856a80210bf00564c7cab9f9cf641b3c44c9ff0914d9679f0a4e98301dfac326"
+ },
+ "margin_diagnostics.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/margin/result/analysis/tables/diagnostics.csv",
+  "sha256": "1ad04a85940b61264b388723d770c02671d68ac1c7987311f8d21d48967a1775"
+ },
+ "margin_balance.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/margin/result/analysis/tables/balance.csv",
+  "sha256": "df88efe058ba77822c691351c1fa090f0c6299bf422797b0412b75245de6ff5e"
+ },
+ "margin_coverage.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/margin/result/analysis/tables/coverage.csv",
+  "sha256": "b4307409180c10e2cf521cff7d2bf297020d8053dee2ee0f14fc1a4aaa6c5bc7"
+ },
+ "bias_results.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/bias/bias_results.csv",
+  "sha256": "90e74c35ef964bc1a6b8a5f28d61c30621f0782f4cf65d7212ea28c9bfc02570"
+ },
+ "winner_ranks.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/bias/winner_ranks.csv",
+  "sha256": "63361d8a639a2042d2f030965442ec2d271d84eb777a7eba04e25f98ff83850f"
+ },
+ "competitor_comparisons.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/bias/heldout_prediction_comparisons.csv",
+  "sha256": "827067e3f70103aa995b80f0b738c8ec91711325da1b73d676ccd7e5f038990e"
+ },
+ "competitor_scores.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/bias/heldout_prediction_scores.csv",
+  "sha256": "96e5240f0868bb7a9bd05b17a24b307cb0505a5ce3b27ddad2fe39420510cad2"
+ },
+ "matching_support.csv": {
+  "source": "paper_draft/data/derived/20261116_140853_554056_runall_s20004_audit/matching_support_summary.csv",
+  "sha256": "ba31c519a3d18451b99ff022f626fb717f722bcf60f876506c720bbc54e74d4f"
+ },
+ "tsne_cub_vit_b16_ft.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/tsne/cub/vit_b16/ft/coordinates.csv",
+  "sha256": "1282b43d88549eeac6403056807b5412c77ca03ed140b2da706dacc6f0c56121"
+ },
+ "layer_metrics.csv": {
+  "source": "paper_draft/data/run_all/20261115_211022_759540_w3_s20004/paired/*/*/*/layer_metrics.csv",
+  "files": 144
+ }
+}

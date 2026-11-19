@@ -1,0 +1,22 @@
+\begin{table}[h]
+\centering
+\caption{Spearman correlation of each property with the difficulty score over the {\V{gridDatasets}} complete datasets. FP: baseline top-1. Sep.: separability. H: H-score. Norm: feature norm ratio P99/P50. All are measured on the baseline except the final-layer CKA between baseline and W3/G128 features.}
+\label{tab:properties}
+\setlength{\tabcolsep}{1.5pt}
+\footnotesize
+\begin{tabular}{llrrrrrrr}
+\toprule
+Backbone & Regime & $q_{10}$ & FP & $C$ & Sep. & H & Norm & CKA \\
+\midrule
+ViT-B/16 & FT & $-$0.98 & $-$0.97 & 0.52 & $-$0.84 & $-$0.32 & 0.42 & $-$0.28 \\
+ViT-B/16 & FZ & $-$0.92 & $-$0.90 & 0.37 & $-$0.83 & $-$0.24 & $-$0.90 & $-$0.55 \\
+ViT-B/16 & CAL & $-$0.83 & $-$0.83 & 0.48 & 0.06 & $-$0.03 & 0.41 & $-$0.07 \\
+Swin-B & FT & $-$0.86 & $-$0.78 & 0.55 & $-$0.73 & $-$0.58 & $-$0.37 & $-$0.60 \\
+Swin-B & FZ & $-$0.97 & $-$0.98 & 0.44 & $-$0.81 & $-$0.15 & $-$0.80 & $-$0.33 \\
+Swin-B & CAL & $-$0.63 & $-$0.59 & 0.44 & 0.07 & $-$0.51 & $-$0.11 & $-$0.18 \\
+BEiTv2-B & FT & $-$0.48 & $-$0.40 & 0.07 & $-$0.39 & $-$0.21 & $-$0.16 & $-$0.36 \\
+BEiTv2-B & FZ & $-$0.92 & $-$0.95 & 0.36 & $-$0.88 & $-$0.43 & 0.70 & $-$0.11 \\
+BEiTv2-B & CAL & $-$0.83 & $-$0.74 & 0.16 & 0.30 & $-$0.06 & $-$0.08 & 0.28 \\
+\bottomrule
+\end{tabular}
+\end{table}

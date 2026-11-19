@@ -1,0 +1,39 @@
+\section{Supplementary material}
+
+\subsection{Agreement of the grid and the paired runs}
+The full grid and the paired W3/G128 exports were produced by separate evaluation runs of the same checkpoints.
+On the \V{consistContexts} contexts present in both, baseline top-1 differs by at most \V{consistFp} points and W3/G128 top-1 by at most \V{consistQ} points.
+
+\subsection{Matching bin width}
+With bin widths 0.025, 0.05 and 0.1, the reduction of the retention gap ranges from \V{reductionMinAll}\% to \V{reductionMaxAll}\% over the nine settings.
+
+\subsection{W3/G128 diagnostics}
+\Cref{tab:diagnostics} lists the final-layer CKA, the class-offset correction and the competitor comparison of each setting.
+
+\input{tables/w3_diagnostics}
+
+\subsection{Correlates of the difficulty score}
+\Cref{tab:properties} lists the Spearman correlation of every measured property with the \term{difficulty score}.
+
+\input{tables/properties}
+
+\subsection{Local structure of the features}
+\Cref{fig:tsne} shows a joint t-SNE~\cite{vandermaaten2008tsne} of baseline and W3/G128 final features for one context.
+In this context, the clusters of the selected classes remain separate after quantization.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/tsne_cub_vit_ft.pdf}
+  \caption{Joint t-SNE of the final features of ViT-B/16 FT on CUB, for \V{tsneClasses} of its \V{cubClasses} classes and all their test images, before and after W3/G128 quantization. Colors are classes.}
+  \label{fig:tsne}
+\end{figure}
+
+\subsection{Swap rate by margin}
+\Cref{fig:decile} relates the swap rate to the baseline margin of each image \TBD{per-image quantized predictions are needed for this figure}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/swap_by_decile_placeholder.pdf}
+  \caption{[PLACEHOLDER: synthetic values] Swap rate at W3/G128 by baseline margin decile within each dataset, averaged over datasets with equal weight.}
+  \label{fig:decile}
+\end{figure}

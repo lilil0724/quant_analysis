@@ -1,0 +1,25 @@
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{bm}
+
+% Printed numbers come from tables/macros.tex, written by codebase/tables.py.
+\input{tables/macros}
+\newcommand{\V}[1]{\ifcsname V@#1\endcsname\csname V@#1\endcsname\else\errmessage{Undefined number #1}\fi}
+
+% Placeholders: red, marked with a dagger. Set \showplaceholdersfalse to print them plain.
+\newif\ifshowplaceholders
+\showplaceholderstrue
+\ifshowplaceholders
+  \newcommand{\dummy}[1]{\textcolor{red}{#1\textsuperscript{\dag}}}
+  \newcommand{\TBD}[1]{\textcolor{red}{[TBD: #1]}}
+\else
+  \newcommand{\dummy}[1]{#1}
+  \newcommand{\TBD}[1]{}
+\fi
+\newcommand{\SC}{UFG}
+\newcommand{\FG}{FG}
+% One font for the quantities the paper defines.
+\newcommand{\term}[1]{\textit{#1}}

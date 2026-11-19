@@ -1,0 +1,11 @@
+\begin{abstract}
+Weight-only post-training quantization (PTQ) costs some recognition datasets far more accuracy than others.
+We study this dataset dependence with half-quadratic quantization (HQQ) on \V{nDatasets} fine-grained datasets, three backbones, three checkpoint regimes and \V{nConditions} combinations of bit width and group size.
+Each quantized model is compared with its own unquantized checkpoint through accuracy retention, the ratio of quantized to baseline accuracy.
+Bit width and group size set the level of retention.
+In the transition between collapse and full retention, five soybean and cotton cultivar datasets keep less accuracy than the other datasets: at 3-bit weights with group size 128 they retain \V{retSc_w3g128} of their accuracy, against \V{retOther_w3g128}.
+Dataset difficulty rankings agree across quantization conditions, with Kendall's $W$ of at least \V{wMin}.
+Datasets with small baseline logit margins lose more, and matching the margin distributions of the two groups narrows their retention gap by \V{reductionMin}\% to \V{reductionMax}\%.
+Baseline accuracy predicts difficulty almost as well as the margin does, yet datasets with equal baseline accuracy can differ in retention by up to \V{pairsMaxDiff}.
+Feature similarity between the baseline and quantized models does not track the accuracy loss.
+\end{abstract}

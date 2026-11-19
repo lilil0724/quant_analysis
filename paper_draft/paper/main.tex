@@ -1,0 +1,39 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage[review,algorithms]{wacv}
+% \usepackage[review,applications]{wacv}
+% \usepackage{wacv}
+
+\input{preamble}
+
+\definecolor{wacvblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=wacvblue]{hyperref}
+
+\def\wacvPaperID{*****}
+\def\confName{WACV}
+\def\confYear{2027}
+
+\title{Dataset-Dependent Accuracy Retention under Weight-Only\\Post-Training Quantization}
+% Alternatives:
+% \title{Dataset-Dependent Robustness of Low-Bit Post-Training Quantization in Fine-Grained and Ultra-Fine-Grained Recognition}
+% \title{Dataset-Dependent Accuracy Robustness under Weight-Only Post-Training Quantization}
+
+\author{Anonymous}
+
+\begin{document}
+\maketitle
+\input{sec/0_abstract}
+\input{sec/1_intro}
+\input{sec/2_related}
+\input{sec/3_setup}
+\input{sec/4_results}
+\input{sec/5_conclusion}
+{
+    \small
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{main}
+}
+\clearpage
+\appendix
+\input{sec/6_supplement}
+\end{document}

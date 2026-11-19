@@ -1,0 +1,40 @@
+\section{Datasets}
+\label{sec:datasets}
+
+\input{tables/datasets}
+
+Test images are resized to 300 pixels and center-cropped to 224, and each context is evaluated with one inference seed.
+CAL predictions aggregate cropped and flipped views, while its features come from the single test image.
+
+\section{Feature properties}
+\label{sec:diagnostics}
+
+At W3/G128 we export the features after every block and the final logits of the baseline and quantized models for all 144 contexts.
+Layer-wise similarity is the linear CKA~\cite{kornblith2019similarity} between the centered baseline and quantized features $X$ and $Y$,
+\begin{equation}
+  \mathrm{CKA}(X, Y) = \frac{\lVert X^{\top} Y \rVert_F^2}{\lVert X^{\top} X \rVert_F \, \lVert Y^{\top} Y \rVert_F}.
+  \label{eq:cka}
+\end{equation}
+Depth is the block index divided by the number of positions (25 for Swin-B, 13 for the others), and mid depth pools all contexts at relative depths 0.45 to 0.55.
+On $\ell_2$-normalized final features, $D_{\mathrm{intra}}$ is the mean cosine distance between images of one class and $D_{\mathrm{inter}}$ between images of two classes, each averaged with classes weighted equally.
+Separability is $D_{\mathrm{inter}} - D_{\mathrm{intra}}$.
+The H-score is $\mathrm{tr}\big(S_b (S_w + \lambda I)^{-1}\big)$ with between-class and within-class scatter $S_b$ and $S_w$ and $\lambda = 0.01\,\mathrm{tr}(S_w)/D$ for feature dimension $D$.
+
+\section{Additional results}
+
+\input{tables/robustness}
+
+\input{tables/margin}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/accuracy_retention.pdf}
+  \caption{Retention at W3/G128 against baseline top-1 for the \V{pooledN} contexts. Lines join three pairs from one setting with nearly equal baseline accuracy.}
+  \label{fig:accuracy}
+\end{figure}
+
+\input{tables/properties}
+
+The full grid and the paired W3/G128 exports come from separate evaluation runs of the same checkpoints.
+On the \V{consistContexts} contexts present in both, baseline top-1 differs by at most \V{consistFp} points and W3/G128 top-1 by at most \V{consistQ} points.
+With matching bin widths 0.025, 0.05 and 0.1, the reduction of the retention gap ranges from \V{reductionMinAll}\% to \V{reductionMaxAll}\%.

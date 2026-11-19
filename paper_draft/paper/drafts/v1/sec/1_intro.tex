@@ -1,0 +1,46 @@
+\section{Introduction}
+\label{sec:intro}
+
+Quantization reduces the memory footprint and computational cost of neural networks by representing weights and activations at lower numerical precision.
+Quantization-aware training (QAT) adapts the model parameters to reduced precision during training, which requires additional optimization and suitable training data.
+Post-training quantization (PTQ) instead converts an already trained model without a full training stage, although calibration and, in some methods, local optimization are still needed~\cite{gholami2021survey}.
+This lower cost makes PTQ attractive when training resources or the original training data are limited.
+
+Substantial research has improved the accuracy of quantized models.
+For vision transformers, PTQ4ViT handles difficult activation distributions through twin uniform quantization and Hessian-guided calibration~\cite{yuan2022ptq4vit}.
+Mixed-precision methods such as LampQ allocate bit widths according to the sensitivity of each component~\cite{kim2026lampq}.
+Data-limited methods improve the information available during adaptation, through class-conditional synthetic data~\cite{zhong2022fdda} or synthesis-aware fine-tuning~\cite{kim2025synq}.
+However, a better quantizer does not by itself explain why its accuracy may vary between recognition datasets.
+
+Quantization degradation is known to be uneven.
+In medical imaging, its effect varies across datasets and backbones~\cite{ozdemir2026bridging}.
+Classes and population groups can also degrade unequally~\cite{liu2025unfairness}, and the worst-case group depends on the calibration distribution~\cite{yuan2023benchmarking}.
+At the sample level, prediction changes after quantization have been associated with distribution shift and small output margins~\cite{hu2023towards}.
+These findings motivate examining not only the quantization procedure, but also the data and the trained model it is applied to.
+
+\begin{figure}[b]
+  \centering
+  \includegraphics[width=\linewidth]{figures/retention_curves.pdf}
+  \caption{Accuracy retention against weight bit width at group size 128, averaged over three backbones and three checkpoint regimes. Thin lines are datasets, thick lines group means. VegFru is excluded because its grid is incomplete.}
+  \label{fig:teaser}
+\end{figure}
+
+Fine-grained image recognition (FGIR) is a useful setting for this question because it requires distinguishing visually similar subcategories.
+Ultra-fine-grained recognition extends this challenge to cultivars, such as soybean and cotton varieties that experts struggle to tell apart~\cite{yu2021benchmark,fang2024learning}.
+Low-precision weights may therefore erase distinctions these tasks depend on.
+\cref{fig:teaser} shows that they do so unevenly.
+At 3-bit weights, each of the five soybean and cotton cultivar datasets keeps at most \V{maxSc_w3g128} of its accuracy, while each other dataset keeps at least \V{minOther_w3g128}.
+However, final quantized accuracy alone cannot separate this from the much lower baseline accuracy of the cultivar datasets.
+We therefore ask three questions.
+First, where in the bit-width and group-size grid does the dataset effect appear, and does the ranking of datasets hold across backbones and regimes?
+Second, do baseline decision margins account for the difficulty, beyond baseline accuracy?
+Third, do feature-level or decision-level changes after quantization explain which datasets lose accuracy?
+
+To answer them, we compare every quantized model with its own unquantized checkpoint over a full grid of weight-only HQQ conditions~\cite{badri2023hqq}.
+A focused analysis at 3-bit weights and group size 128 then pairs the features and logits of the baseline and quantized models.
+Our contributions are as follows:
+\begin{enumerate}
+  \item We measure accuracy retention for \V{nDatasets} fine-grained datasets, three backbones and three checkpoint regimes over \V{nConditions} weight-only conditions, and locate the dataset effect in the transition band between collapse and full retention.
+  \item We show that dataset difficulty rankings are stable across quantization conditions and only partly stable across backbones and regimes.
+  \item We test prespecified margin, representation and decision diagnostics, and show that baseline accuracy explains much, but not all, of the difficulty.
+\end{enumerate}

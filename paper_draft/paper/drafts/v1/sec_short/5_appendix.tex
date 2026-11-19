@@ -1,0 +1,72 @@
+\section{Datasets}
+\label{sec:datasets}
+
+\input{tables/datasets}
+
+Test images are resized to 300 pixels and center-cropped to 224, and each context is evaluated with one inference seed.
+VegFru has no Swin-B results and only 10 of 32 ViT-B/16 CAL results in the grid.
+CAL predictions aggregate cropped and flipped views, while its features come from the single test image.
+
+\section{Feature and decision diagnostics}
+\label{sec:diagnostics}
+
+At W3/G128 we export the features after every block and the final logits of the baseline and quantized models for all 144 contexts.
+A swap is an image whose predicted class changes after quantization.
+Damage is a swap from correct to wrong and rescue a swap from wrong to correct; both are rates over all test images.
+\Cref{fig:decile} relates the swap rate to the baseline margin of each image.
+Layer-wise similarity is the linear CKA~\cite{kornblith2019similarity} between the centered baseline and quantized features $X$ and $Y$,
+\begin{equation}
+  \mathrm{CKA}(X, Y) = \frac{\lVert X^{\top} Y \rVert_F^2}{\lVert X^{\top} X \rVert_F \, \lVert Y^{\top} Y \rVert_F}.
+  \label{eq:cka}
+\end{equation}
+On $\ell_2$-normalized final features, $D_{\mathrm{intra}}$ is the mean cosine distance between images of one class and $D_{\mathrm{inter}}$ between images of two classes, each averaged with classes weighted equally.
+Separability is $D_{\mathrm{inter}} - D_{\mathrm{intra}}$.
+The H-score is $\mathrm{tr}\big(S_b (S_w + \lambda I)^{-1}\big)$ with between-class and within-class scatter $S_b$ and $S_w$ and $\lambda = 0.01\,\mathrm{tr}(S_w)/D$ for feature dimension $D$.
+
+The class-offset correction estimates the mean row-centered logit change of each class on four folds of a stratified five-fold split and subtracts it on the held-out fold.
+Five controls apply the same correction with the class assignment of the offsets shuffled.
+This correction uses test logits and is a diagnostic, not a deployable method.
+Competitor features count the classes whose baseline logit lies within 0.25, 0.5 and 1.0 logit standard deviations of the winner.
+Two logistic models predict damage among baseline-correct images, one from a nonlinear basis of $m(x)$ and the log number of classes and one that adds the counts.
+Both use L2 regularization with $C=100$ and are evaluated leave-one-dataset-out within each backbone and regime, by Brier score.
+AUROC is undefined in \V{aurocUndefined} of \V{aurocRows} evaluations, where every held-out baseline-correct image is damaged; we report these as missing.
+
+\section{Additional results}
+
+\input{tables/robustness}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/ranking_agreement.pdf}
+  \caption{Spearman correlation between the difficulty scores of the \V{gridDatasets} complete datasets in each pair of backbone and regime settings.}
+  \label{fig:agreement}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/margin_distribution.pdf}
+  \caption{Baseline margin distributions of the two groups for ViT-B/16 FT, before matching, and the common target used for matching. Margins above 8 are not shown.}
+  \label{fig:margin}
+\end{figure}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/layer_cka.pdf}
+  \caption{Median linear CKA between baseline and W3/G128 features after each block, over the datasets of each group. Depth is the block index divided by the number of positions; Swin-B has 25 positions, the others 13. Mid depth in the text pools all contexts at relative depths 0.45 to 0.55.}
+  \label{fig:cka}
+\end{figure*}
+
+\input{tables/w3_summary}
+
+\input{tables/properties}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/swap_by_decile_placeholder.pdf}
+  \caption{[PLACEHOLDER: synthetic values] Swap rate at W3/G128 by baseline margin decile within each dataset, averaged over datasets with equal weight \TBD{per-image quantized predictions are needed}.}
+  \label{fig:decile}
+\end{figure}
+
+The full grid and the paired W3/G128 exports come from separate evaluation runs of the same checkpoints.
+On the \V{consistContexts} contexts present in both, baseline top-1 differs by at most \V{consistFp} points and W3/G128 top-1 by at most \V{consistQ} points.
+With matching bin widths 0.025, 0.05 and 0.1, the reduction of the retention gap ranges from \V{reductionMinAll}\% to \V{reductionMaxAll}\%.

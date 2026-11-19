@@ -1,0 +1,11 @@
+\begin{abstract}
+Weight-only post-training quantization (PTQ) costs some recognition datasets far more accuracy than others.
+We ask whether the dataset affects quantization robustness, and how.
+With half-quadratic quantization (HQQ), we quantize three backbones, each trained with three training strategies on \V{nDatasets} fine-grained datasets, at \V{nConditions} combinations of bit width and group size.
+Each quantized model is compared with its own checkpoint through \term{accuracy retention}, the ratio of quantized to baseline accuracy.
+Bit width and group size set the level of retention, and the datasets separate where retention lies between collapse and full retention.
+There, five ultra-fine-grained cultivar datasets (UFG) lose more than the \V{nOther} fine-grained datasets (FG): at 3-bit weights with group size 128 they retain \V{retSc_w3g128} of their accuracy, against \V{retOther_w3g128}.
+The \term{vulnerable-tail margin} of the baseline logits correlates with this difficulty and separates some datasets that baseline accuracy cannot.
+Matching the margin distributions of the two groups narrows their \term{retention gap} by \V{reductionMin}\% to \V{reductionMax}\%, without closing it.
+Feature similarity between the baseline and quantized models does not track the accuracy loss.
+\end{abstract}

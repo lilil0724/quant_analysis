@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Agreement $W$ of the four primary conditions on the ranking of the {\V{gridDatasets}} datasets, and Spearman $\rho$ of the difficulty score with the baseline margin $q_{10}$ and with baseline top-1.}
+\label{tab:gatesShort}
+\setlength{\tabcolsep}{3pt}
+\small
+\begin{tabular}{llrrr}
+\toprule
+Backbone & Strategy & $W$ $\uparrow$ & $\rho$ ($q_{10}$) & $\rho$ (top-1) \\
+\midrule
+ViT-B/16 & FT & 0.89 & $-$0.96 & $-$0.97 \\
+ViT-B/16 & LP & 0.93 & $-$0.93 & $-$0.91 \\
+ViT-B/16 & CAL & 0.81 & $-$0.82 & $-$0.84 \\
+Swin-B & FT & 0.81 & $-$0.87 & $-$0.82 \\
+Swin-B & LP & 0.95 & $-$0.97 & $-$0.98 \\
+Swin-B & CAL & 0.73 & $-$0.65 & $-$0.67 \\
+BEiTv2-B & FT & 0.83 & $-$0.53 & $-$0.45 \\
+BEiTv2-B & LP & 0.94 & $-$0.93 & $-$0.96 \\
+BEiTv2-B & CAL & 0.91 & $-$0.80 & $-$0.72 \\
+\bottomrule
+\end{tabular}
+\end{table}

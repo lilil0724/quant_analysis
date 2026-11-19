@@ -1,0 +1,28 @@
+\section{Introduction}
+\label{sec:intro}
+
+Fine-grained image recognition (FGIR) distinguishes visually similar subcategories, and ultra-fine-grained image recognition (UFGIR) extends it to cultivars that experts struggle to tell apart~\cite{yu2021benchmark}.
+Accuracy on these tasks improves with larger backbones~\cite{oquab2024dinov2}, which need more memory and computation than edge devices offer.
+Post-training quantization (PTQ) reduces this cost without a full training stage, with at most a small calibration set~\cite{gholami2021survey}, and half-quadratic quantization (HQQ) needs none~\cite{badri2023hqq}.
+Research on PTQ mostly improves the quantizer, through better calibration~\cite{yuan2022ptq4vit}, mixed precision~\cite{kim2026lampq} or synthetic calibration data~\cite{zhong2022fdda,kim2025synq}.
+However, its accuracy loss is uneven across medical imaging datasets and backbones~\cite{ozdemir2026bridging}, across classes and demographic groups~\cite{liu2025unfairness}, and with the calibration distribution~\cite{yuan2023benchmarking}, and prediction changes have been linked to small output margins~\cite{hu2023towards}.
+This leads to our first question: does the dataset affect quantization robustness?
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/retention_box.pdf}
+  \caption{Accuracy retention at 3-bit weights with group size 128 for every context, one point per dataset, backbone and training strategy. UFG: the five UFGIR cultivar datasets. FG: the other fine-grained datasets.}
+  \label{fig:teaser}
+\end{figure}
+
+To answer it, we quantize three backbones, each trained with three training strategies on \V{nDatasets} datasets, at \V{nBits} bit widths and \V{nGroupSizes} group sizes, and compare every quantized model with its own checkpoint.
+\cref{fig:teaser} shows a clear difference: at 3-bit weights, each of the five UFGIR cultivar datasets (UFG) keeps at most \V{maxSc_w3g128} of its accuracy on average, while each FGIR dataset (FG) keeps at least \V{minOther_w3g128}.
+However, the UFG datasets also have much lower baseline accuracy.
+This leads to our second question: how and why does the dataset affect quantization robustness?
+To address it, we test whether the dataset ranking is stable, whether the baseline decision margins explain the difficulty beyond baseline accuracy, and how much of the gap remains when the two groups are reweighted to equal margin distributions.
+We also compare the features (CKA) and the decisions (swaps) of each baseline and its quantized model.
+Our contributions are as follows:
+\begin{enumerate}
+  \item We show that the dataset affects quantization robustness: in every backbone and training strategy, the UFG datasets lose more accuracy than the FG datasets where retention lies between collapse and full retention, and the separation of the two groups is stable while the order within the FG group is not.
+  \item We show that the baseline logit margin correlates with the difficulty at least as strongly as any other measured property, including baseline accuracy, and separates some datasets that baseline accuracy cannot; matching it narrows the gap between the groups by about half, while feature similarity does not track the loss.
+\end{enumerate}

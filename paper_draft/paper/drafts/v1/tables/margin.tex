@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Retention gap (other $-$ soy+cotton) at W3/G128 before and after matching the baseline margin distributions, bin width 0.05. Red.: reduction of the gap. Overlap is the shared histogram mass; ESS is the lower of the two groups' matched-to-raw effective sample size.}
+\label{tab:margin}
+\setlength{\tabcolsep}{1.6pt}
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+Backbone & Regime & Raw & Matched & Red. (\%) & Overlap & ESS (\%) \\
+\midrule
+ViT-B/16 & FT & 0.212 & 0.042 & 80.0 & 0.26 & 23.4 \\
+ViT-B/16 & FZ & 0.310 & 0.188 & 39.2 & 0.40 & 42.6 \\
+ViT-B/16 & CAL & 0.268 & 0.118 & 55.9 & 0.24 & 29.6 \\
+Swin-B & FT & 0.498 & 0.248 & 50.2 & 0.23 & 26.3 \\
+Swin-B & FZ & 0.569 & 0.412 & 27.6 & 0.34 & 32.9 \\
+Swin-B & CAL & 0.341 & 0.112 & 67.1 & 0.26 & 31.9 \\
+BEiTv2-B & FT & 0.408 & 0.188 & 53.9 & 0.19 & 20.9 \\
+BEiTv2-B & FZ & 0.184 & 0.078 & 57.4 & 0.37 & 34.1 \\
+BEiTv2-B & CAL & 0.325 & 0.061 & 81.3 & 0.34 & 47.5 \\
+\bottomrule
+\end{tabular}
+\end{table}

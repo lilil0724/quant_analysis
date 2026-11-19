@@ -1,0 +1,22 @@
+\begin{table*}[t]
+\centering
+\caption{W3/G128 results for each backbone and regime over the {\V{nDatasets}} datasets. Accuracies, swap, damage and rescue rates are dataset means in \%; relative loss and final-layer CKA are dataset medians. Bias gain is the mean top-1 change after cross-fitted class-offset correction, beside the mean of five shuffled-class controls. $\Delta$Brier ($\times 10^{3}$) is the leave-one-dataset-out change in damage Brier score from adding competitor features; negative is better.}
+\label{tab:w3}
+\setlength{\tabcolsep}{4pt}
+\small
+\begin{tabular}{llrrrrrrrrrr}
+\toprule
+Backbone & Regime & FP (\%) & Q (\%) & Rel. loss (\%) $\downarrow$ & CKA $\uparrow$ & Swap & Damage & Rescue & Bias gain & Shuffled & $\Delta$Brier $\downarrow$ \\
+\midrule
+ViT-B/16 & FT & 70.7 & 65.5 & 6.1 & 0.88 & 25.8 & 8.1 & 2.9 & 0.64 & $-$0.94 & 3.71 \\
+ViT-B/16 & FZ & 62.8 & 56.1 & 8.5 & 0.91 & 35.0 & 9.9 & 3.2 & 1.52 & $-$1.55 & $-$4.58 \\
+ViT-B/16 & CAL & 72.0 & 67.3 & 3.5 & 0.95 & 25.5 & 7.4 & 2.7 & 1.29 & $-$1.13 & $-$6.07 \\
+Swin-B & FT & 72.5 & 62.6 & 9.3 & 0.87 & 32.8 & 12.1 & 2.2 & 1.91 & $-$1.47 & $-$2.34 \\
+Swin-B & FZ & 69.6 & 59.5 & 10.6 & 0.91 & 34.8 & 12.7 & 2.6 & 4.15 & $-$2.34 & $-$9.32 \\
+Swin-B & CAL & 79.3 & 70.7 & 5.1 & 0.90 & 23.6 & 10.6 & 2.1 & 2.47 & $-$1.60 & $-$2.22 \\
+BEiTv2-B & FT & 65.0 & 50.4 & 25.7 & 0.78 & 38.4 & 16.3 & 1.7 & 2.78 & $-$0.93 & 0.01 \\
+BEiTv2-B & FZ & 62.9 & 12.3 & 89.4 & 0.16 & 87.5 & 51.2 & 0.6 & 2.06 & $-$1.19 & $-$0.19 \\
+BEiTv2-B & CAL & 76.4 & 50.1 & 44.8 & 0.86 & 46.6 & 28.0 & 1.8 & 11.31 & $-$7.72 & $-$2.39 \\
+\bottomrule
+\end{tabular}
+\end{table*}

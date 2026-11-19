@@ -1,0 +1,8 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this paper we measured how much accuracy weight-only HQQ quantization removes from \V{nDatasets} fine-grained datasets, three backbones and three checkpoint regimes.
+Bit width and group size set the level of retention, and the datasets separate only in the transition band between collapse and full retention.
+In that band, the soybean and cotton cultivar datasets consistently lose more, and the ranking of datasets is stable across quantization conditions but only partly across backbones and regimes.
+Small baseline margins accompany the loss, and matching them narrows the gap between the groups without closing it.
+Baseline accuracy predicts much of the difficulty, but datasets with equal baseline accuracy still differ in retention by up to \V{pairsMaxDiff}, and the margin stays associated with the difficulty once accuracy is controlled.

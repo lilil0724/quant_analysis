@@ -1,0 +1,25 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Post-training quantization.}
+PTQ methods differ in how they choose quantization parameters and how much data they need~\cite{gholami2021survey}.
+For vision transformers, PTQ4ViT calibrates separate quantizers for post-softmax and post-GELU activations~\cite{yuan2022ptq4vit}, and LampQ assigns layer-wise bit widths~\cite{kim2026lampq}.
+Zero-shot and data-limited methods replace the calibration data with synthetic samples~\cite{zhong2022fdda,kim2025synq}.
+HQQ is calibration-free: it fits the zero-point and scale of each weight group by minimizing a sparsity-promoting reconstruction error, without data~\cite{badri2023hqq}.
+These works evaluate quantizers on a few standard benchmarks.
+We hold the quantizer fixed and vary the dataset, the backbone and the checkpoint regime.
+
+\paragraph{Uneven quantization degradation.}
+INT8 quantization of medical imaging models changes discrimination and calibration differently across datasets and backbones~\cite{ozdemir2026bridging}.
+Quantization can widen accuracy gaps between classes and demographic groups~\cite{liu2025unfairness}, and PTQ reliability depends on the calibration distribution and differs for the worst-case group~\cite{yuan2023benchmarking}.
+Hu~\etal relate prediction disagreements between full-precision and quantized models to distribution shift and small output margins~\cite{hu2023towards}.
+Xia~\etal separate how likely a prediction is to change from how much the change costs in accuracy~\cite{xia2021underexplored}.
+We extend these observations to fine-grained recognition, where datasets differ widely in their number of classes and baseline accuracy.
+
+\paragraph{Fine-grained recognition.}
+FGIR benchmarks cover birds, aircraft, cars, dogs, flowers, food and pets~\cite{wah2011cub,maji2013fine,krause2013cars,khosla2011dogs,nilsback2008flowers,bossard2014food,parkhi2012pets}.
+Ultra-fine-grained benchmarks distinguish cultivars of soybean and cotton from leaf images~\cite{yu2021benchmark}, and methods for them target subtle cues under few training samples per class~\cite{fang2024learning}.
+
+\paragraph{Comparing representations.}
+Centered kernel alignment (CKA) compares the representations of two networks on the same inputs~\cite{kornblith2019similarity}, and t-SNE visualizes local neighborhood structure~\cite{vandermaaten2008tsne}.
+We use both to compare each quantized model with its baseline on the same test images.

@@ -1,0 +1,8 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this paper we asked whether the dataset affects the robustness of weight-only HQQ quantization, and how.
+Bit width and group size set the level of \term{accuracy retention}, and in the transition band the five UFG cultivar datasets lose more than the FG datasets in every setting, a separation that is stable across backbones and training strategies.
+The \term{vulnerable-tail margin} of the baseline logits correlates with the difficulty, and matching the margin distributions narrows the \term{retention gap} by a median of \V{reductionMedian}\% without closing it.
+Since most UFG swaps go beyond the baseline's second choice, margins to lower-ranked classes are the next step.
+Each dataset is tied to its trained checkpoints, with one checkpoint and one inference seed per context, so these differences are associations rather than effects of the data alone.

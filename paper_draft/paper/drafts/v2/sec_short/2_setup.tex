@@ -1,0 +1,53 @@
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Datasets.}
+We use \V{nDatasets} classification datasets (\cref{tab:datasets} in the appendix).
+The \V{nOther} FG datasets cover birds, aircraft, cars, dogs, flowers, food, pets, vegetables and fruit, anime characters, and natural species~\cite{wah2011cub,vanhorn2015nabirds,maji2013fine,krause2013cars,khosla2011dogs,nilsback2008flowers,bossard2014food,parkhi2012pets,hou2017vegfru,vanhorn2018inat} \TBD{citation for Moe}.
+The \V{nSc} UFG datasets are the four soybean cultivar datasets and the cotton cultivar dataset of the ultra-fine-grained benchmark~\cite{yu2021benchmark}.
+The grouping follows the benchmark the data come from, not a measured property.
+Averaged over datasets, baseline top-1 is \V{fpAccSc}\% for the UFG group and \V{fpAccOther}\% for the FG group.
+
+\paragraph{Backbones, fine-tuning strategies and quantization.}
+We use ViT-B/16~\cite{dosovitskiy2021vit}, Swin-B~\cite{liu2021swin} and BEiTv2-B~\cite{peng2022beitv2}, each trained on every dataset with three fine-tuning strategies.
+Full fine-tuning (FT) updates the whole network, linear probing (LP) trains only the classifier on a frozen backbone, and CAL fine-tunes with counterfactual attention learning~\cite{rao2021cal} \TBD{confirm LP and the pretrained weights}.
+A backbone and a strategy form one setting, and each dataset in one setting defines one context, giving 144 contexts.
+HQQ~\cite{badri2023hqq} quantizes the weights of every linear layer of the backbone and keeps the classifier at full precision; activations are not quantized \TBD{HQQ version}.
+The grid covers bit widths $b \in \{1, 1.58, 2, 3, 4, 5, 6, 8\}$ and group sizes $g \in \{8, 32, 128, 512\}$, giving \V{nConditions} conditions, written W3/G128 for $b=3$ and $g=128$.
+The baseline is the same checkpoint evaluated without HQQ under FP16 mixed precision on the same test images.
+The grid holds \V{cells} results, one for every condition of the \V{contexts} contexts.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figures/gap_heatmaps.pdf}
+  \caption{Retention gap (FG $-$ UFG) for each backbone and fine-tuning strategy, by bit width and group size. Positive values mean the UFG datasets retain less. Group means weight the datasets equally.}
+  \label{fig:gap}
+\end{figure*}
+
+\paragraph{Retention and difficulty.}
+For baseline accuracy $a_{\mathrm{FP}}$ and quantized accuracy $a_{\mathrm{Q}}$, \term{accuracy retention} is $r = a_{\mathrm{Q}} / a_{\mathrm{FP}}$, reported as accuracy recovery in LLM quantization~\cite{kurtic2025bf16}, and relative loss is $1-r$.
+Group retention weights the datasets of a group equally, and the \term{retention gap} is the FG group's retention minus the UFG group's.
+The primary conditions are W3 and W4 at group sizes 8 and 128, where retention is neither saturated near zero nor near one.
+Within each setting, the \term{difficulty score} of a dataset is its percentile rank of relative loss averaged over the four primary conditions.
+Kendall's $W$ measures how well the four conditions agree; we treat the score as a common ranking only when $W \ge 0.6$.
+
+\paragraph{Decision margin.}
+For baseline logits $\bm{z}$ of an image $x$, the \term{normalized decision margin} is
+\begin{equation}
+  m(x) = \bigl(z_{(1)} - z_{(2)}\bigr) / \sigma(\bm{z}),
+  \label{eq:margin}
+\end{equation}
+where $z_{(1)}$ and $z_{(2)}$ are the two largest logits and $\sigma(\bm{z})$ is their standard deviation over classes.
+The margin measures the distance to the second-ranked class only, while quantization can also make a lower-ranked class the winner.
+The \term{vulnerable-tail margin} $q_{10}$ is the 10th percentile of $m(x)$ over the test images of a context.
+We prespecify $q_{10}$ as the primary margin predictor.
+It gives a difficulty signal when its Spearman correlation with the difficulty score is $\rho \le -0.5$ with a one-sided dataset permutation $p < 0.05$.
+The correlation must also be negative in at least three of the four primary conditions and after leaving out any one dataset.
+We further test whether adding $q_{10}$ to the prespecified controls, baseline accuracy and the log number of classes, lowers the leave-one-dataset-out error of a linear model of the score.
+
+\paragraph{Margin matching at W3/G128.}
+To ask how much of the gap follows from the different margin distributions, we reweight the test images of both groups to their common margin distribution.
+With bins of width 0.05 and datasets weighted equally within each group, the target is the bin-wise minimum of the two group histograms.
+Group retention becomes weighted quantized accuracy over weighted baseline accuracy.
+We report the overlap of the histograms and the effective sample size (ESS) beside the matched gap.
+The feature and decision diagnostics at W3/G128 are defined in \cref{sec:diagnostics}.

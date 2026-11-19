@@ -1,0 +1,152 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Where does the dataset effect appear?}
+
+If the datasets differed only in noise, the retention gap between the two groups would scatter around zero across the grid.
+Instead, bit width and group size set the overall level of retention, and the gap concentrates where retention is between its two limits (\cref{fig:gap}).
+Averaged over the nine backbone and regime settings, retention is at most \V{ret_w1_max} at 1 bit and at least \V{ret_w8_min} at 8 bits for every group size.
+At W3/G128, mean retention is \V{ret_w3g128}, and the \SC{} group retains \V{retSc_w3g128} against \V{retOther_w3g128} for the other group, a gap of \V{gap_w3g128}.
+The gap is positive in \V{gapPos_w3} of the \V{nSettingGs} combinations of setting and group size at 3 bits, and in \V{gapPos_w4} of \V{nSettingGs} at 4 bits.
+Smaller groups move the transition band to fewer bits.
+At W2/G8 the gap is \V{gap_w2g8}, while at W2/G128 mean retention has fallen to \V{ret_w2g128} and the gap is only \V{gap_w2g128}.
+\textbf{The dataset effect is therefore a property of the transition band, and its location depends on bit width and group size together.}
+
+At 1 bit, the gap is negative for BEiTv2 FT at every group size, also with the chance-corrected retention defined below.
+Several \SC{} baselines of that backbone are close to chance, where both measures are unstable.
+In \V{lowBaseline} contexts, all in the \SC{} group, the baseline top-1 is below 15\%.
+
+Three checks ask whether the gap is an artifact of the retention ratio, of one benchmark or of noise (\cref{tab:robust}).
+With chance-corrected retention the mean gap at W3/G128 is \V{gapChance_w3g128}, and with the baselines below 15\% removed it is \V{gapNoLow_w3g128}.
+Removing any one \SC{} dataset leaves a gap of at least \V{looMinGap}, and cotton alone, with no soybean dataset, still retains less in every setting.
+The gap is positive in all nine settings under every alternative.
+Treating baseline and quantized accuracy as independent, which overstates the noise, the binomial standard error of a context's retention is at most \V{seMax} for Cotton, with 240 test images, and at most \V{seOtherMax} for any dataset of the other group.
+A bootstrap over datasets places the 95\% interval of the gap above zero in \V{bootPositive} of nine settings; for BEiTv2 FT its lower bound is \V{bootLowBeitFt}.
+
+\input{tables/robustness}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/gap_heatmaps.pdf}
+  \caption{Retention gap (other $-$ \SC{}) for each backbone and regime, by bit width and group size. Positive values mean the \SC{} datasets retain less. Group means weight the \V{gridDatasets} complete datasets equally; VegFru is excluded.}
+  \label{fig:gap}
+\end{figure*}
+
+\subsection{Is the dataset ranking stable?}
+
+A dataset property that drives quantization difficulty should rank the datasets similarly across conditions and models.
+Within each backbone and regime, the four primary conditions agree well, with Kendall's $W$ between \V{wMin} and \V{wMax} (\cref{tab:gates}).
+The difficulty score is therefore a common ranking within each setting.
+Across settings the agreement is weaker (\cref{fig:agreement}).
+The median Spearman correlation between the scores of two settings is \V{agreeMedian}, and it ranges from \V{agreeMin} to \V{agreeMax}.
+BEiTv2 CAL and BEiTv2 FT agree least, so the backbone alone does not fix the ranking.
+The \SC{} datasets hold at least \V{scHardestMin} of the five hardest places in every setting, and all five in \V{scHardestAll} settings.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/ranking_agreement.pdf}
+  \caption{Spearman correlation between the difficulty scores of the \V{gridDatasets} complete datasets in each pair of backbone and regime settings.}
+  \label{fig:agreement}
+\end{figure}
+
+\subsection{Do baseline margins explain the difficulty?}
+
+If quantization perturbs logits by a similar amount everywhere, images with small baseline margins should change first, and datasets with many such images should lose more.
+The prespecified margin signal holds in \V{gatePass} of the nine settings (\cref{tab:gates}).
+The median correlation between $q_{10}$ and the difficulty score is \V{rhoMarginMedian}, and the permutation test gives $p<0.05$ in all \V{gatePPass} settings.
+BEiTv2 FT fails only the strength criterion, with a $\rho$ of \V{rhoMarginBeitFt}.
+However, baseline accuracy correlates with the difficulty score almost as strongly, with a median $\rho$ of \V{rhoAccMedian}.
+Adding $q_{10}$ to baseline accuracy and the log number of classes lowers the held-out error in only \V{marginHelps} of nine settings.
+A rank correlation that controls for baseline accuracy separates the two predictors.
+The partial correlation between $q_{10}$ and the difficulty score is negative in \V{partialNeg} of nine settings, with a median of \V{partialMedian}.
+\textbf{The margin adds rank information beyond baseline accuracy, but not enough to improve a held-out linear prediction.}
+
+Baseline accuracy also cannot fix the retention of an individual context (\cref{fig:accuracy}).
+Over the \V{pooledN} contexts at W3/G128, it explains \V{pooledR2}\% of the variance of retention in a linear fit.
+Within one backbone and regime, \V{pairsClose} pairs of datasets have baseline top-1 within 1.5 points of each other; \V{pairsDiffer} of them differ in retention by more than 0.2, and by up to \V{pairsMaxDiff}.
+On BEiTv2 CAL, Cars and Food start from \V{pairALowFp}\% and \V{pairAHighFp}\% but retain \V{pairALowR} and \V{pairAHighR}.
+On BEiTv2 FT, Dogs and Cars start from \V{pairBLowFp}\% and \V{pairBHighFp}\% but retain \V{pairBLowR} and \V{pairBHighR}.
+On Swin-B CAL, SoyGene and iNat17 start from \V{pairCLowFp}\% and \V{pairCHighFp}\%, and the soybean dataset retains \V{pairCLowR} against \V{pairCHighR}.
+In each pair the same dataset retains less in all four primary conditions, so the differences are not specific to W3/G128.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/accuracy_retention.pdf}
+  \caption{Retention at W3/G128 against baseline top-1 for the \V{pooledN} contexts of the \V{gridDatasets} complete datasets. Lines join three pairs from one backbone and regime with nearly equal baseline accuracy.}
+  \label{fig:accuracy}
+\end{figure}
+
+\input{tables/gates}
+
+Margin matching asks the same question within the W3/G128 test images.
+The \SC{} images concentrate at small margins, while the other images spread over a long tail (\cref{fig:margin}).
+Matching both groups to their common margin distribution reduces the retention gap by \V{reductionMin}\% to \V{reductionMax}\% across the nine settings (\cref{tab:margin}).
+The matched gap stays positive in \V{matchedPositive} of nine settings, so the \SC{} images lose more even at equal margin.
+The comparison covers only the shared part of the distributions, an overlap of \V{overlapMin} to \V{overlapMax} of the histogram mass.
+The matched ESS falls to as little as \V{essRatioMin}\% of the raw ESS, and the largest image weight is \V{weightMax} times its raw weight.
+
+Matching aligns only the distance to the second-ranked class, but most swaps do not go to that class.
+Over the \V{beyondContexts} contexts at W3/G128, a median of \V{beyondMedian}\% of swaps end on a class the baseline ranked below second; rank-2 and rank-3 ties count as second.
+This share is \V{beyondSc}\% for the \SC{} contexts and \V{beyondOther}\% for the other contexts, and every \SC{} dataset has a higher share than every other dataset.
+It does not follow the number of classes: Cotton with \V{cottonClasses} classes reaches \V{beyondCotton}\%, against \V{beyondCub}\% for CUB with \V{cubClasses}, and the correlation with the class count is \V{beyondRhoClasses}.
+It follows the margin instead, with a correlation of \V{beyondRhoMargin} with $q_{10}$.
+The top-1 to top-2 margin therefore misses most swaps of the \SC{} images, which is consistent with the positive matched gap.
+Margins to lower-ranked classes, of which the competitor counts below are a first form, are the natural next diagnostic.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/margin_distribution.pdf}
+  \caption{Baseline margin distributions of the two groups for ViT-B/16 FT, before matching, and the common target used for matching. Margins above 8 are not shown.}
+  \label{fig:margin}
+\end{figure}
+
+\input{tables/margin}
+
+\subsection{Do feature changes explain the difficulty?}
+
+If quantization damaged the features of the hard datasets more, their quantized features should drift further from the baseline.
+\Cref{fig:cka} shows the opposite in the middle of the network.
+Over all contexts at relative depths between 0.45 and 0.55, the median CKA between baseline and W3/G128 features is \V{midCkaSc} for the \SC{} group and \V{midCkaOther} for the other group.
+The final-layer CKA correlates only weakly with the difficulty score, with a median $\rho$ of \V{rhoCkaMedian} (\cref{tab:properties}).
+Among baseline properties, separability tracks the difficulty score with a median $\rho$ of \V{rhoSepMedian}, as baseline accuracy does, while the H-score and the norm ratio P99/P50 do not, at \V{rhoHscoreMedian} and \V{rhoNormMedian}.
+The one setting where features collapse is BEiTv2 FZ.
+Its median final CKA is \V{beitFzCka}, and its mean accuracy falls from \V{beitFzFp}\% to \V{beitFzQ}\% (\cref{tab:w3}).
+\textbf{Feature similarity identifies a collapsed backbone, but it does not rank the datasets by accuracy loss.}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/layer_cka.pdf}
+  \caption{Median linear CKA between baseline and W3/G128 features after each block, over the datasets of each group. Depth is the block index divided by the number of positions; Swin-B has 25 positions, the others 13.}
+  \label{fig:cka}
+\end{figure*}
+
+\input{tables/w3_summary}
+
+\subsection{Which decisions change?}
+
+Accuracy loss is the difference between damage and rescue.
+Damage exceeds rescue in every setting, by a factor of at least \V{damageOverRescueMin} (\cref{tab:w3}).
+The \SC{} group has the higher mean swap rate in \V{swapHigherSc} of nine settings.
+\Cref{fig:decile} relates the swap rate to the baseline margin of each image \TBD{per-image quantized predictions are needed for this figure}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/swap_by_decile_placeholder.pdf}
+  \caption{[PLACEHOLDER: synthetic values] Swap rate at W3/G128 by baseline margin decile within each dataset, averaged over datasets with equal weight.}
+  \label{fig:decile}
+\end{figure}
+
+Class-dependent logit offsets explain part of the damage.
+The cross-fitted offset correction raises mean top-1 by \V{biasGainMin} to \V{biasGainMax} points, while the shuffled controls lower it in every setting, by \V{shuffleLossMin} to \V{shuffleLossMax} points.
+The gain is therefore specific to the class of the offset.
+Competing classes add little beyond the margin.
+Adding the competitor counts lowers the damage Brier score in \V{competitorBetter} of nine settings, but raises it for ViT-B/16 FT and BEiTv2 FT.
+AUROC is undefined in \V{aurocUndefined} of \V{aurocRows} evaluations, where every held-out baseline-correct image is damaged; we report these as missing.
+
+\subsection{Limitations}
+
+Each dataset is tied to the checkpoints trained on it, so the dataset differences are associations, not effects of the data alone.
+The two groups differ in domain, class count, training-set size and baseline accuracy at once, and this study cannot separate these factors.
+Each context has one checkpoint and one inference seed, so we report no uncertainty across training runs.
+The paired feature and logit analyses cover W3/G128 only.
+Margin matching compares the groups only on their shared margin range, and the offset correction is fitted on test logits.

@@ -1,0 +1,87 @@
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Datasets.}
+We use \V{nDatasets} image classification datasets (\cref{tab:datasets}).
+The \V{nOther} FG datasets cover birds, aircraft, cars, dogs, flowers, food, pets, vegetables and fruit, anime characters, and natural species~\cite{wah2011cub,vanhorn2015nabirds,maji2013fine,krause2013cars,khosla2011dogs,nilsback2008flowers,bossard2014food,parkhi2012pets,hou2017vegfru,vanhorn2018inat} \TBD{citation for Moe}.
+The \V{nSc} UFG datasets are the four soybean cultivar datasets and the cotton cultivar dataset of the ultra-fine-grained benchmark~\cite{yu2021benchmark}.
+The grouping follows the benchmark the data come from, not a measured property.
+The two groups also differ in baseline accuracy: averaged over datasets, baseline top-1 is \V{fpAccSc}\% for the UFG group and \V{fpAccOther}\% for the FG group.
+
+\input{tables/datasets}
+
+\paragraph{Backbones and fine-tuning strategies.}
+We use ViT-B/16~\cite{dosovitskiy2021vit}, Swin-B~\cite{liu2021swin} and BEiTv2-B~\cite{peng2022beitv2} at $224\times224$ input, each trained on every dataset with three fine-tuning strategies.
+Full fine-tuning (FT) updates the whole network, linear probing (LP) trains only the classifier on a frozen backbone, and CAL fine-tunes the whole network with counterfactual attention learning~\cite{rao2021cal} \TBD{confirm from the run records that LP trains only the classifier, and the pretrained weights and training hyperparameters}.
+CAL predictions aggregate cropped and flipped views, while its features come from the single test image.
+A backbone and a strategy form one setting, and each dataset in one setting defines one context, giving 144 contexts with \V{testRows} test images per setting.
+Test images are resized to 300 pixels and center-cropped to 224.
+
+\paragraph{Quantization setting.}
+We quantize the weights of every linear layer in the backbone with HQQ and keep the classifier head at full precision \TBD{HQQ version, and the number of quantized layers per backbone}.
+Activations are not quantized.
+The grid covers bit widths $b \in \{1, 1.58, 2, 3, 4, 5, 6, 8\}$ and group sizes $g \in \{8, 32, 128, 512\}$, giving \V{nConditions} conditions; we write W3/G128 for $b=3$ and $g=128$.
+The baseline of each context is the same checkpoint evaluated without HQQ under automatic mixed precision with FP16, on the same test images, with one inference seed.
+The grid holds \V{cells} quantized results, one for every condition of the \V{contexts} contexts.
+
+\paragraph{Accuracy retention.}
+For a context with baseline top-1 accuracy $a_{\mathrm{FP}}$ and quantized accuracy $a_{\mathrm{Q}}$, the \term{accuracy retention} is
+\begin{equation}
+  r = a_{\mathrm{Q}} / a_{\mathrm{FP}},
+  \label{eq:retention}
+\end{equation}
+and the relative loss is $1-r$.
+LLM quantization benchmarks report the same ratio as accuracy recovery~\cite{kurtic2025bf16}.
+Group retention is the mean of $r$ over the datasets of a group, each weighted equally.
+The \term{retention gap} is the FG group's retention minus the UFG group's.
+
+\paragraph{Dataset difficulty.}
+We fix the difficulty measure before looking at its correlates.
+The primary conditions are W3 and W4 at group sizes 8 and 128, because retention saturates near zero at 1 and 1.58 bits and near one at 6 and 8 bits.
+Within each setting, we rank the datasets by relative loss in each primary condition as percentiles, and average the four percentiles into a \term{difficulty score}.
+Kendall's $W$ measures how well the four conditions agree on the ranking; we treat the score as a common difficulty only when $W \ge 0.6$.
+
+\paragraph{Decision margin.}
+For logits $\bm{z}$ of an image $x$ under the baseline, the \term{normalized decision margin} is
+\begin{equation}
+  m(x) = \frac{z_{(1)} - z_{(2)}}{\sigma(\bm{z})},
+  \label{eq:margin}
+\end{equation}
+where $z_{(1)}$ and $z_{(2)}$ are the two largest logits and $\sigma(\bm{z})$ is their standard deviation over classes.
+The normalization makes margins comparable across checkpoints with different logit scales.
+The margin measures the distance to the second-ranked class only, while quantization can also make a lower-ranked class the winner.
+The \term{vulnerable-tail margin} $q_{10}$ of a context is the 10th percentile of $m(x)$ over its test images.
+We prespecify $q_{10}$ as the primary margin predictor.
+It gives a difficulty signal when its Spearman correlation with the \term{difficulty score} is $\rho \le -0.5$ with a one-sided dataset permutation $p < 0.05$.
+The correlation must also be negative in at least three of the four primary conditions and after leaving out any one dataset.
+Baseline accuracy and the logarithm of the number of classes are the prespecified controls.
+We test whether adding $q_{10}$ to them lowers the leave-one-dataset-out error of a linear model of the \term{difficulty score}.
+
+\paragraph{Paired W3/G128 analysis.}
+At W3/G128 we export the features after every block and the final logits of both models for all 144 contexts.
+A swap is an image whose predicted class changes after quantization.
+Damage is a swap from correct to wrong and rescue a swap from wrong to correct; both are rates over all test images.
+Layer-wise similarity is the linear CKA~\cite{kornblith2019similarity} between the centered baseline and quantized features $X$ and $Y$,
+\begin{equation}
+  \mathrm{CKA}(X, Y) = \frac{\lVert X^{\top} Y \rVert_F^2}{\lVert X^{\top} X \rVert_F \, \lVert Y^{\top} Y \rVert_F}.
+  \label{eq:cka}
+\end{equation}
+On $\ell_2$-normalized final features, $D_{\mathrm{intra}}$ is the mean cosine distance between images of one class and $D_{\mathrm{inter}}$ between images of two classes, each averaged with classes weighted equally.
+Separability is $D_{\mathrm{inter}} - D_{\mathrm{intra}}$.
+The H-score is $\mathrm{tr}\big(S_b (S_w + \lambda I)^{-1}\big)$ with between-class and within-class scatter $S_b$ and $S_w$ and $\lambda = 0.01\,\mathrm{tr}(S_w)/D$ for feature dimension $D$.
+
+\paragraph{Margin matching.}
+To ask how much of the \term{retention gap} follows from the different margin distributions of the groups, we reweight the test images of both groups to a common margin distribution.
+We bin $m(x)$ with width 0.05, weight the datasets within each group equally, and take the bin-wise minimum of the two group histograms as the common target.
+Each image receives the ratio of target to group mass in its bin, and group retention becomes weighted quantized accuracy over weighted baseline accuracy.
+The weights depend only on the baseline margin.
+We report the effective sample size (ESS) and the overlap of the two histograms beside the matched gap.
+
+\paragraph{Logit offsets and competing classes.}
+Quantization may shift the logits of some classes more than others.
+We estimate the mean row-centered logit change of each class on four folds of a stratified five-fold split and subtract it on the held-out fold.
+Five controls apply the same correction with the class assignment of the offsets shuffled.
+This correction uses test logits and is a diagnostic, not a deployable method.
+To ask whether competing classes predict damage beyond the margin, we count the classes whose baseline logit lies within 0.25, 0.5 and 1.0 logit standard deviations of the winner.
+Two logistic models predict damage among baseline-correct images: one from a nonlinear basis of $m(x)$ and the log number of classes, and one that adds the counts.
+Both use L2 regularization with $C=100$ and are evaluated leave-one-dataset-out within each setting, by Brier score.

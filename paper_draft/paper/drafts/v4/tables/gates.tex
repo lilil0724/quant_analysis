@@ -1,0 +1,24 @@
+\begin{table}[t]
+\centering
+\caption{Difficulty score of the {\V{gridDatasets}} datasets. $W$: agreement of the four primary conditions. $\rho$: Spearman correlation of the score with the baseline margin $q_{10}$ (one-sided permutation $p$) and with FP top-1. Err: leave-one-dataset-out squared error ($\times 10^{3}$) of the controls (Ctrl.) alone and with $q_{10}$ added.}
+\label{tab:gates}
+\setlength{\tabcolsep}{1.8pt}
+\small
+\begin{tabular}{llrrrrrr}
+\toprule
+ & & & \multicolumn{2}{c}{Margin $q_{10}$} & FP top-1 & \multicolumn{2}{c}{Err $\downarrow$} \\
+\cmidrule(lr){4-5}\cmidrule(lr){7-8}
+Backbone & Strategy & $W$ $\uparrow$ & $\rho$ & $p$ & $\rho$ & Ctrl. & +$q_{10}$ \\
+\midrule
+ViT-B/16 & FT & 0.89 & $-$0.96 & $<$0.01 & $-$0.97 & 17.7 & 36.5 \\
+ViT-B/16 & FZ & 0.93 & $-$0.93 & $<$0.01 & $-$0.91 & 17.1 & 140.4 \\
+ViT-B/16 & CAL & 0.81 & $-$0.82 & $<$0.01 & $-$0.84 & 20.9 & 19.8 \\
+Swin-B & FT & 0.81 & $-$0.87 & $<$0.01 & $-$0.82 & 36.9 & 51.8 \\
+Swin-B & FZ & 0.95 & $-$0.97 & $<$0.01 & $-$0.98 & 12.3 & 110.7 \\
+Swin-B & CAL & 0.73 & $-$0.65 & $<$0.01 & $-$0.67 & 54.5 & 63.1 \\
+BEiTv2-B & FT & 0.83 & $-$0.53 & 0.02 & $-$0.45 & 117.5 & 83.9 \\
+BEiTv2-B & FZ & 0.94 & $-$0.93 & $<$0.01 & $-$0.96 & 12.3 & 59.6 \\
+BEiTv2-B & CAL & 0.91 & $-$0.80 & $<$0.01 & $-$0.72 & 53.8 & 36.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
