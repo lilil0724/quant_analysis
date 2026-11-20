@@ -89,7 +89,7 @@ def csv_selection(value):
 def build_parser():
     repo = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input-root', type=Path, default=repo/'../../data/w3_g128_analysis')
+    parser.add_argument('--input-root', type=Path, default=repo/'../../../data/w3_g128_analysis')
     parser.add_argument('--serial', required=True, type=int)
     parser.add_argument('--output-dir', type=Path)
     parser.add_argument('--source-map', type=Path, help='Explicit context-to-source overrides; serial labels the analysis cohort')

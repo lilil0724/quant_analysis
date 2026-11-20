@@ -33,7 +33,7 @@ Usage: sbatch dataset_confidence/run_bias_competitors_nano4.sh --serial N [optio
   --save-sample-results   Also save derived per-sample features/predictions.
   --dry-run               Print command without modules or execution.
 
-Submit from the quant_analysis checkout. Environment overrides:
+Submit from quant_analysis/legacy. Environment overrides:
 ANALYSIS_PROJECT_ROOT, ANALYSIS_INPUT_ROOT, ANALYSIS_OUTPUT_ROOT,
 ANALYSIS_CONDA_ENV (default opencode_env), ANALYSIS_PYTHON.
 Uses existing paired logits; no inference/checkpoint loading/W&B/GPU computation.
@@ -70,9 +70,9 @@ done
 [[ "$SERIAL" =~ ^[1-9][0-9]*$ ]] || fail 'Specify --serial N'
 [[ "$THREADS" =~ ^[1-9][0-9]*$ ]] || fail 'threads must be positive'
 REPO="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$REPO/dataset_confidence/server_bias_competitors.py" && -f "$REPO/dataset_confidence/bias_competitor_core.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$REPO/dataset_confidence/server_bias_competitors.py" && -f "$REPO/dataset_confidence/bias_competitor_core.py" ]] || fail 'Submit from quant_analysis/legacy or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$REPO" && pwd)"
-INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
+INPUT_ROOT="${INPUT_ROOT:-$REPO/../../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
 INPUT_ROOT="${INPUT_ROOT%/}"
 if [[ "$INPUT_ROOT" == */"$SERIAL" ]]; then INPUT_ROOT="${INPUT_ROOT%/*}"; fi

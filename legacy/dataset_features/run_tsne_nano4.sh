@@ -11,7 +11,7 @@
 #SBATCH --output=w3_paired_tsne_%j.out
 #SBATCH --error=w3_paired_tsne_%j.err
 
-# Submit from the quant_analysis checkout on nano4.
+# Submit from quant_analysis/legacy on nano4.
 set -euo pipefail
 
 usage() {
@@ -21,7 +21,7 @@ Usage: sbatch dataset_features/run_tsne_nano4.sh --serial 20004 [options]
        bash dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run [options]
 
   --serial N          Required W3/g128 source serial.
-  --input-root PATH   Parent w3_g128_analysis directory; default <repo>/../../data/w3_g128_analysis.
+  --input-root PATH   Parent w3_g128_analysis directory; default <quant_analysis>/../../data/w3_g128_analysis.
                       A selected serial directory is accepted too.
   --output-root PATH  Default: <input-root>/<serial>/analysis/tsne_classes (classes mode).
   --stage NAME        run (default) or preflight (no outputs).
@@ -120,9 +120,9 @@ validate_names model "$ALLOWED_MODELS" "${MODELS[@]}"
 validate_names mode "$ALLOWED_MODES" "${MODES[@]}"
 
 ANALYSIS_PROJECT_ROOT="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/tsne_paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/tsne_paired.py" ]] || fail 'Submit from quant_analysis/legacy or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$ANALYSIS_PROJECT_ROOT" && pwd)"
-INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
+INPUT_ROOT="${INPUT_ROOT:-$REPO/../../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
 INPUT_ROOT="${INPUT_ROOT%/}"
 if [[ "$INPUT_ROOT" == */"$SERIAL" ]]; then INPUT_ROOT="${INPUT_ROOT%/*}"; fi

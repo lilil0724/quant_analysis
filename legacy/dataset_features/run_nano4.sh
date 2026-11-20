@@ -11,7 +11,7 @@
 #SBATCH --output=hqq_feature_analysis_%j.out
 #SBATCH --error=hqq_feature_analysis_%j.err
 
-# Submit from quant_analysis on nano4. Module/Python setup matches TGDA inference.
+# Submit from quant_analysis/legacy on nano4. Module/Python setup matches TGDA inference.
 # The queue allocates one GPU; the NumPy analysis currently computes on CPUs.
 set -euo pipefail
 
@@ -21,7 +21,7 @@ Usage: sbatch dataset_features/run_nano4.sh --serial N [options]
        bash dataset_features/run_nano4.sh --serial N --dry-run [options]
 
   --serial N          Required source experiment serial (for example 20005).
-  --input-root PATH   Parent w3_g128_analysis directory (default: <repo>/../../data/w3_g128_analysis).
+  --input-root PATH   Parent w3_g128_analysis directory (default: <quant_analysis>/../../data/w3_g128_analysis).
                       A selected serial directory is also accepted with the same --serial.
   --output-root PATH  Default: <input-root>/<serial>/analysis.
   --source-map PATH   Optional explicit dataset/model/mode source overrides (legacy or schema 2).
@@ -96,9 +96,9 @@ validate_names mode "$ALLOWED_MODES" "${MODES[@]}"
 
 # Slurm runs a spool copy; use its submission directory, like TGDA inference.
 ANALYSIS_PROJECT_ROOT="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/paired.py" ]] || fail 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/paired.py" ]] || fail 'Submit from quant_analysis/legacy or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$ANALYSIS_PROJECT_ROOT" && pwd)"
-INPUT_ROOT="${INPUT_ROOT:-$REPO/../../data/w3_g128_analysis}"
+INPUT_ROOT="${INPUT_ROOT:-$REPO/../../../data/w3_g128_analysis}"
 if [[ "$INPUT_ROOT" != /* ]]; then INPUT_ROOT="$PWD/$INPUT_ROOT"; fi
 INPUT_ROOT="${INPUT_ROOT%/}"
 if [[ "$INPUT_ROOT" == */"$SERIAL" ]]; then INPUT_ROOT="${INPUT_ROOT%/*}"; fi

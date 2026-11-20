@@ -30,7 +30,7 @@ def csv_names(value):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--serial', type=int, required=True, help='Source serial, or cohort label when using a source map')
-    p.add_argument('--input-root', type=Path, default=ROOT/'../../data/w3_g128_analysis')
+    p.add_argument('--input-root', type=Path, default=ROOT/'../../../data/w3_g128_analysis')
     p.add_argument('--source-map', type=Path)
     p.add_argument('--output-root', type=Path, help='Fresh result directory; existing directories are never reused')
     p.add_argument('--run-id', help='Default: Taiwan timestamp plus source serial')

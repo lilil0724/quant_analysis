@@ -22,7 +22,7 @@ if command -v ml >/dev/null 2>&1; then
     ml load miniconda3
 fi
 [[ -f "$ANALYSIS_PROJECT_ROOT/dataset_features/centered_class_distance.py" ]] || {
-    echo "Submit from quant_analysis or set ANALYSIS_PROJECT_ROOT." >&2
+    echo "Submit from quant_analysis/legacy or set ANALYSIS_PROJECT_ROOT." >&2
     exit 1
 }
 [[ -x "$ANALYSIS_PYTHON" ]] || {

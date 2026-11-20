@@ -77,7 +77,7 @@ if [[ "$STAGE" != preflight ]]; then
 fi
 [[ "$STAGE" != run || ${#SELECT[@]} -eq 0 ]] || fail '--stage run uses the imported selection; omit --datasets/--models/--modes'
 REPO="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
-[[ -f "$REPO/dataset_confidence/analyze_margin_matching.py" ]] || fail 'Submit from the updated quant_analysis checkout or set ANALYSIS_PROJECT_ROOT'
+[[ -f "$REPO/dataset_confidence/analyze_margin_matching.py" ]] || fail 'Submit from quant_analysis/legacy or set ANALYSIS_PROJECT_ROOT'
 REPO="$(cd "$REPO" && pwd)"
 WORKSPACE="${WORKSPACE:-$REPO/dataset_confidence}"
 if [[ "$WORKSPACE" != /* ]]; then WORKSPACE="$PWD/$WORKSPACE"; fi

@@ -10,11 +10,11 @@
 #SBATCH --output=weight_only_analysis_%j.out
 #SBATCH --error=weight_only_analysis_%j.err
 
-# Submit from quant_analysis; sbatch executes a spool copy of this script.
+# Submit from quant_analysis/legacy; sbatch executes a spool copy of this script.
 set -euo pipefail
 REPO="${ANALYSIS_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
 [[ -f "$REPO/dataset_features/run_all.py" ]] || {
-    echo 'Submit from updated quant_analysis or set ANALYSIS_PROJECT_ROOT.' >&2
+    echo 'Submit from quant_analysis/legacy or set ANALYSIS_PROJECT_ROOT.' >&2
     exit 2
 }
 PYTHON_BIN="${ANALYSIS_PYTHON:-$HOME/.conda/envs/${ANALYSIS_CONDA_ENV:-tgda}/bin/python}"
