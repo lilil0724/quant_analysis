@@ -1,4 +1,4 @@
-"""Re-derive every printed number and table cell from inputs/ without the generator's code; exit 1 on drift."""
+"""Re-derive every printed number and table cell from data/ without the generator's code; exit 1 on drift."""
 import csv
 import re
 import sys
@@ -9,8 +9,10 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import rankdata
 
-PAPER = Path(__file__).resolve().parents[1]
-INPUTS = PAPER / 'inputs'
+ROOT = Path(__file__).resolve().parents[2]
+PAPER = ROOT / 'paper'
+DATA = ROOT / 'data'
+RESULTS = ROOT / 'results'
 SC = {'soyageing', 'soygene', 'soyglobal', 'soylocal', 'cotton'}
 ALL = ['aircraft', 'cars', 'cub', 'dogs', 'flowers', 'food', 'inat17', 'moe', 'nabirds', 'pets', 'vegfru',
        'soyageing', 'soygene', 'soyglobal', 'soylocal', 'cotton']
@@ -25,7 +27,7 @@ TOLERANCE = {'bootLowBeitFt': 0.015}
 
 
 def rows(name):
-    with open(INPUTS / name, newline='') as handle:
+    with open(DATA / name, newline='') as handle:
         return list(csv.DictReader(handle))
 
 
@@ -476,7 +478,7 @@ def main():
 
 
 def rows_build(name):
-    with open(PAPER / 'build' / name, newline='') as handle:
+    with open(RESULTS / name, newline='') as handle:
         return list(csv.DictReader(handle))
 
 

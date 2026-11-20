@@ -1,9 +1,9 @@
-"""Write the LaTeX macros and tables from the build/ tables into tables/."""
+"""Write the LaTeX macros and tables from results/ into paper/tables/."""
 from decimal import ROUND_HALF_UP, Decimal
 
 import pandas as pd
 
-from registry import BUILD, DATASET_LABELS, DATASETS, GROUP_LABELS, MODEL_LABELS, MODE_LABELS, PAPER, group_of
+from codebase.registry import RESULTS, DATASET_LABELS, DATASETS, GROUP_LABELS, MODEL_LABELS, MODE_LABELS, PAPER, group_of
 
 TABLES = PAPER / 'tables'
 
@@ -24,7 +24,7 @@ def setting_label(model, mode):
 
 
 def write_macros():
-    numbers = pd.read_csv(BUILD / 'numbers.csv')
+    numbers = pd.read_csv(RESULTS / 'numbers.csv')
     lines = []
     for row in numbers.itertuples():
         text = thousands(row.value) if row.dp == 0 and abs(row.value) >= 10000 else fmt(row.value, row.dp)
@@ -33,7 +33,7 @@ def write_macros():
 
 
 def write_datasets():
-    table = pd.read_csv(BUILD / 'datasets.csv', index_col=0)
+    table = pd.read_csv(RESULTS / 'datasets.csv', index_col=0)
     rows = []
     for dataset in DATASETS:
         row = table.loc[dataset]
@@ -58,7 +58,7 @@ Dataset & Group & Test $N$ & $C$ & FP (\\%) \\\\
 
 
 def write_w3_summary():
-    table = pd.read_csv(BUILD / 'w3_summary.csv')
+    table = pd.read_csv(RESULTS / 'w3_summary.csv')
     rows = []
     for row in table.itertuples():
         rows.append(f'{setting_label(row.model, row.mode)} & {fmt(row.fp_accuracy, 1)} & {fmt(row.accuracy, 1)} & '
@@ -103,7 +103,7 @@ Backbone & Strategy & CKA $\\uparrow$ & Offset & Shuffled & $\\Delta$Brier $\\do
 
 
 def write_margin():
-    table = pd.read_csv(BUILD / 'margin_table.csv')
+    table = pd.read_csv(RESULTS / 'margin_table.csv')
     rows = []
     for row in table.itertuples():
         rows.append(f'{setting_label(row.model, row.mode)} & {fmt(row.raw, 3)} & {fmt(row.matched, 3)} & '
@@ -127,7 +127,7 @@ Backbone & Strategy & Raw & Matched & Red. (\\%) & Overlap & ESS (\\%) \\\\
 
 
 def write_w3_groups():
-    table = pd.read_csv(BUILD / 'w3_groups.csv', index_col=0)
+    table = pd.read_csv(RESULTS / 'w3_groups.csv', index_col=0)
     rows = [f'{GROUP_LABELS[group]} & ' + ' & '.join(fmt(x, 1) for x in row) + ' \\\\'
             for group, row in table.iterrows()]
     body = '\n'.join(rows)
@@ -149,7 +149,7 @@ Group & FP & Q & Swap & Damage & Rescue \\\\
 
 
 def write_margin_short():
-    table = pd.read_csv(BUILD / 'margin_table.csv')
+    table = pd.read_csv(RESULTS / 'margin_table.csv')
     rows = [f'{setting_label(row.model, row.mode)} & {fmt(row.raw, 3)} & {fmt(row.matched, 3)} & '
             f'{fmt(row.reduction, 1)} \\\\' for row in table.itertuples()]
     body = '\n'.join(rows)
@@ -171,7 +171,7 @@ Backbone & Strategy & Raw & Matched & Red. (\\%) \\\\
 
 
 def write_gates():
-    table = pd.read_csv(BUILD / 'difficulty_gates.csv')
+    table = pd.read_csv(RESULTS / 'difficulty_gates.csv')
     rows = []
     for row in table.itertuples():
         p = '$<$0.01' if row.p_margin < 0.01 else fmt(row.p_margin, 2)
@@ -199,7 +199,7 @@ Backbone & Strategy & $W$ $\\uparrow$ & $\\rho$ & $p$ & $\\rho$ & Ctrl. & +$q_{{
 
 
 def write_gates_short():
-    table = pd.read_csv(BUILD / 'difficulty_gates.csv').merge(pd.read_csv(BUILD / 'partial.csv'), on=['model', 'mode'])
+    table = pd.read_csv(RESULTS / 'difficulty_gates.csv').merge(pd.read_csv(RESULTS / 'partial.csv'), on=['model', 'mode'])
     rows = [f'{setting_label(row.model, row.mode)} & {fmt(row.w, 2)} & {fmt(row.rho_margin, 2)} & '
             f'{fmt(row.rho_fp_accuracy, 2)} & {fmt(row.partial, 2)} \\\\' for row in table.itertuples()]
     body = '\n'.join(rows)
@@ -221,7 +221,7 @@ Backbone & Strategy & $W$ $\\uparrow$ & $\\rho$ ($q_{{10}}$) & $\\rho$ (top-1) &
 
 
 def write_properties():
-    table = pd.read_csv(BUILD / 'difficulty_gates.csv')
+    table = pd.read_csv(RESULTS / 'difficulty_gates.csv')
     columns = [('fp_normalized_margin_q10', '$q_{10}$'), ('fp_accuracy', 'FP'),
                ('num_classes', '$C$'), ('fp_separability', 'Sep.'), ('fp_h_score_final', 'H'),
                ('fp_norm_p99_p50', 'Norm'), ('final_cka', 'CKA')]
@@ -249,7 +249,7 @@ Backbone & Strategy & {header} \\\\
 
 
 def write_robustness():
-    table = pd.read_csv(BUILD / 'robustness.csv')
+    table = pd.read_csv(RESULTS / 'robustness.csv')
     rows = [f'{row.check} & {fmt(row.mean, 2)} & {fmt(row.min, 2)} & {int(row.positive)} \\\\'
             for row in table.itertuples()]
     body = '\n'.join(rows)

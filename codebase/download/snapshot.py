@@ -1,17 +1,16 @@
-"""Copy the small tables the paper reads from the run bundles into inputs/; run where the bundles exist."""
+"""Copy the small tables the paper reads from the run bundles into data/; run where the legacy/ bundles exist."""
 import hashlib, json, shutil
 from pathlib import Path
 import pandas as pd
 
-PAPER = Path(__file__).resolve().parents[1]
-REPO = PAPER.parents[1]
-RUN = REPO / 'paper_draft/data/run_all/20261115_211022_759540_w3_s20004'
-DERIVED = REPO / 'paper_draft/data/derived/20261116_140853_554056_runall_s20004_audit'
+REPO = Path(__file__).resolve().parents[2]
+RUN = REPO / 'legacy/paper_draft/data/run_all/20261115_211022_759540_w3_s20004'
+DERIVED = REPO / 'legacy/paper_draft/data/derived/20261116_140853_554056_runall_s20004_audit'
 MARGIN = RUN / 'margin/result/analysis/tables'
-OUT = PAPER / 'inputs'
+OUT = REPO / 'data'
 
 COPIES = {
-    'grid.csv': REPO / 'quant_acc/20261117_legacy_hqq_s10000_10016_cal10016_v2/prepared/quant_summary.csv',
+    'grid.csv': REPO / 'legacy/quant_acc/20261117_legacy_hqq_s10000_10016_cal10016_v2/prepared/quant_summary.csv',
     'dataset_master.csv': DERIVED / 'dataset_master.csv',
     'margin_gaps.csv': MARGIN / 'gaps.csv',
     'margin_diagnostics.csv': MARGIN / 'diagnostics.csv',

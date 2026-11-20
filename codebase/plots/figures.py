@@ -1,4 +1,4 @@
-"""Draw the paper's figures from the build/ tables into figures/."""
+"""Draw the paper's figures from results/ into paper/figures/."""
 import matplotlib
 
 matplotlib.use('Agg')
@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from registry import (BITS, BUILD, DATASET_LABELS, GRID_DATASETS, GROUP_LABELS, GROUP_SIZES, INPUTS, MODEL_KEYS,
+from codebase.registry import (BITS, RESULTS, DATASET_LABELS, GRID_DATASETS, GROUP_LABELS, GROUP_SIZES, DATA, MODEL_KEYS,
                       MODEL_LABELS, MODE_LABELS, MODELS, MODES, PAPER, SETTINGS, SOY_COTTON, SEED)
 
 FIGURES = PAPER / 'figures'
@@ -26,7 +26,7 @@ def save(fig, name):
 
 
 def retention_curves():
-    table = pd.read_csv(BUILD / 'grid_datasets_g128.csv', index_col=0)
+    table = pd.read_csv(RESULTS / 'grid_datasets_g128.csv', index_col=0)
     table.columns = table.columns.astype(float)
     x = np.arange(len(BITS))
     fig, ax = plt.subplots(figsize=(COLUMN, 1.9))
@@ -47,7 +47,7 @@ def retention_curves():
 
 
 def retention_bits():
-    groups = pd.read_csv(BUILD / 'grid_groups.csv')
+    groups = pd.read_csv(RESULTS / 'grid_groups.csv')
     x = np.arange(len(BITS))
     fig, axes = plt.subplots(1, 2, figsize=(COLUMN, 1.6), sharey=True)
     for ax, gs in zip(axes, [128, 8]):
@@ -67,7 +67,7 @@ def retention_bits():
 
 
 def gap_heatmaps():
-    groups = pd.read_csv(BUILD / 'grid_groups.csv')
+    groups = pd.read_csv(RESULTS / 'grid_groups.csv')
     fig, axes = plt.subplots(3, 3, figsize=(FULL, 4.6), sharex=True, sharey=True)
     for ax, (model, mode) in zip(axes.flat, SETTINGS):
         cells = groups[(groups.model == model) & (groups['mode'] == mode)]
@@ -89,7 +89,7 @@ def gap_heatmaps():
 
 
 def ranking_agreement():
-    agreement = pd.read_csv(BUILD / 'difficulty_agreement.csv', index_col=[0, 1], header=[0, 1])
+    agreement = pd.read_csv(RESULTS / 'difficulty_agreement.csv', index_col=[0, 1], header=[0, 1])
     labels = [f'{MODEL_LABELS[m]} {MODE_LABELS[k]}' for m, k in SETTINGS]
     fig, ax = plt.subplots(figsize=(COLUMN, 2.6))
     image = ax.imshow(agreement.to_numpy(), cmap='viridis', vmin=0, vmax=1)
@@ -104,7 +104,7 @@ def ranking_agreement():
 
 
 def layer_cka():
-    curves = pd.read_csv(BUILD / 'layer_cka.csv')
+    curves = pd.read_csv(RESULTS / 'layer_cka.csv')
     fig, axes = plt.subplots(1, 3, figsize=(FULL, 1.6), sharey=True)
     for ax, model in zip(axes, MODELS):
         for mode in MODES:
@@ -123,7 +123,7 @@ def layer_cka():
 
 
 def margin_distribution():
-    balance = pd.read_csv(INPUTS / 'margin_balance.csv')
+    balance = pd.read_csv(DATA / 'margin_balance.csv')
     balance['model'] = balance.model_name.map(MODEL_KEYS)
     cells = balance[(balance.model == 'vit') & (balance.checkpoint_mode == 'ft') & (balance.bin_width == 0.05)]
     fig, ax = plt.subplots(figsize=(COLUMN, 1.6))
@@ -158,7 +158,7 @@ def swap_by_decile_placeholder():
 
 
 def tsne_example():
-    coordinates = pd.read_csv(INPUTS / 'tsne_cub_vit_b16_ft.csv')
+    coordinates = pd.read_csv(DATA / 'tsne_cub_vit_b16_ft.csv')
     fig, axes = plt.subplots(1, 2, figsize=(COLUMN, 1.7), sharex=True, sharey=True)
     for ax, (prefix, title) in zip(axes, [('fp', 'FP baseline'), ('w3', 'W3/G128')]):
         ax.scatter(coordinates[f'{prefix}_x'], coordinates[f'{prefix}_y'], c=coordinates.target, cmap='tab20',
@@ -170,7 +170,7 @@ def tsne_example():
 
 
 def retention_box():
-    cells = pd.read_csv(BUILD / 'accuracy_retention.csv')
+    cells = pd.read_csv(RESULTS / 'accuracy_retention.csv')
     rng = np.random.default_rng(SEED)
     fig, ax = plt.subplots(figsize=(COLUMN, 1.7))
     for i, group in enumerate(['sc', 'other']):
@@ -187,8 +187,8 @@ def retention_box():
 
 
 def accuracy_retention():
-    from compute import PAIRS
-    cells = pd.read_csv(BUILD / 'accuracy_retention.csv')
+    from codebase.analyses.compute import PAIRS
+    cells = pd.read_csv(RESULTS / 'accuracy_retention.csv')
     fig, ax = plt.subplots(figsize=(COLUMN, 2.0))
     for model in MODELS:
         for group, marker in [('other', 'o'), ('sc', '^')]:

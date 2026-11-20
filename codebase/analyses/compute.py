@@ -1,9 +1,9 @@
-"""Compute every analysis table and printed number of the paper from inputs/ into build/."""
+"""Compute every analysis table and printed number of the paper from data/ into results/."""
 import numpy as np
 import pandas as pd
 from scipy import stats
 
-from registry import (BITS, BUILD, DATASETS, GRID_DATASETS, GROUP_SIZES, INPUTS, MODEL_KEYS, PERMUTATIONS,
+from codebase.registry import (BITS, RESULTS, DATASETS, GRID_DATASETS, GROUP_SIZES, DATA, MODEL_KEYS, PERMUTATIONS,
                       PRIMARY, SEED, SETTINGS, SOY_COTTON, group_of)
 
 NUMBERS = []
@@ -15,7 +15,7 @@ def put(key, value, dp):
 
 
 def load_grid():
-    grid = pd.read_csv(INPUTS / 'grid.csv')
+    grid = pd.read_csv(DATA / 'grid.csv')
     grid['model'] = grid.model_name.map(MODEL_KEYS)
     grid['mode'] = grid.ckpt_kind
     grid['dataset'] = grid.dataset_name
@@ -29,7 +29,7 @@ def load_grid():
 
 
 def load_master():
-    master = pd.read_csv(INPUTS / 'dataset_master.csv')
+    master = pd.read_csv(DATA / 'dataset_master.csv')
     master['model'] = master.model.map(MODEL_KEYS)
     master['group'] = master.dataset.map(group_of)
     assert len(master) == 144 and not master.duplicated(['dataset', 'model', 'mode']).any()
@@ -67,9 +67,9 @@ def grid_analysis(grid):
     groups = cells.groupby(['model', 'mode', 'bits', 'gs', 'group']).retention.mean().unstack('group')
     groups['all'] = cells.groupby(['model', 'mode', 'bits', 'gs']).retention.mean()
     groups['gap'] = groups.other - groups.sc
-    groups.reset_index().to_csv(BUILD / 'grid_groups.csv', index=False)
+    groups.reset_index().to_csv(RESULTS / 'grid_groups.csv', index=False)
     by_dataset = cells[cells.gs == 128].groupby(['dataset', 'bits']).retention.mean().unstack('bits')
-    by_dataset.to_csv(BUILD / 'grid_datasets_g128.csv')
+    by_dataset.to_csv(RESULTS / 'grid_datasets_g128.csv')
 
     put('cells', len(grid), 0)
     put('contexts', len(grid.drop_duplicates(['dataset', 'model', 'mode'])), 0)
@@ -109,9 +109,9 @@ def difficulty_analysis(grid, master):
     # Rounding keeps equal mean ranks tied despite summation order.
     score = primary.groupby(['model', 'mode', 'dataset'])['rank'].mean().round(10).unstack(['model', 'mode'])
     score = score[pd.MultiIndex.from_tuples(SETTINGS)]
-    score.to_csv(BUILD / 'difficulty.csv')
+    score.to_csv(RESULTS / 'difficulty.csv')
     agreement = score.corr(method='spearman')
-    agreement.to_csv(BUILD / 'difficulty_agreement.csv')
+    agreement.to_csv(RESULTS / 'difficulty_agreement.csv')
 
     rng = np.random.default_rng(SEED)
     rows = []
@@ -138,7 +138,7 @@ def difficulty_analysis(grid, master):
     gates = pd.DataFrame(rows)
     gates['passes'] = ((gates.w >= 0.6) & (gates.rho_margin <= -0.5) & (gates.p_margin < 0.05)
                        & (gates.neg_conditions >= 3) & (gates.lodo_max_rho < 0))
-    gates.to_csv(BUILD / 'difficulty_gates.csv', index=False)
+    gates.to_csv(RESULTS / 'difficulty_gates.csv', index=False)
 
     upper = agreement.to_numpy()[np.triu_indices(len(SETTINGS), 1)]
     pairs = agreement.where(np.triu(np.ones(agreement.shape, bool), 1)).stack([0, 1], future_stack=True).dropna()
@@ -173,12 +173,12 @@ def w3_analysis(master):
     master = master.copy()
     for column in ['fp_accuracy', 'accuracy', 'swap_rate', 'damage_rate', 'rescue_rate']:
         master[column] = 100 * master[column]
-    bias = pd.read_csv(INPUTS / 'bias_results.csv')
+    bias = pd.read_csv(DATA / 'bias_results.csv')
     bias['model'] = bias.model_name.map(MODEL_KEYS)
     bias = bias.rename(columns={'dataset_name': 'dataset', 'checkpoint_mode': 'mode'})
     merged = master.merge(bias[['dataset', 'model', 'mode', 'gain_pp', 'shuffle_mean_gain_pp']],
                           on=['dataset', 'model', 'mode'], validate='1:1')
-    comparisons = pd.read_csv(INPUTS / 'competitor_comparisons.csv')
+    comparisons = pd.read_csv(DATA / 'competitor_comparisons.csv')
     comparisons = comparisons[(comparisons.scope == 'lodo') & (comparisons.outcome == 'damage')].copy()
     comparisons['model'] = comparisons.model_name.map(MODEL_KEYS)
     competitor = comparisons.groupby(['model', 'checkpoint_mode']).delta_brier.mean()
@@ -190,7 +190,7 @@ def w3_analysis(master):
     summary['relative_loss'] *= 100
     summary['delta_brier'] = [competitor.loc[s] for s in summary.index]
     summary = summary.reindex(pd.MultiIndex.from_tuples(SETTINGS, names=['model', 'mode']))
-    summary.reset_index().to_csv(BUILD / 'w3_summary.csv', index=False)
+    summary.reset_index().to_csv(RESULTS / 'w3_summary.csv', index=False)
 
     put('testRows', master[(master.model == 'vit') & (master['mode'] == 'ft')].n.sum(), 0)
     put('beitFzCka', summary.loc[('beit', 'fz'), 'final_cka'], 2)
@@ -203,7 +203,7 @@ def w3_analysis(master):
     put('shuffleLossMin', -summary.shuffle_gain.max(), 1)
     put('shuffleLossMax', -summary.shuffle_gain.min(), 1)
     put('competitorBetter', (summary.delta_brier < 0).sum(), 0)
-    scores = pd.read_csv(INPUTS / 'competitor_scores.csv')
+    scores = pd.read_csv(DATA / 'competitor_scores.csv')
     put('aurocUndefined', (scores.auroc_status != 'ok').sum(), 0)
     put('aurocRows', len(scores), 0)
 
@@ -211,7 +211,7 @@ def w3_analysis(master):
     put('swapHigherSc', (group[('swap_rate', 'sc')] > group[('swap_rate', 'other')]).sum(), 0)
     columns = ['fp_accuracy', 'accuracy', 'swap_rate', 'damage_rate', 'rescue_rate']
     groups = merged.groupby(['model', 'mode', 'group'])[columns].mean().groupby('group').median()
-    groups.loc[['sc', 'other']].to_csv(BUILD / 'w3_groups.csv')
+    groups.loc[['sc', 'other']].to_csv(RESULTS / 'w3_groups.csv')
     sc = merged[merged.group == 'sc'].groupby(['model', 'mode'])[columns[2:]].mean()
     put('wrongSwapScMin', 100 * (1 - (sc.damage_rate + sc.rescue_rate) / sc.swap_rate).min(), 0)
     put('w3FpSc', groups.loc['sc', 'fp_accuracy'], 1)
@@ -221,7 +221,7 @@ def w3_analysis(master):
 
 def winner_analysis(master):
     """Share of swaps whose quantized winner was ranked below second by the baseline."""
-    ranks = pd.read_csv(INPUTS / 'winner_ranks.csv')
+    ranks = pd.read_csv(DATA / 'winner_ranks.csv')
     ranks['model'] = ranks.model_name.map(MODEL_KEYS)
     ranks = ranks.rename(columns={'dataset_name': 'dataset', 'checkpoint_mode': 'mode'})
     ranks = ranks.merge(master[['dataset', 'model', 'mode', 'group', 'num_classes', 'fp_normalized_margin_q10']],
@@ -241,9 +241,9 @@ def winner_analysis(master):
 
 
 def margin_analysis():
-    gaps = pd.read_csv(INPUTS / 'margin_gaps.csv')
+    gaps = pd.read_csv(DATA / 'margin_gaps.csv')
     gaps['model'] = gaps.model_name.map(MODEL_KEYS)
-    support = pd.read_csv(INPUTS / 'matching_support.csv')
+    support = pd.read_csv(DATA / 'matching_support.csv')
     support['model'] = support.model.map(MODEL_KEYS)
     main = gaps[gaps.bin_width == 0.05].set_index(['model', 'checkpoint_mode'])
     worst = support[support.bin_width == 0.05].groupby(['model', 'mode']).agg(
@@ -252,7 +252,7 @@ def margin_analysis():
                           'reduction': 100 * main.absolute_gap_reduction_fraction})
     table = table.join(worst.rename_axis(['model', 'checkpoint_mode']))
     table = table.reindex(pd.MultiIndex.from_tuples(SETTINGS, names=['model', 'mode']))
-    table.reset_index().to_csv(BUILD / 'margin_table.csv', index=False)
+    table.reset_index().to_csv(RESULTS / 'margin_table.csv', index=False)
     assert len(table) == 9 and table.notna().all().all()
 
     put('reductionMin', table.reduction.min(), 1)
@@ -264,20 +264,20 @@ def margin_analysis():
     put('essRatioMin', 100 * support.matched_to_raw_ess.min(), 1)
     put('weightMax', support.max_weight_multiplier.max(), 2)
     sensitivity = gaps.groupby('bin_width').absolute_gap_reduction_fraction.agg(['min', 'max'])
-    sensitivity.to_csv(BUILD / 'margin_sensitivity.csv')
+    sensitivity.to_csv(RESULTS / 'margin_sensitivity.csv')
     put('reductionMinAll', 100 * gaps.absolute_gap_reduction_fraction.min(), 1)
     put('reductionMaxAll', 100 * gaps.absolute_gap_reduction_fraction.max(), 1)
 
 
 def layer_analysis(master):
-    layers = pd.read_csv(INPUTS / 'layer_metrics.csv')
+    layers = pd.read_csv(DATA / 'layer_metrics.csv')
     layers = layers[layers.condition == 'w3_g128'].copy()
     layers['model'] = layers.model.map(MODEL_KEYS)
     layers['group'] = layers.dataset.map(group_of)
     layers['depth'] = layers.groupby(['dataset', 'model', 'mode']).cumcount()
     layers['depth'] /= layers.groupby(['dataset', 'model', 'mode']).depth.transform('max')
     curves = layers.groupby(['model', 'mode', 'group', 'depth']).cka_vs_fp.median().reset_index()
-    curves.to_csv(BUILD / 'layer_cka.csv', index=False)
+    curves.to_csv(RESULTS / 'layer_cka.csv', index=False)
     final = layers[layers.layer == 'final'].merge(master[['dataset', 'model', 'mode', 'final_cka']],
                                                   on=['dataset', 'model', 'mode'], validate='1:1')
     assert np.allclose(final.cka_vs_fp, final.final_cka)
@@ -295,21 +295,21 @@ def consistency(grid, master):
 
 
 def datasets_table(master):
-    coverage = pd.read_csv(INPUTS / 'margin_coverage.csv')
+    coverage = pd.read_csv(DATA / 'margin_coverage.csv')
     sizes = coverage.groupby('dataset_name').agg(n=('n_samples', 'first'), classes=('num_classes', 'first'),
                                                   n_unique=('n_samples', 'nunique'))
     assert (sizes.n_unique == 1).all()
     accuracy = (100 * master.groupby('dataset').fp_accuracy.mean()).rename('fp_accuracy')
     table = sizes.join(accuracy).reindex(DATASETS)
-    table.to_csv(BUILD / 'datasets.csv')
+    table.to_csv(RESULTS / 'datasets.csv')
     put('nDatasets', len(DATASETS), 0)
     put('nSc', len(SOY_COTTON), 0)
     put('nOther', len(DATASETS) - len(SOY_COTTON), 0)
 
 
 def tsne_example():
-    coordinates = pd.read_csv(INPUTS / 'tsne_cub_vit_b16_ft.csv')
-    coverage = pd.read_csv(INPUTS / 'margin_coverage.csv')
+    coordinates = pd.read_csv(DATA / 'tsne_cub_vit_b16_ft.csv')
+    coverage = pd.read_csv(DATA / 'margin_coverage.csv')
     put('tsneClasses', coordinates.target.nunique(), 0)
     put('cubClasses', coverage[coverage.dataset_name == 'cub'].num_classes.iloc[0], 0)
 
@@ -320,7 +320,7 @@ PAIRS = {'A': ('beit', 'cal', 'cars', 'food'), 'B': ('beit', 'ft', 'dogs', 'cars
 def accuracy_analysis(grid, master):
     """How far baseline accuracy alone predicts retention at W3/G128."""
     cell = grid[(grid.bits == 3.0) & (grid.gs == 128) & grid.dataset.isin(GRID_DATASETS)].copy()
-    cell[['dataset', 'model', 'mode', 'group', 'fp32_top1', 'retention']].to_csv(BUILD / 'accuracy_retention.csv',
+    cell[['dataset', 'model', 'mode', 'group', 'fp32_top1', 'retention']].to_csv(RESULTS / 'accuracy_retention.csv',
                                                                                  index=False)
     put('pooledN', len(cell), 0)
     X = np.c_[np.ones(len(cell)), cell.fp32_top1]
@@ -363,7 +363,7 @@ def accuracy_analysis(grid, master):
             if tag in 'AB':
                 put(f'pair{tag}{side}Q', row.fp_normalized_margin_q10[dataset], 2)
 
-    score = pd.read_csv(BUILD / 'difficulty.csv', index_col=0, header=[0, 1])
+    score = pd.read_csv(RESULTS / 'difficulty.csv', index_col=0, header=[0, 1])
     partial = []
     for model, mode in SETTINGS:
         y = score[(model, mode)]
@@ -372,15 +372,15 @@ def accuracy_analysis(grid, master):
         resid = [r - np.polyval(np.polyfit(ranks[2], r, 1), ranks[2]) for r in ranks[:2]]
         partial.append(np.corrcoef(*resid)[0, 1])
     pd.DataFrame([dict(model=m, mode=k, partial=r) for (m, k), r in zip(SETTINGS, partial)]).to_csv(
-        BUILD / 'partial.csv', index=False)
+        RESULTS / 'partial.csv', index=False)
     put('partialMedian', np.median(partial), 2)
     put('partialNeg', sum(r < 0 for r in partial), 0)
 
 
 def robustness_analysis(grid):
     """Retention gap at W3/G128 under alternative retention definitions and groupings."""
-    classes = pd.read_csv(INPUTS / 'margin_coverage.csv').groupby('dataset_name').num_classes.first()
-    sizes = pd.read_csv(INPUTS / 'margin_coverage.csv').groupby('dataset_name').n_samples.first()
+    classes = pd.read_csv(DATA / 'margin_coverage.csv').groupby('dataset_name').num_classes.first()
+    sizes = pd.read_csv(DATA / 'margin_coverage.csv').groupby('dataset_name').n_samples.first()
     cells = grid[grid.dataset.isin(GRID_DATASETS)].copy()
     chance = 100 / cells.dataset.map(classes)
     cells['chance_corrected'] = (cells.hqq_top1 - chance) / (cells.fp32_top1 - chance)
@@ -409,7 +409,7 @@ def robustness_analysis(grid):
               ('Leave out one dataset (worst)', leave_out[worst])]
     table = pd.DataFrame([{'check': name, 'mean': g.mean(), 'min': g.min(), 'positive': (g > 0).sum()}
                           for name, g in checks])
-    table.to_csv(BUILD / 'robustness.csv', index=False)
+    table.to_csv(RESULTS / 'robustness.csv', index=False)
     assert (table.positive == len(SETTINGS)).all()
     put('looMinGap', min(g.min() for g in leave_out.values()), 2)
     put('gapChance_w3g128', checks[1][1].mean(), 2)
@@ -442,7 +442,7 @@ def robustness_analysis(grid):
 
 
 def main():
-    BUILD.mkdir(exist_ok=True)
+    RESULTS.mkdir(exist_ok=True)
     grid = load_grid()
     master = load_master()
     grid_analysis(grid)
@@ -461,7 +461,7 @@ def main():
     put('nGroupSizes', len(GROUP_SIZES), 0)
     numbers = pd.DataFrame(NUMBERS)
     assert not numbers.key.duplicated().any()
-    numbers.to_csv(BUILD / 'numbers.csv', index=False)
+    numbers.to_csv(RESULTS / 'numbers.csv', index=False)
 
 
 if __name__ == '__main__':

@@ -73,3 +73,5 @@ legacy/dataset_confidence/data/run_config.json
 /paper/*.log
 /paper/*.out
 /paper/*.brf
+/legacy/paper_draft/paper/leftovers/
+/legacy/paper_versions/**/*.pdf

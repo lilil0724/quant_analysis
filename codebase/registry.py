@@ -1,9 +1,10 @@
 """Datasets, groups, models and modes the paper reports, in print order."""
 from pathlib import Path
 
-PAPER = Path(__file__).resolve().parents[1]
-INPUTS = PAPER / 'inputs'
-BUILD = PAPER / 'build'
+ROOT = Path(__file__).resolve().parents[1]
+PAPER = ROOT / 'paper'
+DATA = ROOT / 'data'
+RESULTS = ROOT / 'results'
 
 OTHER = ['aircraft', 'cars', 'cub', 'dogs', 'flowers', 'food', 'inat17', 'moe', 'nabirds', 'pets', 'vegfru']
 SOY_COTTON = ['soyageing', 'soygene', 'soyglobal', 'soylocal', 'cotton']
