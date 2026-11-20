@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "relocation_id": "20261104_module_consolidation",
+  "status": "complete",
+  "timezone": "Asia/Taipei",
+  "started_at": "2026-11-04T10:02:33.9758117+08:00",
+  "source_root": "five_dataset_features",
+  "destination_root": "dataset_features",
+  "repository_root": "C:\\project\\quant_analysis",
+  "branch": "codex/activation_quant",
+  "git_commit": "ae7dbfe0439f64c1cca9439da918a3c7504b22a3",
+  "command": "powershell -File <temporary>/relocate_feature_module_20261104.ps1",
+  "file_count": 1418,
+  "bytes": 218255389.0,
+  "directory_count": 544,
+  "preexisting_artifact_count": 70,
+  "files_manifest": "files.csv",
+  "preexisting_artifacts_manifest": "existing_artifacts.csv",
+  "directories_manifest": "directories.json",
+  "historical_manifests_rewritten": false,
+  "raw_arrays_revalidated": false,
+  "full_layout_migration_complete": false,
+  "completed_at": "2026-11-04T10:02:42.9737902+08:00",
+  "verified_moved_files": 1418,
+  "verified_preexisting_artifacts": 70,
+  "source_removed": true,
+  "manifest_hashes": {
+    "files.csv": "4565402437282e3c21c671717845079571906dcd79f04b105a88717d45e89f75",
+    "directories.json": "5cea7cd47c0fed2c1a0889453f88d966c401dece218d15b58ffe99a6add9854b",
+    "existing_artifacts.csv": "06398540a1c7ae77cac11ff5facd9ee54cc6d1e7d96b0693cba36257bf9b68ff"
+  }
+}

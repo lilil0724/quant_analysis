@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "checked_at": "2026-11-04T10:09:55.2689+08:00",
+  "timezone": "Asia/Taipei",
+  "command": "conda run -n opencode_env python -B <temporary>/verify_feature_relocation_20261104.py",
+  "moved_files_size_and_sha256": 1418,
+  "preexisting_artifacts_unchanged": 70,
+  "compact_pairs": 144,
+  "compact_layer_rows": 4896,
+  "compact_saved_output_hashes": 579,
+  "unavailable_full_coordinates": 288,
+  "archived_source_hashes": 14,
+  "python_sources_parsed": 17,
+  "slurm_headers_checked": 3,
+  "local_document_links_and_anchors": 51,
+  "moved_runtime_files_ignored": 1393,
+  "formula_tolerance": 1E-12,
+  "python_executable": "C:\\Users\\kyle0\\miniconda3\\envs\\opencode_env\\python.exe",
+  "raw_arrays_revalidated": false,
+  "full_layout_migration_complete": false,
+  "limits": [
+    "No inference, downloads or server submissions.",
+    "Full raw-array validation requires nano4 sources.",
+    "Historical reports/manifests retain original bytes and paths; use relocation mapping."
+  ],
+  "cli_help_passed": [
+    "dataset_features.run",
+    "dataset_features.paired",
+    "dataset_features.tsne_paired",
+    "dataset_features.centered_class_distance",
+    "dataset_features.unified_inputs"
+  ],
+  "bash_syntax_passed": [
+    "dataset_features/run_nano4.sh",
+    "dataset_features/run_tsne_nano4.sh",
+    "dataset_features/run_centered_class_distance_nano4.sh"
+  ],
+  "dry_runs_passed": [
+    "bash dataset_features/run_nano4.sh --serial 20004 --dry-run",
+    "bash dataset_features/run_tsne_nano4.sh --serial 20004 --dry-run",
+    "conda run -n opencode_env python -B -m dataset_features.centered_class_distance --input-root C:/data/w3_g128_analysis --serial 20004 --output-root dataset_features/results/20004/centered_fp_distance_preview --dry-run"
+  ],
+  "independent_review": "No actionable findings; review included quant_analysis and dependent TGDA changes.",
+  "diff_whitespace_check": "passed in quant_analysis and TGDA",
+  "temporary_verifier_sha256": "d80455e084956bf3ebc81fc26f590abed9198a4395e6d99b691c73e8dfeb40e5"
+}

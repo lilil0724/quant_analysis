@@ -1,5 +1,14 @@
 # Change log
 
+## 2026-11-20 — one branch
+
+- Merged the remote `codex/activation_quant` (`ea855b3`: review notes, counterexample reports,
+  translation, the 2026-11-16 manuscript) into `legacy/paper_draft/`.
+- Merged the former `main` (`83614d7`, 2026-11-04) keeping this layout; its whole tree is in
+  `legacy/main_20261104/`. `codex/Q10_analysis` and `codex/logit_analysis` were already contained.
+- Tags on the former tips: `main-before-final-20261120`, `codex-activation_quant-remote-20261120`,
+  `codex-Q10_analysis-20261120`, `codex-logit_analysis-20261120`, and `pre-restructure-20261120`.
+
 ## 2026-11-20 — repo restructure
 
 - Moved the six analysis packages (`activation_quantization`, `quant_acc`, `dataset_confidence`,

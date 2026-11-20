@@ -16,6 +16,7 @@ pipeline at the repo root reads only the run bundles listed in `data/MANIFEST.js
 | `AGENTS.md`, `CONTEXT.md` | The earlier operating rules and vocabulary for these packages |
 | `CLAUDE_before_restructure.md`, `README_before_restructure.md`, `requirements.txt` | The repo's agent notes, README and (unpinned) requirements before the restructure |
 | `paper_draft/` | The paper's working notes: handoff brief, intro drafts, citation map, `new_draft_guideline.md`, `pdfs/` (cited papers, untracked), `data/` (serial 20004 run bundles, untracked), `reports/`, the WACV author kit; `paper/` holds the old `build.sh`, `EVIDENCE.md`, `TBD_zh.md` and README |
+| `main_20261104/` | The full tree of the former `main` branch (2026-11-04, `83614d7`: `activation_quant/`, `legacy_hqq/`, `hqq_confidence/`, `granularity_robustness/`, `dataset_ranking/`, `tools/baseline_recovery/`); its `.gitignore` is renamed `gitignore_main_20261104` so it does not apply here |
 | `paper_versions/` | Source copies of paper versions v1–v4; their PDFs are in `drafts/` |
 | `pr/` | Empty folder from the earlier layout |
 | `RELOCATION.json` | Every untracked file before the move (path, size, SHA-256); tag `pre-restructure-20261120` has the tracked ones |

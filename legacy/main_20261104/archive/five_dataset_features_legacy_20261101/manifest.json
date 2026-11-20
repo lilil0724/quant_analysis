@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "created_at": "2026-11-01T21:41:13.606894+08:00",
+  "timezone": "Asia/Taipei",
+  "purpose": "Preserve legacy source bytes before removing inactive 21-condition workflows",
+  "status": "archived_sources_removed_after_hash_verification",
+  "git_commit": "a4a0136b34336e4c99447f93252965fdaf9bbd3c",
+  "files": [
+    {
+      "original_path": "five_dataset_features/analyze.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/analyze.py",
+      "bytes": 23141,
+      "sha256": "d438f71bc20f3601392f1f47da4d9fccb00cd1f24d8a9a331f3d4fd35633e38a",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/analysis_snapshot.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/analysis_snapshot.py",
+      "bytes": 6714,
+      "sha256": "95c88a84825887b1951ca412c04bd2437eec442ec9e1b55da892c7590656278b",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/run_local.ps1",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/run_local.ps1",
+      "bytes": 1679,
+      "sha256": "622c09c888db87957b6a0b2c5fad7bffe929e5bcd3464053a127a13b19e88a6c",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/smoke.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/smoke.py",
+      "bytes": 7781,
+      "sha256": "b5b7a0d2d03fdc27d3772f01e920ed2ddd9793459b60c41d1f41c5c45a69d1d3",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/geometry_robustness.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/geometry_robustness.py",
+      "bytes": 30705,
+      "sha256": "66b8d8d4c593e86def34c47e9395e1f40de4f71702877995f9f7899bb808f48b",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/distance_hypothesis.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/distance_hypothesis.py",
+      "bytes": 14237,
+      "sha256": "09b25818ea0160de08ff2077b77ae98d83c943a09cedf0bb7eb1c52b79aa028b",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/quantized_class_distance.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/quantized_class_distance.py",
+      "bytes": 12169,
+      "sha256": "f1dadad57cddf706cf16a2972beff7f4fb9995ca42dbad7150c9d56f7b18b300",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/distance_accuracy.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/distance_accuracy.py",
+      "bytes": 16344,
+      "sha256": "dac934ffccbabeda12478f9c1a6edbbf38b46e46bc9b6846065cc5caedf722b3",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/paired_feature_pca.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/paired_feature_pca.py",
+      "bytes": 26578,
+      "sha256": "8f2a42ae7f46df8ec6cc652c58d41c7e8654e15281147fb4f1b4db849e3ccdea",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/verify_paired_feature_pca.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/verify_paired_feature_pca.py",
+      "bytes": 6347,
+      "sha256": "a475693843e5a522832ca846b5293f401f4a4f5dda38dafd1cde0b23fa5ad2c8",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/plot_presentation.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/plot_presentation.py",
+      "bytes": 12529,
+      "sha256": "7e48111d5154e647683a759d9c1092d6460d6602f1ad4514f08d1b444c5b182e",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/plot_cka_robustness.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/plot_cka_robustness.py",
+      "bytes": 4837,
+      "sha256": "26206d5b053e4370226495eeb6207d3f27abebf92d62fff06c1fc7899c8998db",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/plot_cka_retention_scatter.py",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/plot_cka_retention_scatter.py",
+      "bytes": 5181,
+      "sha256": "da7148eb1344c51603489d4889cce9de6a54e801ba17b501edc9b81d219ec94b",
+      "action": "archived"
+    },
+    {
+      "original_path": "five_dataset_features/README.md",
+      "archive_path": "archive/five_dataset_features_legacy_20261101/README.before_cleanup.md",
+      "bytes": 28405,
+      "sha256": "f5425f62b325c4d39f8dab251246e7e354899915ca7630f0cf4690f26212e780",
+      "action": "preserved_before_rewrite"
+    }
+  ],
+  "retained_dependencies": [
+    {
+      "path": "five_dataset_features/metrics.py",
+      "sha256": "c95fbaef4fa30a72b4a5de3abf363ec2b6148654bbcd46b9d333854f67913225"
+    }
+  ],
+  "historical_artifacts": "Not relocated or rewritten",
+  "restoration": "Restore archived files to original_path; archive is not an executable relocated package"
+}

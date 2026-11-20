@@ -1,0 +1,20 @@
+{
+  "serial": 20004,
+  "pairs": 144,
+  "layer_pairs": 2448,
+  "verified_layer_hashes": 144,
+  "definitions": {
+    "distance": "1-cosine after per-sample L2 normalization",
+    "intra": "Mean over classes with >=2 samples of mean distances of distinct same-class sample pairs",
+    "inter": "Equal-weight mean over distinct unordered class pairs of mean cross-class sample-pair distances",
+    "gap": "D_inter-D_intra",
+    "ratio": "D_inter/D_intra",
+    "s_norm": "(D_inter-D_intra)/(D_inter+D_intra)",
+    "gap_loss": "FP gap-W3 gap; positive means smaller W3 gap",
+    "s_norm_loss": "FP S_norm-W3 S_norm; positive means smaller W3 normalized gap"
+  },
+  "correlations": "Average-tied-rank Spearman, 16 datasets separately in each model/mode; no p-values or held-out prediction claims. Adjusted correlations residualize both ranks on intercept and FP-accuracy rank only.",
+  "aggregation": "First compute per-dataset metrics then take equal-dataset means; mean S_norm is not S_norm of mean distances.",
+  "limit": "Existing compact metrics only; no raw feature recomputation. CAL features are raw-image backbone call, logits aggregate crop/flip.",
+  "manifest_sha256": "4bf50637c0602e38887580ca3bdf4253abaa87966053ba1286cea8d32f9f73ec"
+}

@@ -1,0 +1,61 @@
+{
+  "status": "repair_verified",
+  "recorded_at": "2026-11-04T07:45:25.606Z",
+  "timezone": "Asia/Taipei",
+  "old_module": "dataset_robustness",
+  "current_module": "dataset_ranking",
+  "scope": "Repair operational references after a pre-existing directory rename; this repair did not move input or result files.",
+  "path_mapping": "Replace only the owning module prefix dataset_robustness/ with dataset_ranking/ for historical paths under this checkout.",
+  "inventory": "files.csv",
+  "inventory_files": 95,
+  "inventory_bytes": 27304961,
+  "inventory_boundary": "Post-repair snapshot of historical data/results verified unchanged during final regression and overwrite checks. The pre-repair temporary hash list was unavailable after Windows sandbox cleanup; this receipt does not certify pre-rename byte identity.",
+  "historical_provenance": "Original reports and manifests remain unchanged with their original paths and code hashes. Current verifiers require fresh outputs from current code; historical full baseline-promotion verification was not run and historical PCA outputs are absent locally.",
+  "validation": {
+    "cli_help": [
+      "analyze",
+      "verify",
+      "pca_profiles",
+      "verify_pca"
+    ],
+    "checks": {
+      "status": "passed",
+      "historical_tables_equal": 13,
+      "historical_files_unchanged": 95,
+      "overwrite_guards_checked": 2,
+      "python_sources_checked": 7,
+      "tolerance": 1e-12
+    },
+    "main": {
+      "status": "passed",
+      "cells": 4320,
+      "exclusions": 0,
+      "within_correlations_checked": 5310,
+      "cross_correlations_checked": 1152,
+      "pairwise_conservation_checks": 2835,
+      "workbook_checks": 15,
+      "figure_integrity_checks": 29,
+      "source_and_script_hashes_verified": true,
+      "note": "Figure integrity is automated; visual layout was inspected separately."
+    },
+    "pca": {
+      "status": "passed",
+      "fits_checked": 36,
+      "figures_checked": 5,
+      "source_and_output_hashes_verified": true,
+      "note": "Figure integrity is automated; visual layout was inspected separately."
+    }
+  },
+  "validation_location": "Unique temporary directory outside the repository; generated runs and temporary checks removed after validation.",
+  "reproduce": [
+    "conda run -n opencode_env python -B -m dataset_ranking.analyze --results-dir <new-main-directory>",
+    "conda run -n opencode_env python -B -m dataset_ranking.verify --results-dir <new-main-directory>",
+    "conda run -n opencode_env python -B -m dataset_ranking.pca_profiles --main-results <new-main-directory> --output-dir <new-pca-directory>",
+    "conda run -n opencode_env python -B -m dataset_ranking.verify_pca --output-dir <new-pca-directory>"
+  ],
+  "limitations": [
+    "Full result/reports layout migration remains pending.",
+    "Figure integrity was checked automatically; new plots were not visually reviewed in this repair.",
+    "No input download, checkpoint inference, commit or push was performed."
+  ]
+}

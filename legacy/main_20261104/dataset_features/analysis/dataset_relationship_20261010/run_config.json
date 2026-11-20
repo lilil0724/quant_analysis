@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-10",
+  "source_root": "C:\\project\\quant_analysis\\five_dataset_features\\data\\w3_g128_results",
+  "output_root": "C:\\project\\quant_analysis\\five_dataset_features\\analysis\\dataset_relationship_20261010",
+  "source_hashes": {
+    "C:\\project\\quant_analysis\\five_dataset_features\\data\\w3_g128_results\\analysis_manifest.json": "4bf50637c0602e38887580ca3bdf4253abaa87966053ba1286cea8d32f9f73ec",
+    "C:\\project\\quant_analysis\\five_dataset_features\\data\\w3_g128_results\\all_pairs.csv": "b523e644d27b54d4dce24b5284e4587832a7a66fa2391797e69a9080400f0cab",
+    "C:\\project\\quant_analysis\\five_dataset_features\\analysis\\serial_20004_20261010\\class_distances\\final_class_distances.csv": "8e52d3dd649a10b46e15171024e0590c52232f803649e32486fbd5a4c339ecde",
+    "C:\\project\\quant_analysis\\data\\backbones_quant.csv": "ee879ce9ba4bce27db9b6d02ce998aa15ea5ac4133a5cfea5dcfe8d520b2594b"
+  },
+  "script_sha256": "4be452293482711ee193daf97ec52d8274901c5833b737d98ebf18bbbdaadbb9",
+  "compact_files_verified": 579,
+  "omitted_coordinates": 288,
+  "n_pairs": 144,
+  "n_datasets": 16,
+  "legacy_cells": 4320,
+  "analysis": "exploratory retrospective; no significance claims, model tuning, clipping or external validation",
+  "holdout": "OLS with training-fold-only standardization. LODO, whole soybean family, and whole soy+cotton block; dataset equal error weighting.",
+  "feature_definitions": "Q10 pre-quantization normalized logit-margin tail; S=(inter-intra)/(inter+intra); n is TEST count, not training-set size.",
+  "variance": "balanced additive descriptive sums of squares; residual combines interaction and unknown measurement error, no causal variance.",
+  "limits": "raw logits/features/predictions and source checkpoints absent; compact output integrity and algebra verified, source metrics not independently recomputed"
+}
