@@ -1,5 +1,7 @@
 # Quantization analysis workspace
 
+論文問答、實例與比例統計見 [討論筆記](paper_draft/PAPER_DISCUSSION_NOTES_20261116.md)；[英文投稿草稿](paper_draft/manuscripts/20261116_short/short.pdf) 與 [全文繁體中文譯文](paper_draft/reports/20261116_225424_630984_short_zh_tw_translation/REPORT.md) 已整理。
+
 論文 intro 草稿、文獻定位與引用清單見 [paper_draft/README.md](paper_draft/README.md)。
 引用 PDF 保存在 `paper_draft/pdfs/`，由 Git 忽略，僅留在本機。
 

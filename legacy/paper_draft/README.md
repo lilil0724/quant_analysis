@@ -4,6 +4,12 @@ PTQ、FGIR／UFGIR 的論文草稿、文獻核對與本機引用 PDF。
 
 ## 文件
 
+- [論文問答與完整數據筆記](PAPER_DISCUSSION_NOTES_20261116.md)：baseline、Table 1／5、margin 配對比例、反向案例、Sep.／H-score 與待補資料。
+- [英文投稿草稿 PDF](manuscripts/20261116_short/short.pdf)（[版本與 SHA-256](manuscripts/20261116_short/SOURCE.json)）：依作者要求納入 Git 的特定稿件版本。
+- [short.pdf 全文繁體中文翻譯](reports/20261116_225424_630984_short_zh_tw_translation/REPORT.md)：完整正文、附錄、五張表、六張圖說與 26 筆參考文獻；忠實保留原稿的 TBD／占位內容。
+- [q10 方向相反的實例與比例](reports/20261116_212421_402885_q10_direction_counterexamples/REPORT.md)：baseline 近似門檻的敏感度、retention 方向與 q10 幾乎相同案例的區分。
+- [Baseline／margin 相近但量化 accuracy 不同的實例](reports/20261116_210237_212249_baseline_margin_counterexamples/REPORT.md)：144 contexts、1,080 個同 setting 配對與實際 margin CDF。
+- [short.pdf 論文合理性與資料核對（2026-11-16）](reports/20261116_201210_623333_short_paper_review/REPORT.md)：舊 CAL protocol、占位內容、retention estimator 與統計解釋問題。
 - [完整英文 intro、中文段落說明與引用對照](INTRODUCTION.md)（最新詳細版）
 - [Intro 草稿與引用用途](ptq_fgir_intro_draft_20261116.md)
 - [研究 gap 與相關研究核對](ptq_fgir_intro_gap_check_20261116.md)
@@ -37,8 +43,8 @@ PTQ、FGIR／UFGIR 的論文草稿、文獻核對與本機引用 PDF。
 
 ## Git 與備份
 
-- `pdfs/` 及本目錄任何大小寫副檔名的 PDF 均由根 `.gitignore` 排除，PDF 僅保存在本機。
-- Markdown 草稿、引用清單與來源核對可由 Git 追蹤；本次沒有執行 commit 或 push。
+- `pdfs/` 與其他 PDF 預設由根 `.gitignore` 排除；只有作者要求加入的 `manuscripts/20261116_short/short.pdf` 以精確路徑例外納入 Git，參考文獻 PDF 仍僅存本機。
+- Markdown 草稿、引用清單、來源核對與選定稿件可由 Git 追蹤；討論筆記及各報告標明適用版本與限制。
 - Zotero 原始附件未修改；複製後已核對 SHA-256。
 - Git 不會備份忽略的 PDF；請以本機備份或 Zotero 保存原始檔。
 - 來源與 bibliographic metadata 以附帶論文及官方頁面為準；Zotero 附件可能為 preprint 版本。
