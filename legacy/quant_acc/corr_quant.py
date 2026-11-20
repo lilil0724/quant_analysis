@@ -35,6 +35,8 @@ def parse_args():
     parser.add_argument(
         '--serials', nargs='+', type=int,
         help='optional HQQ source serials to retain; matches any serial in hqq_source_serials')
+    parser.add_argument('--no-markdown', action='store_true',
+                        help='let the enclosing run write its single consolidated report')
     return parser.parse_args()
 
 
@@ -188,15 +190,17 @@ def main():
     quality_lines = ['# Data quality', '', f'- Prepared accuracy cells: {len(data)}',
                      f'- Baseline-matched cells: {int(data["baseline_matched"].sum())}',
                      f'- Contexts: {data[CONTEXT_COLUMNS].drop_duplicates().shape[0]}']
-    with open(os.path.join(args.results_dir, 'data_quality.md'), 'w', encoding='utf-8') as handle:
-        handle.write('\n'.join(quality_lines) + '\n')
+    if not args.no_markdown:
+        with open(os.path.join(args.results_dir, 'data_quality.md'), 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(quality_lines) + '\n')
     report_lines = ['# Quant accuracy factor report', '', f'- Prepared cells: {len(data)}', '',
                     '## Factor contribution ranking (delta R2 ablation)', '',
                     level_ablation.sort_values('delta_r2', ascending=False).to_string(index=False), '',
                     '## Spearman rank correlation supplement', '',
                     legacy_correlations[legacy_correlations['method'].eq('spearman')].tail(2).to_string(index=False)]
-    with open(os.path.join(args.results_dir, 'report.md'), 'w', encoding='utf-8') as handle:
-        handle.write('\n'.join(report_lines) + '\n')
+    if not args.no_markdown:
+        with open(os.path.join(args.results_dir, 'report.md'), 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(report_lines) + '\n')
     print(f'Modelled {len(data)} baseline-matched cells in {args.results_dir}')
 
 

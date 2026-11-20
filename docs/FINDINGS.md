@@ -8,6 +8,16 @@ training strategy (nine settings); a context is one dataset in one setting (144 
 
 Copies the 14 input tables into `data/` and records their sources and SHA-256 in `data/MANIFEST.json`.
 
+**Re-check of `data/grid.csv` against W&B (not a `plotter.sh` step).** A fresh download of
+`nycu_pcs/TiT` serials 10000–10016 (6,512 runs, all finished; `legacy/quant_acc/acquire_snapshot.py`)
+run through the grid selection (`legacy/quant_acc/rerun_serial_grid.py`, run
+`20261120_recheck_s10000_10016`) reproduces `data/grid.csv` exactly: 4,608 cells, the same baseline
+and quantized top-1 in every cell. 68 settings have more than one compatible run, all VegFru: 64
+BEiTv2 FT/FZ quantized conditions and 4 baselines (BEiTv2 and ViT-B/16, FT and FZ; the two ViT ones
+evaluated the same checkpoint from another storage path). The kept and the older run differ by at most
+0.01 top-1 points (`legacy/quant_acc/check_duplicates.py`, tolerance 0.1), so keeping the newest run
+changes nothing.
+
 ## `codebase.analyses.compute`
 
 **Grid (`grid_analysis`).** The grid is complete: 144 contexts × 32 conditions = 4,608 cells.

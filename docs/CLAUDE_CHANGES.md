@@ -12,6 +12,10 @@
 - Lifted the paper pipeline from `paper_draft/paper/` to `codebase/`, `data/`, `results/`, `paper/`,
   `drafts/`; `plotter.sh` replaces `build.sh` and adds a fourth LaTeX pass so the reference
   back-links resolve from a clean checkout. The output equals v5.
+- Added the grid's selection code to `legacy/quant_acc/` from the run's provenance copy
+  (`acquire_snapshot.py` with a repo-relative root and 200 runs per W&B page, `rerun_serial_grid.py`,
+  and the `--no-markdown` versions of `corr_quant.py` and `plot_quant_acc_bit_group.py`), plus
+  `check_duplicates.py`. Re-check run `20261120_recheck_s10000_10016` reproduces `data/grid.csv`.
 
 ## 2026-11-19 — paper folder rebuilt
 

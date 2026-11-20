@@ -5,7 +5,7 @@ pipeline at the repo root reads only the run bundles listed in `data/MANIFEST.js
 
 | Path | Holds |
 |---|---|
-| `quant_acc/` | Weight-only HQQ accuracy ratios and baseline pairing; `20261117_legacy_hqq_s10000_10016_cal10016_v2/` (untracked) is the run that produced `data/grid.csv`, `legacy/` (untracked) the older 141-context grid |
+| `quant_acc/` | Weight-only HQQ accuracy ratios and baseline pairing; `acquire_snapshot.py` downloads serials 10000–10016, `rerun_serial_grid.py` selects the grid from a download, `check_duplicates.py` compares duplicate runs; `20261117_legacy_hqq_s10000_10016_cal10016_v2/` (untracked) is the run that produced `data/grid.csv`, `legacy/` (untracked) the older 141-context grid |
 | `activation_quantization/` | Weight and activation (W/A) quantization grids, serials 20007 and 20008 |
 | `dataset_features/` | Paired baseline/W3 feature geometry (CKA, PCA, t-SNE, class distances); nano4 launchers |
 | `dataset_confidence/` | Logit analyses: overconfidence, margin, swap mechanism, margin matching, bias/competitors; nano4 launchers |

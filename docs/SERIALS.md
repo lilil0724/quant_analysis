@@ -13,4 +13,5 @@ W&B project `nycu_pcs/TiT`. Runs were trained and evaluated outside this repo (T
 Selection rule for the grid: for FT and FZ, the newest finished positive AMP baseline per context and
 the newest compatible HQQ run per condition; for CAL, serial 10016 only. Older duplicates are kept
 out, not averaged; `legacy/quant_acc/20261117_legacy_hqq_s10000_10016_cal10016_v2/audit/` lists every
-selected and excluded run.
+selected and excluded run. Duplicates of one setting agree within 0.01 top-1 points; the re-check run
+`20261120_recheck_s10000_10016` (`legacy/quant_acc/reports/`) reproduces the grid exactly.

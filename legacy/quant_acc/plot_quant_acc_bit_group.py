@@ -122,7 +122,7 @@ def checkpoint_accuracy_lines(cells, results_dir, dpi):
                     axis.plot(line['hqq_nbits'], line['hqq_top1'], marker='o', label=f'g={group_size}')
                 baseline = panel['fp32_top1'].dropna().median()
                 if pd.notna(baseline):
-                    axis.axhline(.9 * baseline, color='#CC3311', linestyle='--', linewidth=1, label='90% FP32')
+                    axis.axhline(.9 * baseline, color='#CC3311', linestyle='--', linewidth=1, label='90% unquantized AMP')
                 axis.set_title(f'{dataset} | {model}', fontsize=9)
                 if row == len(datasets) - 1:
                     axis.set_xlabel('HQQ nbits')
