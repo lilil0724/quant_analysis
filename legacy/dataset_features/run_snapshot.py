@@ -12,6 +12,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from codebase.raw import metrics
+
 from .run_config import RunConfig, canonical_hash
 
 
@@ -51,7 +53,8 @@ def code_hashes(stage: str) -> dict[str, str]:
     if stage not in CODE_DEPENDENCIES:
         raise ValueError(f"No code dependency map for stage {stage}")
     base = Path(__file__).parent
-    return {name: file_hash(base / name) for name in CODE_DEPENDENCIES[stage]}
+    return {name: file_hash(Path(metrics.__file__) if name == 'metrics.py' else base / name)
+            for name in CODE_DEPENDENCIES[stage]}
 
 
 def runtime_identity() -> dict[str, str | None]:

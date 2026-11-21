@@ -1,11 +1,9 @@
-"""Coordinate the existing paired W3/G128 analyses; no new metrics or plots."""
+"""Coordinate paired W3/G128 analyses from existing Nano4 exports."""
 import argparse
 import hashlib
-import importlib.metadata
 import itertools
 import json
 import os
-import platform
 import re
 import shlex
 import shutil
@@ -15,11 +13,12 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .common import DATASETS
+from codebase.raw.provenance import REPO_ROOT, environment, git_identity, raw_source_files, snapshot_source, write_receipt
+
+from .common import ANALYSES, DATASETS, SUPPORTED_DATASETS, read_csv, write_csv
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = ('vit_b16', 'swin_base_patch4_window7_224_in22k', 'beitv2_base_patch16_224')
-ANALYSES = ('paired', 'centered', 'bias', 'margin', 'tsne')
 TZ = ZoneInfo('Asia/Taipei')
 
 
@@ -34,7 +33,10 @@ def parser():
     p.add_argument('--source-map', type=Path)
     p.add_argument('--output-root', type=Path, help='Fresh result directory; existing directories are never reused')
     p.add_argument('--run-id', help='Default: Taiwan timestamp plus source serial')
-    p.add_argument('--datasets', type=csv_names, default=list(DATASETS))
+    p.add_argument('--datasets', type=csv_names, default=list(DATASETS),
+                   help='Comma-separated datasets; opt in to DAFB with --datasets dafb')
+    p.add_argument('--report-root', type=Path, default=ROOT/'dataset_features/reports',
+                   help='Parent directory for the DAFB report')
     p.add_argument('--models', type=csv_names, default=list(MODELS))
     p.add_argument('--modes', type=csv_names, default=['ft', 'fz', 'cal'])
     p.add_argument('--analyses', type=csv_names, default=list(ANALYSES))
@@ -49,8 +51,10 @@ def jobs(args):
     root, out = str(args.input_root), args.output_root
     source = ['--source-map', str(args.source_map)] if args.source_map else []
     serial = ['--serial', str(args.serial)]
-    words = ['--datasets', *args.datasets, '--models', *args.models, '--modes', *args.modes]
-    csv = ['--datasets', ','.join(args.datasets), '--models', ','.join(args.models), '--modes', ','.join(args.modes)]
+    datasets = [name for name in args.datasets if name in DATASETS]
+    contexts = ['--models', *args.models, '--modes', *args.modes]
+    words = ['--datasets', *datasets, *contexts]
+    csv = ['--datasets', ','.join(datasets), '--models', ','.join(args.models), '--modes', ','.join(args.modes)]
     def command(module, *parts):
         return [sys.executable, '-B', '-u', '-m', module, *map(str, parts)]
     paired = ['--input-root', root, *serial, *words, *source, '--output-root', str(out/'paired')]
@@ -72,7 +76,13 @@ def jobs(args):
                        commands=[command('dataset_confidence.analyze_margin_matching', 'import-server', *margin_source, *margin_workspace),
                                  command('dataset_confidence.analyze_margin_matching', 'run', *margin_workspace, *serial, '--run-id', 'analysis')]),
     }
-    return [dict(name=name, **all_jobs[name]) for name in args.analyses]
+    planned = [dict(name=name, **all_jobs[name]) for name in args.analyses] if datasets else []
+    if 'dafb' in args.datasets:
+        dafb = command('dataset_features.dafb', '--input-root', root, *serial, *source, *contexts,
+                       '--analyses', *args.analyses, '--output-root', out/'dafb',
+                       '--run-id', args.run_id, '--report-root', args.report_root)
+        planned.append(dict(name='dafb', preflight=[[*dafb, '--preflight-only']], commands=[dafb]))
+    return planned
 
 
 def now():
@@ -87,16 +97,10 @@ def sha256(path):
     return h.hexdigest()
 
 
-def write_receipt(path, value):
-    partial = path.with_suffix('.json.tmp')
-    partial.write_text(json.dumps(value, indent=2, default=str), encoding='utf-8')
-    partial.replace(path)
-
-
 def validate(args):
     if args.serial <= 0 or args.threads <= 0:
         raise ValueError('serial and threads must be positive')
-    for key, allowed in [('datasets', DATASETS), ('models', MODELS), ('modes', ('ft','fz','cal')), ('analyses', ANALYSES)]:
+    for key, allowed in [('datasets', SUPPORTED_DATASETS), ('models', MODELS), ('modes', ('ft','fz','cal')), ('analyses', ANALYSES)]:
         values = getattr(args, key)
         if not values or len(set(values)) != len(values) or not set(values) <= set(allowed):
             raise ValueError(f'Invalid or duplicate {key}: {values}')
@@ -109,6 +113,7 @@ def validate(args):
     if args.input_root.name == str(args.serial):
         args.input_root = args.input_root.parent
     args.output_root = (args.output_root or ROOT/'dataset_features/result'/args.run_id).expanduser().resolve()
+    args.report_root = args.report_root.expanduser().resolve()
     if args.source_map:
         args.source_map = args.source_map.expanduser().resolve()
     if (args.input_root == args.output_root or args.input_root.is_relative_to(args.output_root)
@@ -118,7 +123,8 @@ def validate(args):
 
 def preflight_centered(args):
     from . import centered_class_distance as centered, paired_inputs
-    for dataset, model, mode in itertools.product(args.datasets, args.models, args.modes):
+    datasets = [name for name in args.datasets if name in DATASETS]
+    for dataset, model, mode in itertools.product(datasets, args.models, args.modes):
         folder, serial = paired_inputs.select_source(args.input_root/str(args.serial)/dataset/model/mode,
                                                      args.serial, dataset, model, mode, args.source_map)
         centered.validate_pair(folder, serial, dataset, model, mode)
@@ -126,47 +132,16 @@ def preflight_centered(args):
 
 
 def snapshot_code(out):
-    records = {}
     paths = [p for folder in ('dataset_features','dataset_confidence') for p in (ROOT/folder).glob('*.py')]
     paths.append(ROOT/'dataset_features/run_all_nano4.sh')
-    for path in sorted(paths):
-        relative = path.relative_to(ROOT)
-        dest = out/'provenance/source'/relative
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, dest)
-        records[relative.as_posix()] = sha256(dest)
-    return records
-
-
-def environment():
-    versions = {}
-    for package in ('numpy','pandas','matplotlib','scipy','scikit-learn'):
-        try:
-            versions[package] = importlib.metadata.version(package)
-        except importlib.metadata.PackageNotFoundError:
-            versions[package] = None
-    return dict(python=sys.version, platform=platform.platform(), packages=versions)
-
-
-def git_identity():
-    try:
-        values = []
-        for arguments in (['rev-parse','HEAD'], ['status','--short']):
-            process = subprocess.Popen(['git','-C',str(ROOT),*arguments], stdout=subprocess.PIPE,
-                                       stderr=subprocess.DEVNULL, text=True)
-            output, _ = process.communicate()
-            if process.returncode:
-                return dict(commit=None, dirty=None)
-            values.append(output.strip())
-        return dict(commit=values[0], dirty=bool(values[1]), status=values[1].splitlines())
-    except OSError:
-        return dict(commit=None, dirty=None)
+    return snapshot_source(out, [*paths, *raw_source_files()])
 
 
 def completion_records(job, out):
     name = job['name']
     path = {'paired': out/'paired/analysis_manifest.json', 'centered': out/'centered/run_config.json',
-            'bias': out/'bias/completion.json', 'margin': out/'margin/result/analysis/run.json'}.get(name)
+            'bias': out/'bias/completion.json', 'margin': out/'margin/result/analysis/run.json',
+            'dafb': out/'dafb/run.json'}.get(name)
     paths = list((out/'tsne').rglob('method.json')) if name == 'tsne' else [path]
     if not paths:
         raise RuntimeError(f'{name} returned without completion receipts')
@@ -242,9 +217,9 @@ def run(args):
                 shutil.copy2(args.source_map, args.output_root/'provenance/source_map.json')
                 if sha256(args.output_root/'provenance/source_map.json') != source_map['sha256']:
                     raise RuntimeError('Source map changed while saving its provenance copy')
-        if 'margin' in args.analyses:
+        if any(job['name'] == 'margin' for job in planned):
             from dataset_confidence.analyze_margin_matching import focus
-            focus(argparse.Namespace(grouping='soy-cotton'), args.datasets)
+            focus(argparse.Namespace(grouping='soy-cotton'), [name for name in args.datasets if name in DATASETS])
         for job in planned:
             for i, command in enumerate(job['preflight']):
                 execute(job, 'preflight', i, command)
@@ -256,7 +231,15 @@ def run(args):
                 execute(job, 'analysis', i, command)
             receipt['outputs'].update(completion_records(job, args.output_root))
             save()
-        if any(sha256(ROOT/name) != value for name, value in receipt['code'].items()):
+        if 'dafb' in args.datasets and 'paired' in args.analyses:
+            summary = args.output_root/'all_pairs.csv'
+            rows = []
+            for job in planned:
+                if job['name'] in ('paired', 'dafb'):
+                    rows.extend(read_csv(args.output_root/job['name']/'all_pairs.csv'))
+            write_csv(summary, rows)
+            receipt['outputs'][summary.name] = sha256(summary)
+        if any(sha256(REPO_ROOT/name) != value for name, value in receipt['code'].items()):
             raise RuntimeError('Analysis code changed during this run; select a new run after checking the source snapshot')
         receipt['status'] = 'complete'
         print(f'Complete: {args.output_root}', flush=True)

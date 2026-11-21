@@ -73,6 +73,44 @@ precision、preprocessing 與評估設定；schema-2 還要求 checkpoint/data/c
 
 ## Paired FP/W3：nano4 主分析
 
+### DAFB 逐層特徵與 logits
+
+DAFB 的 raw-data 分析實作已移至 [codebase/raw](../../codebase/raw/README.md)。
+以下入口會呼叫同一套實作，沿用 legacy 的結果和報告路徑。
+
+從 quant_analysis/legacy 提交 [run_all_nano4.sh](run_all_nano4.sh)，指定 --datasets dafb。
+預設執行 ViT-B/16、Swin-B、BEiTv2-B 各自的 FT/FZ/CAL，共九組 matched
+unquantized AMP 與 Linear weight-only W3/G128。沿用 TGDA 保存的 schema-2
+匯出，唯讀檢查兩組的 manifest、樣本、逐層 .npy、predictions.csv 和
+logits.npy。輸入根目錄指到 serial 的上一層。
+
+    sbatch dataset_features/run_all_nano4.sh --datasets dafb --serial 20004 \
+      --input-root /work/kyle0724/data/w3_g128_analysis
+
+--preflight-only 只驗證輸入，--models vit_b16 --modes ft 可縮小範圍。
+舊的 run_dafb_nano4.sh 也可直接呼叫同一套 DAFB 分析。Nano4 預設使用 tgda 環境，
+也可用 ANALYSIS_PYTHON 指定 Python。需要 NumPy、SciPy、pandas、Matplotlib、
+scikit-learn 和 threadpoolctl。分析使用 CPU，Slurm 使用 8gpus partition。
+
+每次新建 legacy/dataset_features/result/<run_id>/ 和
+legacy/dataset_features/reports/<run_id>/REPORT.md。結果目錄由 .gitignore 的
+**/result/ 規則忽略，REPORT.md 可追蹤。all_pairs.csv 匯總 accuracy、
+swap、damage／rescue、final H-score 和 normalized margin Q10。各組另有逐層
+CKA、class distances、norm、FP 共基底 PCA、matched 樣本的 joint t-SNE，
+以及每個樣本的 margins。margin_deciles.csv 與 margin_auroc.csv 統計 FP
+margin 與 prediction transitions 的關聯。centered_class_distance.csv 比較
+FP final features 全域中心化前後的類別距離。classifier_bias.csv 和
+competitor_ranks.csv 紀錄 fold-held-out logit bias 診斷及 W3 winner 的 FP
+排名。DAFB 的完整表格和圖放在本次 result 的 dafb/ 子目錄。未指定 --datasets
+時照舊跑原本的 16 個 datasets。也可用 --datasets cub,dafb --analyses paired
+匯出兩個 datasets 的合併 all_pairs.csv。跨 dataset 的 margin matching
+以原有 dataset 選取為準，需要 soy/cotton 和 other 兩組。DAFB 的 margin
+分析使用同一 dataset 內的 FP margin 分位。產生的摘要可另行下載分析。
+
+run.json 紀錄完成範圍、input／output hashes 和套件版本。run_all 的 Slurm log
+為提交目錄的 weight_only_analysis_<JOBID>.out/.err。CAL 的逐層 features 來自 raw-image
+backbone call，logits 可能聚合 crop/flip。
+
 ### 一次提交既有分析：run_all_nano4.sh
 
 `run_all_nano4.sh` → `python -m dataset_features.run_all` 是新增的協調入口，

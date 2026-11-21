@@ -25,6 +25,9 @@ the expected output.
 
 ## Layout
 
+The [raw export analysis](codebase/raw/README.md) reads DAFB layer features and
+logits directly on Nano4 and prepares paper-format summaries.
+
 | Path | Holds |
 |---|---|
 | `plotter.sh` | the driver: one command rebuilds every CSV, table, figure, both PDFs and the checks |

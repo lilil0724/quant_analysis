@@ -28,6 +28,8 @@ import pandas as pd
 
 from . import margin_matching as core
 from . import server_bias_competitors as server
+
+from codebase.raw.provenance import raw_source_files, snapshot_source
 from .common import EXPECTED_CONDITIONS
 from .prepare_pairs import load_predictions, provenance_status, _validate_metadata
 
@@ -343,6 +345,7 @@ def source_identity(output):
         hashes[f'dataset_features/{name}'] = server.sha256_file(path)
         if server.sha256_file(copy) != hashes[f'dataset_features/{name}']:
             raise ValueError('Input adapter snapshot hash mismatch')
+    hashes.update(snapshot_source(output, raw_source_files()))
     try:
         commit = subprocess.check_output(['git','-C',str(REPO),'rev-parse','HEAD'],text=True,stderr=subprocess.DEVNULL).strip()
         status = subprocess.check_output(['git','-C',str(REPO),'status','--short'],text=True,stderr=subprocess.DEVNULL).splitlines()
